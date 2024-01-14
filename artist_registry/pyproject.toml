@@ -1,5 +1,5 @@
 [tool.poetry]
-name = "a-db"
+name = "artist_registry"
 version = "0.1.0"
 description = ""
 authors = ["Jan Miksik"]
@@ -17,5 +17,5 @@ sqlparse = "0.4.4"
 [tool.poetry.dev-dependencies]
 
 [build-system]
-requires = ["poetry-core>=1.0.0"]
+requires = ["poetry-core"]
 build-backend = "poetry.core.masonry.api"

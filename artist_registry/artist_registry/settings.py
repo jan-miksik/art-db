@@ -79,9 +79,9 @@ DATABASES = {
         'ENGINE': 'django.db.backends.postgresql',
         'NAME': 'art_db', 
         'USER': 'art_db_user',
-        'PASSWORD': 'art_db_user',
-        'HOST': 'localhost',
-        'PORT': 5432
+        'PASSWORD': 'art_db_user-password',
+        'HOST': '0.0.0.0',
+        'PORT': 5432,
     }
 }
 

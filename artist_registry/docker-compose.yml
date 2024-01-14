@@ -8,22 +8,24 @@ services:
     environment:
       - POSTGRES_DB=art_db
       - POSTGRES_USER=art_db_user
-      - POSTGRES_PASSWORD=art_db_user
-
-  web:
-    build: .
-    command: python manage.py runserver 0.0.0.0:8000
-    volumes:
-      - .:/code
+      - POSTGRES_PASSWORD=art_db_user-password
     ports:
-      - 8000:8000
-    environment:
-      - DB_HOST=db
-      - DB_NAME=art_db
-      - DB_USER=art_db_user
-      - DB_PASS=art_db_user
-    depends_on:
-      - db
+      - '5432:5432'
+
+  # web:
+  #   build: .
+  #   command: python manage.py runserver 0.0.0.0:8000
+  #   volumes:
+  #     - .:/code
+  #   ports:
+  #     - 8000:8000
+  #   environment:
+  #     - DB_HOST=db
+  #     - DB_NAME=art_db
+  #     - DB_USER=art_db_user
+  #     - DB_PASS=art_db_user
+  #   depends_on:
+  #     - db
 
 volumes:
   postgres_data:

@@ -1,32 +1,50 @@
-# Base image
 FROM python:3.12-slim
+# # Base image
 
-# Set work directory
-WORKDIR /app
+# # Install system dependencies
+# RUN apt-get update && apt-get install -y \  
+#   build-essential \
+#   curl
 
-# Install Poetry
-RUN pip install poetry
+# # Install Poetry
+# RUN curl -sSL https://install.python-poetry.org | POETRY_HOME=/opt/poetry python3 -
 
-# Copy pyproject.toml and poetry.lock file (if exists)
-COPY pyproject.toml ./
+# # Add poetry to path  
+# ENV PATH="${PATH}:/opt/poetry/bin"
 
-# Install dependencies
-RUN poetry install --no-interaction --no-ansi --no-root
+# # Copy project dependency files
+# COPY pyproject.toml ./
 
-# Copy project
-COPY . .
+# # Install dependencies - now cached!
+# RUN poetry config virtualenvs.create false \
+#   && poetry install --no-interaction --no-ansi --no-root
 
-# Migrate database
-RUN python3 manage.py migrate 
+# # Set work directory
+# WORKDIR /app
 
-# Collect static
-# RUN python manage.py collectstatic --no-input 
+# # # Install Poetry
+# # RUN pip install poetry
 
-# Gunicorn config
-COPY gunicorn_conf.py ./
+# # # Copy pyproject.toml and poetry.lock file (if exists)
+# # COPY pyproject.toml ./
 
-# Ports
-EXPOSE 8000  
+# # Install dependencies
+# RUN poetry install --no-interaction --no-ansi --no-root
 
-# Start app  
-CMD ["gunicorn", "--config", "gunicorn_conf.py", "artist_registry.wsgi:application"]
+# # Copy project
+# COPY . .
+
+# # Migrate database
+# RUN python3 manage.py migrate 
+
+# # Collect static
+# # RUN python manage.py collectstatic --no-input 
+
+# # Gunicorn config
+# COPY gunicorn_conf.py ./
+
+# # Ports
+# EXPOSE 8000  
+
+# # Start app  
+# CMD ["gunicorn", "--config", "gunicorn_conf.py", "artist_registry.wsgi:application"]
