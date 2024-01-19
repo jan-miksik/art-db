@@ -1,0 +1,24 @@
+<a href="{% url 'artist_create' %}">Create New Artist</a>
+
+<table>
+  <thead>
+      <tr>
+        <th>
+          <a href="?sort_order=name&sort_direction={% if sort_order == 'name' and sort_direction == 'asc' %}desc{% else %}asc{% endif %}">
+              Name
+              {% if sort_order == 'name' and sort_direction == 'asc' %}&uarr;{% endif %}
+              {% if sort_order == 'name' and sort_direction == 'desc' %}&darr;{% endif %}
+          </a>
+      </th>
+          <th>Notes</th>
+      </tr>
+  </thead>
+  <tbody>
+      {% for artist in artists %}
+          <tr>
+              <td>{{ artist.name }}</td>
+              <td>{{ artist.notes }}</td>
+          </tr>
+      {% endfor %}
+  </tbody>
+</table>
