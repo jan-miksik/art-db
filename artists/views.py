@@ -10,14 +10,14 @@ def artist_list(request):
     artists = Artist.objects.all().order_by(sort_order)
     return render(request, 'artists/artist_list.html', {'artists': artists, 'sort_order': sort_order, 'sort_direction': sort_direction})
 
-from .forms import ArtistForm
+# from .forms import ArtistForm
 
-def artist_create(request):
-    if request.method == 'POST':
-        form = ArtistForm(request.POST)
-        if form.is_valid():
-            form.save()
-            return redirect('artist_list')
-    else:
-        form = ArtistForm()
-    return render(request, 'artists/artist_form.html', {'form': form})
+# def artist_create(request):
+#     if request.method == 'POST':
+#         form = ArtistForm(request.POST)
+#         if form.is_valid():
+#             form.save()
+#             return redirect('artist_list')
+#     else:
+#         form = ArtistForm()
+#     return render(request, 'artists/artist_form.html', {'form': form})

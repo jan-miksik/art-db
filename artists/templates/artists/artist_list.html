@@ -1,24 +1,32 @@
-<a href="{% url 'artist_create' %}">Create New Artist</a>
-
-<table>
-  <thead>
-      <tr>
-        <th>
-          <a href="?sort_order=name&sort_direction={% if sort_order == 'name' and sort_direction == 'asc' %}desc{% else %}asc{% endif %}">
-              Name
-              {% if sort_order == 'name' and sort_direction == 'asc' %}&uarr;{% endif %}
-              {% if sort_order == 'name' and sort_direction == 'desc' %}&darr;{% endif %}
-          </a>
+{% block content %}
+  <table>
+    <tr>
+      <th>
+        <a href="?sort_order=name&sort_direction={% if sort_order == 'name' and sort_direction == 'asc' %}desc{% else %}asc{% endif %}">
+            Name
+            {% if sort_order == 'name' and sort_direction == 'asc' %}&uarr;{% endif %}
+            {% if sort_order == 'name' and sort_direction == 'desc' %}&darr;{% endif %}
+        </a>
       </th>
-          <th>Notes</th>
+      <th>Profile Image</th>
+      <th>Artworks</th>
+      <th>
+        Notes
+        {% if sort_order == 'notes' and sort_direction == 'asc' %}&uarr;{% endif %}
+        {% if sort_order == 'notes' and sort_direction == 'desc' %}&darr;{% endif %}
+      </th>
+    </tr>
+    {% for artist in artists %}
+      <tr>
+        <td>{{ artist.name }}</td>
+        <td><img src="{{ artist.profile_image.url }}" alt="{{ artist.name }}"></td>
+        <td>
+          {% for artwork in artist.artwork_set.all %}
+            <img src="{{ artwork.picture.url }}" alt="{{ artwork.title }}">
+          {% endfor %}
+        </td>
+        <td>{{ artist.notes }}</td>
       </tr>
-  </thead>
-  <tbody>
-      {% for artist in artists %}
-          <tr>
-              <td>{{ artist.name }}</td>
-              <td>{{ artist.notes }}</td>
-          </tr>
-      {% endfor %}
-  </tbody>
-</table>
+    {% endfor %}
+  </table>
+{% endblock %}

@@ -1,6 +1,19 @@
 version: '3.8'
 
 services:
+  # for VPN
+  # gluetun:
+  #   image: qmcgaw/gluetun
+  #   cap_add:
+  #     - NET_ADMIN
+  #   environment:
+  #     - VPN_SERVICE_PROVIDER=mullvad
+  #     - VPN_TYPE=openvpn
+  #     - OPENVPN_USER=9929775807838938
+  #     - SERVER_CITIES=Prague
+  #   volumes:
+  #     - /gluetun:/gluetun
+
   db:
     image: postgres
     volumes:
