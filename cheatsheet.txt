@@ -1,0 +1,6 @@
+$ docker compose up -d
+$ source .venv/bin/activate
+$ poetry shell
+
+$ python3 manage.py runserver
+$ python3 manage.py migrate
