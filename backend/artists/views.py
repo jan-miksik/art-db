@@ -1,14 +1,30 @@
 # Create your views here.
 from django.shortcuts import render, redirect
 from .models import Artist
+from rest_framework import viewsets
+from .serializers import ArtistSerializer
+from rest_framework.decorators import api_view
+from rest_framework.response import Response
 
-def artist_list(request):
-    sort_order = request.GET.get('sort_order', 'name')
-    sort_direction = request.GET.get('sort_direction', 'asc')
-    if sort_direction == 'desc':
-        sort_order = '-' + sort_order
-    artists = Artist.objects.all().order_by(sort_order)
-    return render(request, 'artists/artist_list.html', {'artists': artists, 'sort_order': sort_order, 'sort_direction': sort_direction})
+class ArtistViewSet(viewsets.ModelViewSet):
+    queryset = Artist.objects.all()
+    serializer_class = ArtistSerializer
+
+
+@api_view(['GET'])
+def artists_endpoint(request):
+    models = Artist.objects.all()
+    serializer = ArtistSerializer(models, many=True)
+    return Response(serializer.data)
+
+
+# def artist_list(request):
+#     sort_order = request.GET.get('sort_order', 'name')
+#     sort_direction = request.GET.get('sort_direction', 'asc')
+#     if sort_direction == 'desc':
+#         sort_order = '-' + sort_order
+#     artists = Artist.objects.all().order_by(sort_order)
+#     return render(request, 'artists/artist_list.html', {'artists': artists, 'sort_order': sort_order, 'sort_direction': sort_direction})
 
 # from .forms import ArtistForm
 

@@ -25,7 +25,7 @@ SECRET_KEY = 'django-insecure-bxp#bec1r2p-=mos4@c1(m2=9tvp&#6a6dm=4c^$cs@$c+z&yv
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = ['localhost']
+ALLOWED_HOSTS = ['localhost', '127.0.0.1']
 
 
 # Application definition
@@ -39,7 +39,9 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
     'corsheaders',
-    'artists',    
+    'rest_framework',
+    'artists',
+    'storages',
 ]
 
 MIDDLEWARE = [
@@ -139,3 +141,13 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
 MEDIA_URL = '/media/'
+
+AWS_ACCESS_KEY_ID = 'AKIA4N7WU65Z4YIBEIJ2'
+AWS_SECRET_ACCESS_KEY = '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'
+
+AWS_STORAGE_BUCKET_NAME = 'art-db-django'
+AWS_S3_CUSTOM_DOMAIN = '%s.s3.amazonaws.com' % AWS_STORAGE_BUCKET_NAME
+AWS_S3_FILE_OVERWRITE = False
+
+DEFAULT_FILE_STORAGE = 'storages.backends.s3boto3.S3Boto3Storage'
+STATICFILES_STORAGE = 'storages.backends.s3boto3.S3Boto3Storage'
