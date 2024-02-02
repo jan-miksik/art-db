@@ -21,6 +21,7 @@ services:
     environment:
       - POSTGRES_DB=art_db
       - POSTGRES_USER=art_db_user
+      # should be ${{POSTGRES_PASSWORD}} from .env file
       - POSTGRES_PASSWORD=art_db_user-password
     ports:
       - '5432:5432'
@@ -36,7 +37,7 @@ services:
   #     - DB_HOST=db
   #     - DB_NAME=art_db
   #     - DB_USER=art_db_user
-  #     - DB_PASS=art_db_user
+  #     - DB_PASS=art_db_user-password
   #   depends_on:
   #     - db
 
