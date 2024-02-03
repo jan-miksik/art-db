@@ -25,9 +25,8 @@ SECRET_KEY = 'django-insecure-bxp#bec1r2p-=mos4@c1(m2=9tvp&#6a6dm=4c^$cs@$c+z&yv
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-# TODO setup more secure allowed hosts
-# ALLOWED_HOSTS = ['localhost', '127.0.0.1', "0.0.0.0"]
-ALLOWED_HOST = ['*']
+ALLOWED_HOSTS = ['localhost', '127.0.0.1', "0.0.0.0", "django-server-production-9daf.up.railway.app"]
+# ALLOWED_HOST = ['*']
 
 # Application definition
 
