@@ -1,12 +1,14 @@
 $ docker compose up -d
+$ docker compose down
 $ source .venv/bin/activate
 $ poetry shell
 
 $ python3 manage.py runserver
 $ python3 manage.py migrate
 
+
 // create dump of database
-$ docker exec -i a-db-db-1 pg_dump -U art_db_user art_db -Ft > dump_`date +%d-%m-%Y"_"%H_%M_%S`.tar
+$ docker exec -i <docker-id-or-name> pg_dump -U art_db_user art_db -Ft > dump_`date +%d-%m-%Y"_"%H_%M_%S`.tar
 
 + NO 
 {
@@ -17,3 +19,13 @@ $ docker exec -i a-db-db-1 pg_dump -U art_db_user art_db -Ft > dump_`date +%d-%m
   docker exec -i <postgresql_container_id> pg_restore -U postgres -F t -d mydb > db.tar
 }
 
+// restore database
+$ cat /path/to/your_dump_file | docker exec -i backend-db-1 pg_restore -U art_db_user -d art_db
+
+
+$ python manage.py createsuperuser
+
+$ docker exec -it backend-db-1 bash
+
+// setup env variables
+https://dev.to/defidelity/protect-your-sensitive-data-a-guide-to-env-files-in-django-499e
