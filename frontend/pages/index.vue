@@ -31,10 +31,10 @@
 <script setup lang="ts">
 import axios from 'axios';
 const artists = ref<any>([]);
+const config = useRuntimeConfig()
 
 onMounted(async () => {
-
-  axios.get('http://localhost:8000/artists/')
+  axios.get(`${config.public.DJANGO_SERVER_URL}/artists/`)
     .then(response => {
       console.log('response: ', response);
       console.log('response.data: ', response.data);
