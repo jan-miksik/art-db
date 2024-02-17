@@ -44,19 +44,19 @@ onMounted(async () => {
 });
 
 
-// const setRandomColor = (event: any) => {
+// const setrandomColor = (event: any) => {
 //   event.target.style.backgroundColor = getRandomColor();
 // };
 
-// const getRandomColor = () => {
+// const getrandomColor = () => {
 //   const letters = '0123456789ABCDEF';
-//   let color = '#';
 //   for (let i = 0; i < 6; i++) {
 //     color += letters[Math.floor(Math.random() * 16)];
 //   }
 //   return color;
 // };
 
+//   let color = '#';
 </script>
 
 <style scoped>
