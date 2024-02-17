@@ -13,7 +13,7 @@ $ python3 manage.py migrate
 $ docker exec -i <docker-id-or-name> pg_dump -U art_db_user art_db -Ft > dump_`date +%d-%m-%Y"_"%H_%M_%S`.tar
 
 // restore database
-$ cat /path/to/your_dump_file | docker exec -i backend-db-1 pg_restore -U art_db_user -d art_db
+$ cat /path/to/your_dump_file | docker exec -i backend-db-1 pg_restore -U postgres -d art_db
 
 // get db from server
 $ pg_dump -U <username> -h <host> -p <port> -W -F t <db_name> > <output_filename>
