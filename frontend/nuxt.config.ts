@@ -5,5 +5,6 @@ export default defineNuxtConfig({
     public: {
       DJANGO_SERVER_URL: process.env.DJANGO_SERVER_URL, 
     }
-  }
+  },
+  // modules: ["@nuxtjs/eslint-module"]
 })

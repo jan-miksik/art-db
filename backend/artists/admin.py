@@ -1,4 +1,5 @@
 from django.contrib import admin
+from django import forms
 from .models import Artist, Artwork
 from django.utils.html import format_html
 from django.db import models
@@ -19,9 +20,22 @@ class ArtworkInline(admin.TabularInline):  # or admin.StackedInline for a differ
 class ArtistAdmin(admin.ModelAdmin):
     site_header = 'Artist Admin area'
     inlines = [ArtworkInline]
-    fields = ('name', 'notes', 'profile_image', 'profile_image_preview')  # specify the order of fields
+    fields = (
+        'firstname', 
+        'surname',
+        'born',
+        'gender',
+        'auctions_turnover_2023_h1_USD',
+        'notes', 
+        'profile_image', 
+        'profile_image_preview'
+        )  # specify the order of fields
     readonly_fields = ('profile_image_preview',) 
-    list_display = ('name', 'profile_image_preview')
+    list_display = ('full_name', 'profile_image_preview')
+
+    def full_name(self, obj):
+        return f"{obj.firstname or 'zatim nema jmeno'} {obj.surname or ''}".strip()
+    full_name.short_description = 'Name'
 
     # def profile_image_preview(self, obj):
     #     return format_html('<img src="{}" height="50" />', obj.profile_image.url)

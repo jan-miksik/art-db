@@ -11,4 +11,15 @@ class ArtistSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Artist
-        fields = ['id', 'name', 'notes', 'profile_image', 'artworks']
+        fields = [
+            'id', 
+            'firstname',
+            'surname',
+            'name',
+            'notes', 
+            'profile_image', 
+            'artworks', 
+            'born', 
+            'gender', 
+            'auctions_turnover_2023_h1_USD'
+            ]
