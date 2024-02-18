@@ -108,18 +108,10 @@ onMounted(() => {
       autoScroll: true,
       listeners: {
         move(event: any) {
-
-          // console.log('draggable event: ', event)
-          // if (!isOnAdminPage.value) return
-          // const scale = mapperEventData.value.scale
-          // piece.value.isPublished = false
           const xRaw = artistPosition.value.position.x + event.dx;
-          // console.log("xRaw: ", xRaw);
           const yRaw = artistPosition.value.position.y + event.dy;
-          // console.log("yRaw: ", yRaw);
-          // const x = xRaw > -2000 ? xRaw : -2000;
-          // const y = yRaw > -2000 ? yRaw : -2000;
-          artistPosition.value.position.x = xRaw;
+          const x = xRaw > 0 ? xRaw : 0;
+          artistPosition.value.position.x = x;
           artistPosition.value.position.y = yRaw;
       },
       }

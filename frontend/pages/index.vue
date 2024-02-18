@@ -6,7 +6,6 @@
       :artist-data="artist"
       class="artist"
       />
-      <!-- :style="randomizePosition()" -->
   </div>
 </template>
 
@@ -29,10 +28,6 @@ onMounted(async () => {
     .catch((error) => console.error("Error:", error));
 
 });
-
-// const generateRandomNumberPlusMinus = (max: number) => {
-//   return Math.floor((Math.random() * max + 1) * (Math.random() - 0.5) * 2);
-// };
 
 </script>
 
