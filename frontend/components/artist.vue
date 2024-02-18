@@ -1,10 +1,10 @@
 <template>
   <div>
     <img
+      ref="artistProfileImage"
       class="artist__profile-image"
       :src="artistData.artworks[0].picture"
       :alt="artistData.name"
-      ref="artistProfileImage"
     />
     <svg
       class="artist__name-svg-circle"
@@ -13,8 +13,8 @@
     >
       <defs>
         <path
-          d="M0, 200a200, 200 0 1, 0 400, 0a200, 200 0 1, 0 -400, 0"
           id="txt-path"
+          d="M0, 200a200, 200 0 1, 0 400, 0a200, 200 0 1, 0 -400, 0"
         ></path>
       </defs>
       <text fill="black" class="artist__name-text">
@@ -28,37 +28,43 @@
 
 <script setup lang="ts">
 type Artist = {
-  profile_image: string;
-  name: string;
-  notes: string;
-};
+  profile_image: string
+  name: string
+  notes: string
+  artworks: {
+    picture: string
+  }[]
+}
 
 const props = defineProps<{
-  artistData: Artist;
+  artistData: Artist
 }>();
-console.log('artistData: ', props.artistData);
+console.log("artistData: ", props.artistData);
 const artistProfileImage = ref();
 const randomRange = (min: number, max: number) => {
+
   return Math.floor(Math.random() * (max - min + 1) + min);
+
 };
 
 const randomizeRotation = () => {
+
   return {
-    rotate: `${randomRange(0, 360)}deg`,
+    rotate: `${randomRange(0, 360)}deg`
   };
+
 };
 
 // onMounted(() => {
-  
 //   artistProfileImage.value?.addEventListener('mouseenter', () => {
 
 //     console.log('mouseenter');
 //     console.log('props.artistData.profile_image: ', props.artistData.profile_image);
 //     artistProfileImage.value.style.cursor = `url(${props.artistData.profile_image}), auto`;
 //   });
-  
+
 //   artistProfileImage.value?.addEventListener('mouseleave', () => {
-//     artistProfileImage.value.style.cursor = 'default';  
+//     artistProfileImage.value.style.cursor = 'default';
 //   });
 // })
 </script>
@@ -70,11 +76,13 @@ const randomizeRotation = () => {
   border-radius: 50%;
   object-fit: contain;
   z-index: 10;
-  transition 0.3s ease-in-out
+  transition 0.1s ease-in-out
   position: relative;
+  border: 2px solid transparent;
 
   &:hover
-    border-radius: 40%;
+    // border-radius: 40%;
+    border: 2px solid black;
     cursor: pointer;
 
 

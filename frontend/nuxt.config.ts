@@ -1,10 +1,10 @@
 // https://nuxt.com/docs/api/configuration/nuxt-config
 export default defineNuxtConfig({
   devtools: { enabled: true },
-  runtimeConfig: { 
+  runtimeConfig: {
     public: {
-      DJANGO_SERVER_URL: process.env.DJANGO_SERVER_URL, 
+      DJANGO_SERVER_URL: process.env.DJANGO_SERVER_URL
     }
   },
-  // modules: ["@nuxtjs/eslint-module"]
-})
+  modules: ["@nuxtjs/eslint-module"]
+});
