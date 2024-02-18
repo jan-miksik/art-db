@@ -4,9 +4,9 @@
       v-for="artist in artists"
       :key="artist.id"
       :artist-data="artist"
-      :style="randomizePosition()"
       class="artist"
-    />
+      />
+      <!-- :style="randomizePosition()" -->
   </div>
 </template>
 
@@ -34,23 +34,6 @@ onMounted(async () => {
 //   return Math.floor((Math.random() * max + 1) * (Math.random() - 0.5) * 2);
 // };
 
-const randomRange = (min: number, max: number) => {
-
-  return Math.floor(Math.random() * (max - min + 1) + min);
-
-};
-
-const screenWidth = window.innerWidth;
-const screenHeight = window.innerHeight;
-
-const randomizePosition = () => {
-
-  return {
-    top: `${randomRange(100, screenHeight) - 100}px`,
-    left: `${randomRange(100, screenWidth) - 139}px`
-  };
-
-};
 </script>
 
 <style lang="stylus" scoped>

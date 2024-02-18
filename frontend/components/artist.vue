@@ -1,5 +1,14 @@
 <template>
-  <div>
+  <div
+    ref="artistRef"
+    class="artist"
+    :style="handlePieceStyle"
+    @mousedown="handleOnMouseDown"
+    @mousemove="mouseMoveHandler"
+    @mouseleave="mouseLeaveHandler"
+    @mouseup="mouseUpHandler"
+    @touchmove="touchmoveHandler"
+    @touchend="touchendHandler">
     <img
       ref="artistProfileImage"
       class="artist__profile-image"
@@ -9,7 +18,7 @@
     <svg
       class="artist__name-svg-circle"
       viewBox="0 0 400 400"
-      :style="randomizeRotation()"
+      :style="randomizedRotation"
     >
       <defs>
         <path
@@ -40,7 +49,28 @@ const props = defineProps<{
   artistData: Artist
 }>();
 console.log("artistData: ", props.artistData);
-const artistProfileImage = ref();
+import interact from "interactjs";
+import useMouseActionDetector from "~/J/useMouseActionDetector";
+const {
+  mouseDownHandler,
+  mouseMoveHandler,
+  mouseUpHandler,
+  mouseLeaveHandler,
+  isDragging,
+  zIndexOfLastSelectedPiece,
+  touchmoveHandler,
+  touchendHandler
+} = useMouseActionDetector();
+
+const localZIndex = ref(1);
+const artistRef = ref()
+const artistPosition = ref({
+  position: {
+    x: 0,
+    y: 0,
+    // deg: 0
+  }
+});
 const randomRange = (min: number, max: number) => {
 
   return Math.floor(Math.random() * (max - min + 1) + min);
@@ -48,28 +78,87 @@ const randomRange = (min: number, max: number) => {
 };
 
 const randomizeRotation = () => {
-
   return {
     rotate: `${randomRange(0, 360)}deg`
   };
+};
+const randomizedRotation = ref(() => randomizeRotation());
+
+onMounted(() => {
+  const randomRange = (min: number, max: number) => {
+
+  return Math.floor(Math.random() * (max - min + 1) + min);
+
+  };
+
+  const screenWidth = window.innerWidth;
+  const screenHeight = window.innerHeight;
+
+  const randomizePosition = () => {
+    artistPosition.value.position = {
+      x: randomRange(100, screenWidth) - 139,
+      y: randomRange(100, screenHeight) - 100,
+    }
+  };
+  randomizePosition();
+
+  interact(artistRef.value as any)
+    .draggable({
+      inertia: true,
+      autoScroll: true,
+      listeners: {
+        move(event: any) {
+
+          // console.log('draggable event: ', event)
+          // if (!isOnAdminPage.value) return
+          // const scale = mapperEventData.value.scale
+          // piece.value.isPublished = false
+          const xRaw = artistPosition.value.position.x + event.dx;
+          // console.log("xRaw: ", xRaw);
+          const yRaw = artistPosition.value.position.y + event.dy;
+          // console.log("yRaw: ", yRaw);
+          // const x = xRaw > -2000 ? xRaw : -2000;
+          // const y = yRaw > -2000 ? yRaw : -2000;
+          artistPosition.value.position.x = xRaw;
+          artistPosition.value.position.y = yRaw;
+      },
+      }
+    })
+    .resizable({
+      // resize from edges and corners
+      edges: { left: false, right: true, bottom: false, top: false },
+      modifiers: [
+        interact.modifiers.restrictSize({
+          min: { width: 10, height: 10 }
+        })
+      ],
+      inertia: true
+    });
+
+});
+
+const handleOnMouseDown = () => {
+
+  mouseDownHandler();
+  localZIndex.value = zIndexOfLastSelectedPiece.value;
+  zIndexOfLastSelectedPiece.value++;
 
 };
 
-// onMounted(() => {
-//   artistProfileImage.value?.addEventListener('mouseenter', () => {
+const handlePieceStyle = computed(() => {
+  return {
+    left: `${artistPosition.value?.position?.x || 0}px`,
+    top: `${artistPosition.value?.position?.y || 0}px`,
+    zIndex: `${localZIndex.value}`
+  };
 
-//     console.log('mouseenter');
-//     console.log('props.artistData.profile_image: ', props.artistData.profile_image);
-//     artistProfileImage.value.style.cursor = `url(${props.artistData.profile_image}), auto`;
-//   });
+})
 
-//   artistProfileImage.value?.addEventListener('mouseleave', () => {
-//     artistProfileImage.value.style.cursor = 'default';
-//   });
-// })
 </script>
 
 <style lang="stylus" scoped>
+.artist
+  position absolute
 .artist__profile-image
   width: 120px;
   height: 120px;
@@ -81,29 +170,18 @@ const randomizeRotation = () => {
   border: 2px solid transparent;
 
   &:hover
-    // border-radius: 40%;
     border: 2px solid black;
     cursor: pointer;
 
-
-// @keyframes rotating {
-//   from {
-//     transform: rotate(0deg);
-//   }
-//   to {
-//     transform: rotate(360deg);
-//   }
-// }
-
 .artist__name-svg-circle
-  translate: -129px -10px;
-  width: 139px;
+  translate: -133px -10px;
+  width: 142px;
   position: absolute;
 
 .artist__name-text
-  font-size: 25px
-  font-family: "Helvetica Neue"
-  font-weight: 300
-  letter-spacing: 5px
-  position: relative;
+  font-size: 25px;
+  font-family: "Helvetica Neue";
+  font-weight: 300;
+  letter-spacing: 5px;
+  position: relative
 </style>
