@@ -6,6 +6,7 @@
       :artist-data="artist"
       class="artist"
       />
+      <ArtistModal />
   </div>
 </template>
 

@@ -3,6 +3,7 @@
     ref="artistRef"
     class="artist"
     :style="handlePieceStyle"
+    @click="openArtistModal(artistData)"
     @mousedown="handleOnMouseDown"
     @mousemove="mouseMoveHandler"
     @mouseleave="mouseLeaveHandler"
@@ -11,7 +12,7 @@
     @touchend="touchendHandler">
     <img
       ref="artistProfileImage"
-      class="artist__profile-image"
+      class="artist__artwork-preview-image"
       :src="artistData.artworks[0].picture"
       :alt="artistData.name"
     />
@@ -36,7 +37,7 @@
 </template>
 
 <script setup lang="ts">
-type Artist = {
+export type Artist = {
   profile_image: string
   name: string
   notes: string
@@ -50,17 +51,20 @@ const props = defineProps<{
 }>();
 console.log("artistData: ", props.artistData);
 import interact from "interactjs";
+import useAritstModal from "./useArtistModal";
+const { openArtistModal } = useAritstModal();
+
 import useMouseActionDetector from "~/J/useMouseActionDetector";
 const {
   mouseDownHandler,
   mouseMoveHandler,
   mouseUpHandler,
   mouseLeaveHandler,
-  isDragging,
   zIndexOfLastSelectedPiece,
   touchmoveHandler,
   touchendHandler
 } = useMouseActionDetector();
+
 
 const localZIndex = ref(1);
 const artistRef = ref()
@@ -71,6 +75,8 @@ const artistPosition = ref({
     // deg: 0
   }
 });
+
+
 const randomRange = (min: number, max: number) => {
 
   return Math.floor(Math.random() * (max - min + 1) + min);
@@ -82,7 +88,8 @@ const randomizeRotation = () => {
     rotate: `${randomRange(0, 360)}deg`
   };
 };
-const randomizedRotation = ref(() => randomizeRotation());
+const randomizedRotation = computed(() => randomizeRotation());
+console.log("randomizedRotation: ", randomizedRotation.value);
 
 onMounted(() => {
   const randomRange = (min: number, max: number) => {
@@ -151,7 +158,7 @@ const handlePieceStyle = computed(() => {
 <style lang="stylus" scoped>
 .artist
   position absolute
-.artist__profile-image
+.artist__artwork-preview-image
   width: 120px;
   height: 120px;
   border-radius: 50%;
