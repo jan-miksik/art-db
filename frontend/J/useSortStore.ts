@@ -3,7 +3,9 @@ import { useArtistsStore } from './useArtistsStore'
 export enum SortOption {
   'FIRSTNAME',
   'SURNAME',
-  'BORN'
+  'BORN',
+  'GENDER',
+  'AUCTIONS_TURNOVER_2023_H1_USD'
 }
 
 export enum SortDirection {
@@ -27,7 +29,7 @@ export const useSortStore = defineStore('sort', () => {
     return new Promise(resolve => setTimeout(resolve, ms));
   }
 
-  const reArangeSortedArtists = (fieldName: 'firstname' | 'surname' | 'born') => {
+  const reArangeSortedArtists = (fieldName: 'firstname' | 'surname' | 'born' | 'gender' | 'auctions_turnover_2023_h1_USD') => {
     let topPosition = 200
     useArtistsStore().artists.forEach((artist, index) => {
       if (index === 0) {
@@ -53,7 +55,7 @@ export const useSortStore = defineStore('sort', () => {
     })
   }
 
-  const alphabetSort = async (fieldName: 'firstname' | 'surname') => {
+  const alphabetSort = async (fieldName: 'firstname' | 'surname' | 'gender') => {
     isSortingInProgress.value = true
 
     if (activeSort.value.direction === SortDirection.ASC) {
@@ -74,18 +76,18 @@ export const useSortStore = defineStore('sort', () => {
     }, 1000)
   }
 
-  const numberSort = async (fieldName: 'born') => {
+  const numberSort = async (fieldName: 'born' | 'auctions_turnover_2023_h1_USD') => {
     isSortingInProgress.value = true
 
     if (activeSort.value.direction === SortDirection.ASC) {
       useArtistsStore().artists.sort((a, b) => {
-        return b[fieldName] - a[fieldName]
+        return +b[fieldName] - +a[fieldName]
       })
       await sleep(100)
       reArangeSortedArtists(fieldName)
     } else {
       useArtistsStore().artists.sort((a, b) => {
-        return a[fieldName] - b[fieldName]
+        return +a[fieldName] - +b[fieldName]
       })
       await sleep(100)
       reArangeSortedArtists(fieldName)
@@ -94,17 +96,6 @@ export const useSortStore = defineStore('sort', () => {
       isSortingInProgress.value = false
   }
 
-  const sortByFirstName = () => {
-    alphabetSort('firstname')
-  }
-
-  const sortBySurname = () => {
-    alphabetSort('surname')
-  }
-
-  const sortByBorn = () => {
-    numberSort('born')
-  }
 
   const setSort = (field: SortOption) => {
     let direction =
@@ -123,15 +114,23 @@ export const useSortStore = defineStore('sort', () => {
 
     switch (field) {
       case SortOption.FIRSTNAME: {
-        sortByFirstName()
+        alphabetSort('firstname') 
         break
       }
       case SortOption.SURNAME: {
-        sortBySurname()
+        alphabetSort('surname') // as name in UI
         break
       }
       case SortOption.BORN: {
-        sortByBorn()
+        numberSort('born')
+        break
+      }
+      case SortOption.GENDER: {
+        alphabetSort('gender')
+        break
+      }
+      case SortOption.AUCTIONS_TURNOVER_2023_H1_USD: {
+        numberSort('auctions_turnover_2023_h1_USD')
         break
       }
     }

@@ -1,5 +1,5 @@
+import type { Artist } from "~/J/useArtistsStore";
 import useMouseActionDetector from "~/J/useMouseActionDetector";
-import type { Artist } from "./Artist.vue";
 
 const isOpen = ref(false);
 const artistData = ref<Artist>();

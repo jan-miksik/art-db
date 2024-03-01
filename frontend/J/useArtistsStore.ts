@@ -12,17 +12,13 @@ export type Artist = {
     x: number
     y: number
   }
+  gender: string
+  auctions_turnover_2023_h1_USD: number
 }
 
 export const useArtistsStore = defineStore('artists', () => {
   const artists = ref<Artist[]>([])
   console.log('artists: ', artists);
-
-  // watch(() => artists.value[0].position, () => {
-  //   console.log('artists: ', artists.value);
-  //   console.log('artists changed')
-  
-  // }, {deep: true, immediate: true})
 
   return {
     artists
