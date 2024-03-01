@@ -1,7 +1,7 @@
 <template>
   <div
     ref="artistRef"
-    class="artist"
+    :class="['artist', {'artist__sorting-in-progress': useSortStore().isSortingInProgress}]"
     :style="handlePieceStyle"
     @click="openArtistModal(artistData)"
     @mousedown="handleOnMouseDown"
@@ -9,7 +9,8 @@
     @mouseleave="mouseLeaveHandler"
     @mouseup="mouseUpHandler"
     @touchmove="touchmoveHandler"
-    @touchend="touchendHandler">
+    @touchend="touchendHandler"
+  >
     <img
       ref="artistProfileImage"
       class="artist__artwork-preview-image"
@@ -37,24 +38,15 @@
 </template>
 
 <script setup lang="ts">
-export type Artist = {
-  profile_image: string
-  name: string
-  notes: string
-  artworks: {
-    picture: string
-  }[]
-}
-
 const props = defineProps<{
   artistData: Artist
-}>();
-console.log("artistData: ", props.artistData);
-import interact from "interactjs";
-import useAritstModal from "./useArtistModal";
-const { openArtistModal } = useAritstModal();
+}>()
+import interact from 'interactjs'
+import useAritstModal from './useArtistModal'
+const { openArtistModal } = useAritstModal()
 
-import useMouseActionDetector from "~/J/useMouseActionDetector";
+import useMouseActionDetector from '~/J/useMouseActionDetector'
+import { type Artist } from '../J/useArtistsStore'
 const {
   mouseDownHandler,
   mouseMoveHandler,
@@ -63,64 +55,35 @@ const {
   zIndexOfLastSelectedPiece,
   touchmoveHandler,
   touchendHandler
-} = useMouseActionDetector();
+} = useMouseActionDetector()
 
-
-const localZIndex = ref(1);
+const localZIndex = ref(1)
 const artistRef = ref()
-const artistPosition = ref({
-  position: {
-    x: 0,
-    y: 0,
-    // deg: 0
-  }
-});
-
 
 const randomRange = (min: number, max: number) => {
-
-  return Math.floor(Math.random() * (max - min + 1) + min);
-
-};
+  return Math.floor(Math.random() * (max - min + 1) + min)
+}
 
 const randomizeRotation = () => {
   return {
     rotate: `${randomRange(0, 360)}deg`
-  };
-};
-const randomizedRotation = computed(() => randomizeRotation());
-console.log("randomizedRotation: ", randomizedRotation.value);
+  }
+}
+const randomizedRotation = computed(() => randomizeRotation())
 
 onMounted(() => {
-  const randomRange = (min: number, max: number) => {
-
-  return Math.floor(Math.random() * (max - min + 1) + min);
-
-  };
-
-  const screenWidth = window.innerWidth;
-  const screenHeight = window.innerHeight;
-
-  const randomizePosition = () => {
-    artistPosition.value.position = {
-      x: randomRange(100, screenWidth) - 139,
-      y: randomRange(100, screenHeight) - 100,
-    }
-  };
-  randomizePosition();
-
   interact(artistRef.value as any)
     .draggable({
       inertia: true,
       autoScroll: true,
       listeners: {
         move(event: any) {
-          const xRaw = artistPosition.value.position.x + event.dx;
-          const yRaw = artistPosition.value.position.y + event.dy;
-          const x = xRaw > 0 ? xRaw : 0;
-          artistPosition.value.position.x = x;
-          artistPosition.value.position.y = yRaw;
-      },
+          const xRaw = props.artistData.position.x + event.dx
+          const yRaw = props.artistData.position.y + event.dy
+          const x = xRaw > 0 ? xRaw : 0
+          props.artistData.position.x = x
+          props.artistData.position.y = yRaw
+        }
       }
     })
     .resizable({
@@ -132,32 +95,31 @@ onMounted(() => {
         })
       ],
       inertia: true
-    });
-
-});
+    })
+})
 
 const handleOnMouseDown = () => {
-
-  mouseDownHandler();
-  localZIndex.value = zIndexOfLastSelectedPiece.value;
-  zIndexOfLastSelectedPiece.value++;
-
-};
+  mouseDownHandler()
+  localZIndex.value = zIndexOfLastSelectedPiece.value
+  zIndexOfLastSelectedPiece.value++
+}
 
 const handlePieceStyle = computed(() => {
   return {
-    left: `${artistPosition.value?.position?.x || 0}px`,
-    top: `${artistPosition.value?.position?.y || 0}px`,
+    left: `${props.artistData?.position?.x || 0}px`,
+    top: `${props.artistData?.position?.y || 0}px`,
     zIndex: `${localZIndex.value}`
-  };
-
+  }
 })
-
 </script>
 
 <style lang="stylus" scoped>
 .artist
   position absolute
+
+.artist__sorting-in-progress
+  transition all 1s ease-in-out
+
 .artist__artwork-preview-image
   width: 120px;
   height: 120px;

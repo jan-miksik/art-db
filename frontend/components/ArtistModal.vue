@@ -39,7 +39,7 @@ const closeModal = () => {
   bottom 0
   right 0
   background-color #eeeeee
-  z-index 1000
+  z-index 10000000000
   display flex
   justify-content center
   align-items center
