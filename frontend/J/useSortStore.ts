@@ -23,12 +23,22 @@ export const useSortStore = defineStore('sort', () => {
 
   const isSortingInProgress = ref(false)
 
-  const reArangeSortedArtists = () => {
+  const sleep = async (ms: number) => {
+    return new Promise(resolve => setTimeout(resolve, ms));
+  }
+
+  const reArangeSortedArtists = (fieldName: 'firstname' | 'surname' | 'born') => {
     let topPosition = 200
     useArtistsStore().artists.forEach((artist, index) => {
       if (index === 0) {
         artist.position.y = topPosition
       }
+
+      if (index > 0 && useArtistsStore().artists[index - 1][fieldName] === artist[fieldName]) {
+        artist.position.y = topPosition
+        return
+      }
+      
       if (index > 0) {
         if (artist.position.y + 120 < topPosition) {
           artist.position.y = topPosition + 120
@@ -43,42 +53,45 @@ export const useSortStore = defineStore('sort', () => {
     })
   }
 
-  const alphabetSort = (fieldName: 'firstname' | 'surname') => {
+  const alphabetSort = async (fieldName: 'firstname' | 'surname') => {
     isSortingInProgress.value = true
 
     if (activeSort.value.direction === SortDirection.ASC) {
       useArtistsStore().artists.sort((a, b) => {
         return a[fieldName].localeCompare(b[fieldName])
       })
-      reArangeSortedArtists()
+        await sleep(100)
+        reArangeSortedArtists(fieldName)
     } else {
       useArtistsStore().artists.sort((a, b) => {
         return b[fieldName].localeCompare(a[fieldName])
       })
-      reArangeSortedArtists()
+        await sleep(100)
+        reArangeSortedArtists(fieldName)
     }
     setTimeout(() => {
       isSortingInProgress.value = false
     }, 1000)
   }
 
-  const numberSort = (fieldName: 'born') => {
+  const numberSort = async (fieldName: 'born') => {
     isSortingInProgress.value = true
 
     if (activeSort.value.direction === SortDirection.ASC) {
       useArtistsStore().artists.sort((a, b) => {
         return b[fieldName] - a[fieldName]
       })
-      reArangeSortedArtists()
+      await sleep(100)
+      reArangeSortedArtists(fieldName)
     } else {
       useArtistsStore().artists.sort((a, b) => {
         return a[fieldName] - b[fieldName]
       })
-      reArangeSortedArtists()
+      await sleep(100)
+      reArangeSortedArtists(fieldName)
     }
-    setTimeout(() => {
+      await sleep(1000)
       isSortingInProgress.value = false
-    }, 1000)
   }
 
   const sortByFirstName = () => {
