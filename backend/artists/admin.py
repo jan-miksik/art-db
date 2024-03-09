@@ -34,8 +34,10 @@ class ArtistAdmin(admin.ModelAdmin):
     list_display = ('full_name', 'profile_image_preview')
 
     def full_name(self, obj):
-        return f"{obj.firstname or 'zatim nema jmeno'} {obj.surname or ''}".strip()
-    full_name.short_description = 'Name'
+        if obj.firstname or obj.surname:
+            return f"{obj.firstname or ""} {obj.surname or ""}"
+        else:
+            return "bez jmena"
 
     # def profile_image_preview(self, obj):
     #     return format_html('<img src="{}" height="50" />', obj.profile_image.url)
@@ -49,10 +51,26 @@ class ArtistAdmin(admin.ModelAdmin):
     profile_image_preview.short_description = 'Profile Image'
 
 
+class ArtworkAdmin(admin.ModelAdmin):
+    def title_to_display(self, obj):
+        return obj.title or 'No title yet'
+    list_display = ('title_to_display', 'artwork_image_preview')
+
+    readonly_fields = ['artwork_image_preview_detail']
+
+    def artwork_image_preview(self, obj):
+        return format_html('<img src="{}" width="50" height="50" />', obj.picture.url)
+    artwork_image_preview.short_description = 'Artwork Preview'
+
+    def artwork_image_preview_detail(self, obj):
+        return format_html('<img src="{}" width="350" />', obj.picture.url)
+    artwork_image_preview.short_description = 'Artwork Preview'
+
 
 
 admin.site.register(Artist, ArtistAdmin)
-admin.site.register(Artwork)
+admin.site.register(Artwork, ArtworkAdmin)
+
 
 
 

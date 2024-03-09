@@ -9,6 +9,9 @@ $ python3 manage.py runserver
 $ python3 manage.py migrate
 
 
+// 
+$ docker exec -it backend-db-1 psql -U postgres
+
 // create dump of database
 $ docker exec -i <docker-id-or-name> pg_dump -U art_db_user art_db -Ft > dump_`date +%d-%m-%Y"_"%H_%M_%S`.tar
 

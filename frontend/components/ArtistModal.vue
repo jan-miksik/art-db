@@ -24,6 +24,7 @@
 <script setup lang="ts">
 import useAritstModal from "./useArtistModal";
 const { isOpen, artistData } = useAritstModal();
+console.log('artistData: ', artistData);
 
 const closeModal = () => {
   isOpen.value = false;

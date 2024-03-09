@@ -18,14 +18,20 @@ class Artist(models.Model):
     def name(self):
         return f"{self.firstname} {self.surname}"
 
-    # def __str__(self):
-    #     return self.name
+    def __str__(self):
+            return f"{self.firstname or ""} {self.surname or ""}"
 
     class Meta:
         ordering = ['firstname', 'surname']
 
 class Artwork(models.Model):
     artist = models.ForeignKey(Artist, on_delete=models.CASCADE)  
-    title = models.CharField(max_length=250, default='', blank=True)
+    title = models.CharField(max_length=250, default='without name', blank=True)
     picture = models.ImageField(upload_to='artworks/', null=True)
+    year = models.IntegerField(null=True, blank=True)
+    sizeY = models.IntegerField(null=True, blank=True)
+    sizeX = models.IntegerField(null=True, blank=True)
+
+    def __str__(self):
+        return self.title
 # Create your models here.
