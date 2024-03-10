@@ -19,7 +19,7 @@ class Artist(models.Model):
         return f"{self.firstname} {self.surname}"
 
     def __str__(self):
-            return f"{self.firstname or ""} {self.surname or ""}"
+            return f"{self.firstname or ''} {self.surname or ''}"
 
     class Meta:
         ordering = ['firstname', 'surname']

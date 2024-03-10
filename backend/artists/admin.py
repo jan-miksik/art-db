@@ -35,7 +35,7 @@ class ArtistAdmin(admin.ModelAdmin):
 
     def full_name(self, obj):
         if obj.firstname or obj.surname:
-            return f"{obj.firstname or ""} {obj.surname or ""}"
+            return f"{obj.firstname or ''} {obj.surname or ''}"
         else:
             return "bez jmena"
 

@@ -7,6 +7,10 @@ export type Artist = {
   born: number
   artworks: {
     picture: string
+    title: string
+    year: number
+    sizeY: number
+    sizeX: number
   }[]
   position: {
     x: number

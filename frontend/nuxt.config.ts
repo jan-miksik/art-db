@@ -6,7 +6,7 @@ export default defineNuxtConfig({
       DJANGO_SERVER_URL: process.env.DJANGO_SERVER_URL
     }
   },
-  modules: ["@pinia/nuxt"],
+  modules: ["@pinia/nuxt", "nuxt-swiper"],
   pinia: {
     storesDirs: ['./J/**', ],
   },

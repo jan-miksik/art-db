@@ -4,7 +4,14 @@ from .models import Artist, Artwork
 class ArtworkSerializer(serializers.ModelSerializer):
     class Meta:
         model = Artwork
-        fields = ['id', 'title', 'picture']  # add the fields you want to include
+        fields = [
+            'id', 
+            'title', 
+            'picture',
+            'year',
+            'sizeX',
+            'sizeY',
+            ]  # add the fields you want to include
 
 class ArtistSerializer(serializers.ModelSerializer):
     artworks = ArtworkSerializer(source='artwork_set', many=True, read_only=True)

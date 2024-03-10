@@ -42,3 +42,13 @@ $ psql -U postgres -d art_db
 
 // setup env variables
 https://dev.to/defidelity/protect-your-sensitive-data-a-guide-to-env-files-in-django-499e
+
+
+// create postgres user with roles
+CREATE USER postgres WITH PASSWORD 'password';
+ALTER ROLE postgres WITH SUPERUSER CREATEROLE CREATEDB REPLICATION BYPASSRLS;
+
+// recreate DB
+$ docker exec -it backend-db-1 psql -U postgres
+DROP DATABASE art_db;
+CREATE DATABASE art_db;
