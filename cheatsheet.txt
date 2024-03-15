@@ -22,6 +22,9 @@ $ cat /path/to/your_dump_file | docker exec -i backend-db-1 pg_restore -U postgr
 $ pg_dump -U <username> -h <host> -p <port> -W -F t <db_name> > <output_filename>
 $ pg_dump -U postgres -h viaduct.proxy.rlwy.net -p 39730 -W -F t railway > railway_dump_2024_2
 
+// restore db on server
+pg_restore -U <username> -h <host> -p <port> -W -F t -d <db_name> <dump_file_name>
+pg_restore -U postgres -h viaduct.proxy.rlwy.net -p 39730 -W -F t -d railway <dump_file_name>
 
 + NO 
 {
