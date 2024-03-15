@@ -6,5 +6,8 @@ export default defineNuxtConfig({
       DJANGO_SERVER_URL: process.env.DJANGO_SERVER_URL
     }
   },
-  modules: ["@nuxtjs/eslint-module"]
-});
+  modules: ["@pinia/nuxt", "nuxt-swiper"],
+  pinia: {
+    storesDirs: ['./J/**', ],
+  },
+})
