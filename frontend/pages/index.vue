@@ -1,6 +1,7 @@
 <template>
   <div>
     <Sort />
+    <Filter />
     <Artist
       v-for="artist in artists"
       :key="artist.id"
