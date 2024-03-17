@@ -1,4 +1,5 @@
 export type Artist = {
+  id: string
   profile_image: string
   name: string
   surname: string
@@ -22,9 +23,11 @@ export type Artist = {
 
 export const useArtistsStore = defineStore('artists', () => {
   const artists = ref<Artist[]>([])
+  const artistsAll = ref<Artist[]>([])
   console.log('artists: ', artists);
 
   return {
-    artists
+    artists,
+    artistsAll
   }
 })

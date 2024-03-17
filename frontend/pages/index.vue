@@ -1,9 +1,9 @@
 <template>
   <div>
     <Sort />
-    <!-- <Filter /> -->
+    <Filter />
     <Artist
-      v-for="artist in artists"
+      v-for="artist in useArtistsStore().artists"
       :key="artist.id"
       :artist-data="artist"
       class="artist"
@@ -14,7 +14,6 @@
 
 <script setup lang="ts">
 import axios from "axios";
-const artists = ref<any>([]);
 const config = useRuntimeConfig();
 
 const randomRange = (min: number, max: number) => {
@@ -34,11 +33,12 @@ onMounted(async () => {
   axios
     .get(`${config.public.DJANGO_SERVER_URL}/artists/`)
     .then((response) => {
-      artists.value = response.data;
-      artists.value.forEach((artist: any) => {
+      useArtistsStore().artistsAll = response.data;
+      useArtistsStore().artists = response.data;
+      useArtistsStore().artists.forEach((artist: any) => {
         artist.position = randomizePosition();
       });
-      useArtistsStore().artists = artists.value;
+      // useArtistsStore().artists = artists.value;
     })
     .catch((error) => console.error("Error:", error));
 
