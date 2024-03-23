@@ -1,6 +1,7 @@
 <template>
-  <div ref="menuRef">
-    <div class="sort" @click="toggleMenu">△▼△▼△</div>
+  <div class="sort" ref="menuRef">
+    <!-- <div class="sort__toggle" @click="toggleMenu">△▼△▼△</div> -->
+    <div class="sort__toggle" @click="toggleMenu">V<snan class="sort__toggel-reversed-v">V</snan></div> 
 
     <div v-if="isOpenMenu" class="sort__menu">
       <SortOption :sortOption="sortStore.SortOption.SURNAME" label="name"/>
@@ -43,24 +44,33 @@ onUnmounted(() => {
   background: white;
 }
 .sort
-  position fixed
-  top: 1rem;
-  left: 50%;
-  font-size: 1.2rem;
-  cursor pointer
-  transform: translate(-50%, 0);
-  z-index 10000000000
-
-.sort__menu
-  position: fixed;
   display: flex;
   flex-direction: column;
   align-items: center;
-  top: 3rem;
-  left: 50%;
-  width: 9rem;
-  transform: translate(-50%, 0)
+  gap 0.5rem
   z-index 10000000000
+
+
+.sort__toggle
+  top: 1rem;
+  cursor pointer
+  width: 8.1rem;
+  z-index 10000000000
+  text-align center
+  font-family 'Roboto', sans-serif
+  font-size 1.4rem
+  font-weight 700
+
+.sort__toggel-reversed-v
+  transform: rotate(180deg);
+  position: absolute;
+  top: -0.1rem;
+
+.sort__menu
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  width: 8.1rem;
 
 .sort__triangel-1
   position: absolute;

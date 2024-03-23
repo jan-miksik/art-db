@@ -17,17 +17,49 @@ export const useFilterStore = defineStore('filter', () => {
 
   const isFilteringInProgress = ref(false)
 
-  const searchAndFilterByName = (whatToSearch: string) => {
+  const reArangeSortedArtists = (fieldName: 'firstname') => {
+    console.log('reArangeSortedArtists: ');
+    let topPosition = 200
+    useArtistsStore().artists.forEach((artist, index) => {
+      if (index === 0) {
+        artist.position.y = topPosition
+      }
+
+      if (index > 0 && useArtistsStore().artists[index - 1][fieldName] === artist[fieldName]) {
+        artist.position.y = topPosition
+        return
+      }
+      
+      if (index > 0) {
+        if (artist.position.y + 120 < topPosition) {
+          artist.position.y = topPosition + 120
+          topPosition = topPosition + 120
+        } else if (artist.position.y + 350 > topPosition) {
+          artist.position.y = topPosition + 120
+          topPosition = topPosition + 120
+        } else {
+          topPosition = artist.position.y
+        }
+      }
+    })
+  }
+
+  const sleep = async (ms: number) => {
+    return new Promise(resolve => setTimeout(resolve, ms));
+  }
+
+  const searchAndFilterByName = async (whatToSearch: string) => {
     isFilteringInProgress.value = true;
     const searchTextLower = whatToSearch.toLowerCase();
     const filteredPeople = useArtistsStore().artistsAll.filter(person => {
       return person.name.toLowerCase().includes(searchTextLower);
     });
     useArtistsStore().artists = filteredPeople;
-    isFilteringInProgress.value = false;
+    await sleep(100)
+    reArangeSortedArtists('firstname');
   }
 
-  const filterByBornInRange = (from: number, to: number) => {
+  const filterByBornInRange = async (from: number, to: number) => {
     isFilteringInProgress.value = true;
 
     const filteredPeople = useArtistsStore().artistsAll.filter(person => {
@@ -41,9 +73,8 @@ export const useFilterStore = defineStore('filter', () => {
     });
 
     useArtistsStore().artists = filteredPeople;
-
-    isFilteringInProgress.value = false;
-
+    await sleep(100)
+    reArangeSortedArtists('firstname');
   }
 
   return {

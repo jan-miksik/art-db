@@ -1,6 +1,6 @@
 <template>
-  <div ref="menuRef">
-    <div class="filter" @click="toggleMenu">YYY
+  <div class="filter" ref="menuRef">
+    <div class="filter-toggle" @click="toggleMenu">ϒ
       <!-- <img src="~/assets/filter.png" width="50"> -->
     </div>
 
@@ -59,25 +59,26 @@ const handleClickOutside = (event: any) => {
   background: white;
 }
 .filter
-  position fixed
-  top: 1rem;
-  left: 35%;
-  font-size: 1.2rem;
-  cursor pointer
-  transform: translate(-50%, 0);
-  z-index 10000000000
-  font-family 'Roboto', sans-serif
-
-.filter__menu
-  position: fixed;
   display: flex;
   flex-direction: column;
   align-items: center;
-  top: 3rem;
-  left: 33%;
-  width: 9rem;
-  transform: translate(-50%, 0)
+  gap 0.5rem
   z-index 10000000000
+
+.filter-toggle
+  width: 7.5rem;
+  font-weight 700
+  font-size: 1.5rem;
+  cursor pointer
+  z-index 10000000000
+  font-family 'Roboto', sans-serif
+  text-align center
+
+.filter__menu
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  width: 7.5rem;
   gap 0.5rem
 
 .filter__triangel-1

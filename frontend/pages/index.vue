@@ -1,7 +1,9 @@
 <template>
   <div>
-    <Sort />
-    <Filter />
+    <div class="menu">
+      <Filter />
+      <Sort />
+    </div>
     <Artist
       v-for="artist in useArtistsStore().artists"
       :key="artist.id"
@@ -49,4 +51,15 @@ onMounted(async () => {
 <style lang="stylus" scoped>
 .artist
   position absolute
+
+.menu
+  position absolute
+  position fixed
+  display flex
+  gap 2rem
+  justify-content: center;
+  width 100%
+  // left 0
+  // right 0
+
 </style>

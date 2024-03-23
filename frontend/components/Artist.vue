@@ -1,7 +1,7 @@
 <template>
   <div
     ref="artistRef"
-    :class="['artist', {'artist__sorting-in-progress': useSortStore().isSortingInProgress}]"
+    :class="['artist', {'artist__sorting-in-progress': !isDragging}]"
     :style="handlePieceStyle"
     @click="openArtistModal(artistData)"
     @mousedown="handleOnMouseDown"
@@ -48,6 +48,7 @@ const { openArtistModal } = useAritstModal()
 import useMouseActionDetector from '~/J/useMouseActionDetector'
 import { type Artist } from '../J/useArtistsStore'
 const {
+  isDragging,
   mouseDownHandler,
   mouseMoveHandler,
   mouseUpHandler,
@@ -59,6 +60,7 @@ const {
 
 const localZIndex = ref(1)
 const artistRef = ref()
+const isMouseDown = ref(false)
 
 const randomRange = (min: number, max: number) => {
   return Math.floor(Math.random() * (max - min + 1) + min)
@@ -74,7 +76,7 @@ const randomizedRotation = computed(() => randomizeRotation())
 onMounted(() => {
   interact(artistRef.value as any)
     .draggable({
-      inertia: true,
+      inertia: false,
       autoScroll: true,
       listeners: {
         move(event: any) {
@@ -94,7 +96,7 @@ onMounted(() => {
           min: { width: 10, height: 10 }
         })
       ],
-      inertia: true
+      inertia: false
     })
 })
 
