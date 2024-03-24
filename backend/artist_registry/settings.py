@@ -47,7 +47,6 @@ INSTALLED_APPS = [
     'corsheaders',
     'rest_framework',
     'artists',
-    # 'storages',
 ]
 
 MIDDLEWARE = [
@@ -161,4 +160,7 @@ MEDIA_URL = '/media/'
 # AWS_S3_FILE_OVERWRITE = False
 
 # DEFAULT_FILE_STORAGE = 'storages.backends.s3boto3.S3Boto3Storage'
-# STATICFILES_STORAGE = 'storages.backends.s3boto3.S3Boto3Storage'
+
+# STATICFILES_STORAGE = 'artists.arweave_storage.ArweaveStorage'
+
+DEFAULT_FILE_STORAGE = 'artists.arweave_storage.ArweaveStorage'

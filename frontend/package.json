@@ -12,7 +12,10 @@
     "start": "node .output/server/index.mjs"
   },
   "dependencies": {
+    "@akord/akord-js": "^5.0.3",
+    "@types/node": "18",
     "axios": "^1.6.7",
+    "blob": "^0.1.0",
     "interactjs": "^1.10.26",
     "nuxt": "^3.10.3",
     "swiper": "^11.0.7",
@@ -31,7 +34,7 @@
     "nuxt-swiper": "^1.2.2",
     "prettier": "^3.2.5",
     "stylus": "^0.62.0",
-    "typescript": "^5.3.3"
+    "typescript": "^5.4.3"
   },
   "packageManager": "yarn@4.1.0"
 }

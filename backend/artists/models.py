@@ -8,6 +8,7 @@ class Artist(models.Model):
     ]
     notes = models.TextField(default='', blank=True)
     profile_image = models.ImageField(upload_to='artists/', null=True)
+    # profile_image_url = models.URLField(blank=True, null=True)
     firstname = models.CharField(max_length=200, blank=True)
     surname = models.CharField(max_length=200, blank=True)
     born = models.IntegerField(null=True, blank=True)
