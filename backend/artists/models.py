@@ -8,22 +8,13 @@ class Artist(models.Model):
         ('N', 'Non-binary'),
     ]
     notes = models.TextField(default='', blank=True)
-    profile_image = models.ImageField(upload_to='artists/', null=True)
-    # profile_image_url = models.URLField(blank=True, null=True)
+    profile_image = models.ImageField(null=True)
     firstname = models.CharField(max_length=200, blank=True)
     surname = models.CharField(max_length=200, blank=True)
     born = models.IntegerField(null=True, blank=True)
     gender = models.CharField(max_length=1, choices=GENDER_CHOICES, blank=True)
     auctions_turnover_2023_h1_USD = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True)
-    # arweave_url = models.URLField(blank=True, null=True)
     profile_image_url = models.URLField(blank=True, null=True) #saved to Arweave
-    file_field = models.FileField(upload_to='files/', default='')  # Or any other FileField
-
-    def upload_profile_image_to_arweave(self, file_path):
-        arweave_url = upload_to_arweave(file_path)
-        self.profile_image_url = arweave_url
-        self.save()
-
 
     @property
     def name(self):
@@ -45,4 +36,3 @@ class Artwork(models.Model):
 
     def __str__(self):
         return self.title
-# Create your models here.

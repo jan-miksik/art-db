@@ -47,7 +47,7 @@ INSTALLED_APPS = [
     'corsheaders',
     'rest_framework',
     'artists',
-    # 'storages',
+    'storages',
 ]
 
 MIDDLEWARE = [
