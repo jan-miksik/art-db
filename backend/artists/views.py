@@ -5,6 +5,13 @@ from rest_framework import viewsets
 from .serializers import ArtistSerializer
 from rest_framework.decorators import api_view
 from rest_framework.response import Response
+from django.http import JsonResponse
+# from django.views.decorators.csrf import csrf_exempt
+from artists.arweave_storage import upload_to_arweave
+from django.http import JsonResponse
+from django.shortcuts import get_object_or_404
+from .models import Artist
+from django.views.decorators.csrf import csrf_protect
 
 class ArtistViewSet(viewsets.ModelViewSet):
     queryset = Artist.objects.all()
@@ -18,22 +25,15 @@ def artists_endpoint(request):
     return Response(serializer.data)
 
 
-# def artist_list(request):
-#     sort_order = request.GET.get('sort_order', 'name')
-#     sort_direction = request.GET.get('sort_direction', 'asc')
-#     if sort_direction == 'desc':
-#         sort_order = '-' + sort_order
-#     artists = Artist.objects.all().order_by(sort_order)
-#     return render(request, 'artists/artist_list.html', {'artists': artists, 'sort_order': sort_order, 'sort_direction': sort_direction})
 
-# from .forms import ArtistForm
-
-# def artist_create(request):
-#     if request.method == 'POST':
-#         form = ArtistForm(request.POST)
-#         if form.is_valid():
-#             form.save()
-#             return redirect('artist_list')
-#     else:
-#         form = ArtistForm()
-#     return render(request, 'artists/artist_form.html', {'form': form})
+@csrf_protect
+def upload_to_arweave_view(request, pk):
+    artist = get_object_or_404(Artist, pk=pk)
+    if request.method == 'POST':
+        file = request.FILES.get('file')
+        if file:
+            file_path = file.temporary_file_path()
+            arweave_url = upload_to_arweave(file_path)
+            return JsonResponse({'success': True, 'url': arweave_url})
+        return JsonResponse({'success': False, 'error': 'No file provided'})
+    return JsonResponse({'success': False, 'error': 'Invalid request method'})

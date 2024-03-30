@@ -1,0 +1,27 @@
+{% extends "admin/widgets/clearable_file_input.html" %}
+{% block file_input %}
+    {% if arweave_url %}
+        <p>Current file: <a href="{{ arweave_url }}" target="_blank">{{ arweave_url }}</a></p>
+    {% endif %}
+    {{ block.super }}
+    <button type="button" id="upload_to_arweave">Upload to Arweave</button>
+    <script>
+      document.querySelector('#upload_to_arweave').addEventListener('click', function(event) {
+          event.preventDefault();
+          var fileInput = document.querySelector('#id_profile_image');
+          var formData = new FormData();
+          formData.append('file', fileInput.files[0]);
+          fetch('/upload_to_arweave/', {
+              method: 'POST',
+              body: formData,
+              headers: {
+                  'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value,
+              },
+          })
+          .then(response => response.json())
+          .then(data => {
+              document.querySelector('#id_profile_image_url').value = data.arweave_url;
+          });
+      });
+  </script>
+{% endblock %}

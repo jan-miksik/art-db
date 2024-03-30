@@ -47,6 +47,7 @@ INSTALLED_APPS = [
     'corsheaders',
     'rest_framework',
     'artists',
+    # 'storages',
 ]
 
 MIDDLEWARE = [
@@ -163,4 +164,4 @@ MEDIA_URL = '/media/'
 
 # STATICFILES_STORAGE = 'artists.arweave_storage.ArweaveStorage'
 
-DEFAULT_FILE_STORAGE = 'artists.arweave_storage.ArweaveStorage'
+# DEFAULT_FILE_STORAGE = 'artists.arweave_storage.ArweaveStorage'

@@ -8,6 +8,9 @@ import mimetypes
 from django.core.files.storage import Storage
 from django.conf import settings
 import pdb
+import uuid
+
+
 
 def upload_to_arweave(file_path):
     wallet_path = os.path.join(settings.MEDIA_ROOT, 'arweave_wallet.json')
@@ -40,38 +43,36 @@ def upload_to_arweave(file_path):
 
     return image_url
 
+# class ArweaveStorage(Storage):
+#     def _save(self, name, content):
+#         # Upload the file to Arweave and return the URL
+#         # arweave_url = upload_to_arweave(content.path)
+#         return name
 
-class ArweaveStorage(Storage):
-    def __init__(self, option=None):
-        print(".................... __init__ ArweaveStorage .....................")
-        pass
+#     # class ArweaveStorage(Storage):
+#     def _save(self, name, content):
+#         if hasattr(content.file, 'temporary_file_path'):
+#             file_path = content.file.temporary_file_path()
+#         else:
+#             if not os.path.isdir('tmp'):
+#                 os.mkdir('tmp')
+#             with open(f'tmp/{name}', 'wb+') as out_file:
+#                 out_file.write(content.file.read())
+#             file_path = f'tmp/{name}'
+#         arweave_url = self.upload_to_arweave(file_path)
+#         return arweave_url
 
-    def _open(self, name, mode='rb'):
-        raise NotImplementedError("Reading files from Arweave is not supported.")
-
-    def _save(self, name, content):
-        print("Saving file...")
-        temp_path = settings.MEDIA_ROOT / name
-        with open(temp_path, 'wb+') as temp_file:
-            for chunk in content.chunks():
-                temp_file.write(chunk)
         
-        try:
-            arweave_url = upload_to_arweave(temp_path)
-        except Exception as e:
-            print(f"Error uploading to Arweave: {e}")
-            # Handle the exception, e.g., log the error, rollback changes
-            temp_path.unlink()
-            return None
+#     def exists(self, name):
+#         # Arweave is a permanent storage system, so we assume that if a file
+#         # was uploaded, it still exists.
+#         return True
+
+#     def url(self, name):
+#         return name
     
-        temp_path.unlink()
-        pdb.set_trace()
-        return arweave_url
-        
-    def exists(self, name):
-        # Arweave is a permanent storage system, so we assume that if a file
-        # was uploaded, it still exists.
-        return True
+#     def generate_filename(self, filename):
+#         pass
 
-    def url(self, name):
-        return name
+# def get_arweave_storage():
+#     return ArweaveStorage()

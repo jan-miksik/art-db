@@ -1,4 +1,5 @@
 from django.db import models
+from .arweave_storage import upload_to_arweave
 
 class Artist(models.Model):
     GENDER_CHOICES = [
@@ -14,6 +15,15 @@ class Artist(models.Model):
     born = models.IntegerField(null=True, blank=True)
     gender = models.CharField(max_length=1, choices=GENDER_CHOICES, blank=True)
     auctions_turnover_2023_h1_USD = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True)
+    # arweave_url = models.URLField(blank=True, null=True)
+    profile_image_url = models.URLField(blank=True, null=True) #saved to Arweave
+    file_field = models.FileField(upload_to='files/', default='')  # Or any other FileField
+
+    def upload_profile_image_to_arweave(self, file_path):
+        arweave_url = upload_to_arweave(file_path)
+        self.profile_image_url = arweave_url
+        self.save()
+
 
     @property
     def name(self):
