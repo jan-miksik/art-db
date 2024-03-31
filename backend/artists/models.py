@@ -8,7 +8,7 @@ class Artist(models.Model):
         ('N', 'Non-binary'),
     ]
     notes = models.TextField(default='', blank=True)
-    profile_image = models.ImageField(null=True)
+    profile_image = models.ImageField(null=True, blank=True)
     firstname = models.CharField(max_length=200, blank=True)
     surname = models.CharField(max_length=200, blank=True)
     born = models.IntegerField(null=True, blank=True)
@@ -29,7 +29,8 @@ class Artist(models.Model):
 class Artwork(models.Model):
     artist = models.ForeignKey(Artist, on_delete=models.CASCADE)  
     title = models.CharField(max_length=250, default='without name', blank=True)
-    picture = models.ImageField(upload_to='artworks/', null=True)
+    picture = models.ImageField(upload_to='artworks/', null=True, blank=True)
+    picture_url = models.URLField(blank=True, null=True) #saved to Arweave
     year = models.IntegerField(null=True, blank=True)
     sizeY = models.IntegerField(null=True, blank=True)
     sizeX = models.IntegerField(null=True, blank=True)

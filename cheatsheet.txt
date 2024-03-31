@@ -18,6 +18,12 @@ $ docker exec -i backend-db-1 pg_dump -U postgres art_db -Ft > dump_`date +%d-%m
 // restore database
 $ cat /path/to/your_dump_file | docker exec -i backend-db-1 pg_restore -U postgres -d art_db
 
+// drob db
+$ docker exec -it backend-db-1 dropdb -U postgres art_db
+
+// create db
+$ docker exec -it backend-db-1 dropdb -U postgres art_db
+
 // get db from server
 $ pg_dump -U <username> -h <host> -p <port> -W -F t <db_name> > <output_filename>
 $ pg_dump -U postgres -h viaduct.proxy.rlwy.net -p 39730 -W -F t railway > railway_dump_2024_2

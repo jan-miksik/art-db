@@ -6,14 +6,14 @@
       <div class="aritst-modal__profile" @click.stop>
         <img
         class="artist-modal__profile-image"
-        :src="artistData.profile_image"
+        :src="artistData.profile_image_url"
         :alt="artistData.name"
         @click.stop
         />
       </div>
       <!-- <img v-for="(piece, index) in artistData.artworks"
         class="artist-modal__artwork-preview-image"
-        :src="piece.picture"
+        :src="piece.picture_url"
         :alt="piece.title"
         @click.stop
       /> -->
@@ -35,7 +35,7 @@
           <swiper-slide @click.stop class="artist-modal__slide" v-for="(piece, index) in artistData.artworks">
             <img
               class='artist-modal__artwork-preview-image'
-              :src="piece.picture"
+              :src="piece.picture_url"
               :alt="piece.title"
               @click.stop
             />

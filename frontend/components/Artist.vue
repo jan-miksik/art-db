@@ -14,7 +14,7 @@
     <img
       ref="artistProfileImage"
       class="artist__artwork-preview-image"
-      :src="artistData.artworks[0].picture"
+      :src="artistData.artworks[0].picture_url"
       :alt="artistData.name"
     />
     <svg

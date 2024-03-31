@@ -3,20 +3,16 @@ from django.conf import settings
 import os
 from arweave.arweave_lib import Transaction
 from arweave.transaction_uploader import get_uploader
-import logging
 import mimetypes
 from django.conf import settings
 
-
 def upload_to_arweave(file_path):
+    mimetypes.init()
+    mimetypes.types_map['.webp'] = 'image/webp'
+    mime_type, _ = mimetypes.guess_type(file_path)
+
     wallet_path = os.path.join(settings.MEDIA_ROOT, 'arweave_wallet.json')
     wallet = arweave.Wallet(wallet_path)
-    """This function uses the arweave package to upload a file."""
-    
-    logger = logging.getLogger(__name__)
-    logger.info("Balance of $AR: %s", wallet.balance)
-
-    mime_type, _ = mimetypes.guess_type(file_path)
 
     with open(file_path, "rb", buffering=0) as file_handler:
         tx = Transaction(
@@ -31,9 +27,6 @@ def upload_to_arweave(file_path):
 
         while not uploader.is_complete:
             uploader.upload_chunk()
-
-        logger.info("FILE: %s", file_path)
-        logger.info("TRANSACTION: %s\n", f"https://arweave.net/{tx.id}")
 
         image_url = f"https://arweave.net/{tx.id}"
 

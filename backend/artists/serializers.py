@@ -7,7 +7,7 @@ class ArtworkSerializer(serializers.ModelSerializer):
         fields = [
             'id', 
             'title', 
-            'picture',
+            'picture_url',
             'year',
             'sizeX',
             'sizeY',
@@ -24,7 +24,7 @@ class ArtistSerializer(serializers.ModelSerializer):
             'surname',
             'name',
             'notes', 
-            'profile_image', 
+            'profile_image_url', 
             'artworks', 
             'born', 
             'gender', 

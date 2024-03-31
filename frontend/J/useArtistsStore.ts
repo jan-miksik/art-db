@@ -1,13 +1,13 @@
 export type Artist = {
   id: string
-  profile_image: string
+  profile_image_url: string
   name: string
   surname: string
   firstname: string
   notes: string
   born: number
   artworks: {
-    picture: string
+    picture_url: string
     title: string
     year: number
     sizeY: number
