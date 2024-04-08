@@ -19,12 +19,6 @@ export enum GenderOptionEnum {
   WOMAN = "WOMAN",
 }
 
-// export const genderOptionEnumsArray = [
-//   GenderOptionEnum.NON_BINARY,
-//   GenderOptionEnum.WOMEN,
-//   GenderOptionEnum.MEN,
-// ]
-
 export const genderOptions = [
   {
     sign: " ⚥ ",

@@ -84,14 +84,9 @@ input[type="number"] {
   width 6.5rem
 
 .filter-option
-  // width: 100%
   text-align: center
   line-height: 1.5rem
   z-index 10000000000
-  // &:hover
-  //   background-color: black
-  //   color: white
-  //   cursor: pointer
 
 .filter-option--SELECTION
   margin-right auto
@@ -106,7 +101,6 @@ input[type="number"] {
   cursor: pointer
   &:hover
     background-color: #b0b0b0
-    // border-radius: 0.5rem
 
 .filter-option__selection-option--is-selected
   opacity 1
