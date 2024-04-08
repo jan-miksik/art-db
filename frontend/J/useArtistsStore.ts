@@ -17,7 +17,7 @@ export type Artist = {
     x: number
     y: number
   }
-  gender: string
+  gender: "W" | "M" | "N"
   auctions_turnover_2023_h1_USD: number
 }
 

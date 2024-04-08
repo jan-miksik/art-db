@@ -15,18 +15,24 @@ $ docker exec -it backend-db-1 psql -U postgres
 // create dump of database
 $ docker exec -i backend-db-1 pg_dump -U postgres art_db -Ft > dump_`date +%d-%m-%Y"_"%H_%M_%S`.tar
 
-// restore database
-$ cat /path/to/your_dump_file | docker exec -i backend-db-1 pg_restore -U postgres -d art_db
 
+#### recreate db
 // drob db
 $ docker exec -it backend-db-1 dropdb -U postgres art_db
 
 // create db
-$ docker exec -it backend-db-1 dropdb -U postgres art_db
+$ docker exec -it backend-db-1 createdb -U postgres art_db
+
+// restore database
+$ cat /path/to/your_dump_file | docker exec -i backend-db-1 pg_restore -U postgres -d art_db
+
+// in one command
+$ docker exec -it backend-db-1 dropdb -U postgres art_db && docker exec -it backend-db-1 createdb -U postgres art_db && cat railway_dump_08-04-2024_14_38_39.tar | docker exec -i backend-db-1 pg_restore -U postgres -d art_db
+################
 
 // get db from server
 $ pg_dump -U <username> -h <host> -p <port> -W -F t <db_name> > <output_filename>
-$ pg_dump -U postgres -h viaduct.proxy.rlwy.net -p 39730 -W -F t railway > railway_dump_2024_2
+$ pg_dump -U postgres -h viaduct.proxy.rlwy.net -p 39730 -W -F t railway > railway_dump_`date +%d-%m-%Y"_"%H_%M_%S`.tar
 
 // restore db on server
 $ pg_restore -U <username> -h <host> -p <port> -W -F t -d <db_name> <dump_file_name>

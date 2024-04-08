@@ -8,14 +8,47 @@ export enum FilterOption {
 }
 
 export enum FilterType {
-  'SEARCH',
-  'RANGE',
-  'SELECTION',
+  SEARCH = 'SEARCH',
+  RANGE = 'RANGE',
+  SELECTION = 'SELECTION',
+}
+
+export enum GenderOptionEnum {
+  NON_BINARY = "NON_BINARY",
+  MAN = "MAN",
+  WOMAN = "WOMAN",
+}
+
+// export const genderOptionEnumsArray = [
+//   GenderOptionEnum.NON_BINARY,
+//   GenderOptionEnum.WOMEN,
+//   GenderOptionEnum.MEN,
+// ]
+
+export const genderOptions = [
+  {
+    sign: " ⚥ ",
+    enumValue: GenderOptionEnum.NON_BINARY
+  },
+  {
+    sign: "♂",
+    enumValue: GenderOptionEnum.MAN
+  },
+  {
+    sign: "♀",
+    enumValue: GenderOptionEnum.WOMAN
+  },
+]
+
+export type SelectionOptionType = {
+  sign: string,
+  enumValue: GenderOptionEnum
 }
 
 export const useFilterStore = defineStore('filter', () => {
 
   const isFilteringInProgress = ref(false)
+  const selectedGendersToShow = ref<SelectionOptionType[]>([])
 
   const reArangeSortedArtists = (fieldName: 'firstname') => {
     console.log('reArangeSortedArtists: ');
@@ -77,11 +110,42 @@ export const useFilterStore = defineStore('filter', () => {
     reArangeSortedArtists('firstname');
   }
 
+  const filterByGender = async (selectedGender: SelectionOptionType) => {
+    isFilteringInProgress.value = true;
+    if (selectedGendersToShow.value.some((option) => option.enumValue === selectedGender.enumValue)) {
+      selectedGendersToShow.value = selectedGendersToShow.value.filter(o => o.enumValue !== selectedGender.enumValue)
+    } else {
+      selectedGendersToShow.value.push(selectedGender)
+    }
+    
+    const filteredPeople = useArtistsStore().artistsAll.filter(person => {
+      return selectedGendersToShow.value.some(option => {
+        if (option.enumValue === GenderOptionEnum.NON_BINARY && person.gender === 'N') {
+          return true;
+        }
+        if (option.enumValue === GenderOptionEnum.WOMAN && person.gender === 'W') {
+          return true;
+        }
+        if (option.enumValue === GenderOptionEnum.MAN && person.gender === 'M') {
+          return true;
+        }
+        return false;
+      });
+    });
+    useArtistsStore().artists = filteredPeople;
+    await sleep(100)
+    reArangeSortedArtists('firstname');
+  }
+
   return {
     FilterOption,
     FilterType,
     searchAndFilterByName,
     filterByBornInRange,
-    isFilteringInProgress
+    filterByGender,
+    isFilteringInProgress,
+    genderOptions,
+    selectedGendersToShow,
+    // genderOptionEnumsArray,
   }
 })

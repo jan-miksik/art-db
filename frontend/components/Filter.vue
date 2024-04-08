@@ -17,6 +17,13 @@
         @range="filterStore.filterByBornInRange"
         :filterType="filterStore.FilterType.RANGE"
       />
+      <FilterOption 
+        :filterOption="filterStore.FilterOption.GENDER" 
+        :selectionOptions="filterStore.genderOptions"
+        :selectedOptions="filterStore.selectedGendersToShow"
+        @selection="filterStore.filterByGender"
+        :filterType="filterStore.FilterType.SELECTION"
+      />
       <!-- <FilterOption :filterOption="filterStore.FilterOption.GENDER" label="gender"/> -->
       <!-- <FilterOption :filterOption="filterStore.FilterOption.AUCTIONS_TURNOVER_2023_H1_USD" label="auctions 2023"/> -->
     </div>
