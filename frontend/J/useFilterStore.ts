@@ -19,30 +19,34 @@ export enum GenderOptionEnum {
   WOMAN = "WOMAN",
 }
 
-export const genderOptions = [
-  {
-    sign: " ⚥ ",
-    enumValue: GenderOptionEnum.NON_BINARY
-  },
-  {
-    sign: "♂",
-    enumValue: GenderOptionEnum.MAN
-  },
-  {
-    sign: "♀",
-    enumValue: GenderOptionEnum.WOMAN
-  },
-]
-
 export type SelectionOptionType = {
   sign: string,
   enumValue: GenderOptionEnum
 }
 
+import FluidSvg from '~/assets/fluid.svg'
+import FemalePng from '~/assets/female.png'
+import MalePng from '~/assets/male.png'
+
 export const useFilterStore = defineStore('filter', () => {
 
+  const genderOptions = [
+    {
+      sign: FluidSvg,
+      enumValue: GenderOptionEnum.NON_BINARY
+    },
+    {
+      sign: MalePng,
+      enumValue: GenderOptionEnum.MAN
+    },
+    {
+      sign: FemalePng,
+      enumValue: GenderOptionEnum.WOMAN
+    },
+  ]
+
   const isFilteringInProgress = ref(false)
-  const selectedGendersToShow = ref<SelectionOptionType[]>([])
+  const selectedGendersToShow = ref<SelectionOptionType[]>([genderOptions[0], genderOptions[1], genderOptions[2]])
 
   const reArangeSortedArtists = (fieldName: 'firstname') => {
     console.log('reArangeSortedArtists: ');

@@ -73,7 +73,7 @@ const handleClickOutside = (event: any) => {
   z-index 10000000000
 
 .filter-toggle
-  width: 7.5rem;
+  width: 8rem;
   font-weight 700
   font-size: 1.5rem;
   cursor pointer
@@ -85,7 +85,7 @@ const handleClickOutside = (event: any) => {
   display: flex;
   flex-direction: column;
   align-items: center;
-  width: 7.5rem;
+  width: 8rem;
   gap 0.5rem
 
 .filter__triangel-1

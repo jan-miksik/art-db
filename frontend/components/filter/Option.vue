@@ -10,7 +10,8 @@
       </div>
       <div class="filter-option__selection" v-if="filterType === FilterType.SELECTION">
         <div v-for="(selectionOption) in selectionOptions" @click="() => handleSelectionChange(selectionOption)" :class="['filter-option__selection-option', {'filter-option__selection-option--is-selected': isOptionSelected(selectionOption)}]">
-          {{ selectionOption.sign }}
+          <!-- {{ selectionOption.sign }} -->
+          <img :src="selectionOption.sign" height="16"/>
         </div>
       </div>
     </div>
@@ -99,6 +100,8 @@ input[type="number"] {
 .filter-option__selection-option
   opacity: 0.2
   cursor: pointer
+  padding: 2px;
+  height: 20px;
   &:hover
     background-color: #b0b0b0
 
