@@ -1,20 +1,12 @@
-import os
 import weaviate
+import weaviate.classes.config as wvcc
 
-WEAVIATE_URL = os.getenv('WEAVIATE_URL')
-if not WEAVIATE_URL:
-    WEAVIATE_URL = 'http://localhost:8080'
-
-print(WEAVIATE_URL, flush=True)
-
-client = weaviate.Client(WEAVIATE_URL)
-
-# creating the Dog class with the following properties: breed, image, and filepath
+client = weaviate.connect_to_local() # Connect with default parameters
 
 schema = {
     "classes": [
         {
-            "class": "Artwork",
+            "class": "Artworks",
             "description": "Images of artworks",
             "moduleConfig": {
                 "img2vec-neural": {
@@ -29,17 +21,17 @@ schema = {
                 {
                     "name": "artwork",
                     "dataType": ["string"],
-                    "description": "name of dog artwork",
+                    "description": "name of the artwork",
                 },
                 {
-                    "name": "image",
-                    "dataType": ["blob"],
-                    "description": "image",
+                    "name": "author",
+                    "dataType": ["string"],
+                    "description": "name of the author",
                 },
                 {
-                    "name": "filepath",
+                    "name": "arweave_link",
                     "dataType":["string"],
-                    "description": "filepath of the images",
+                    "description": "arweave link of the image",
                 }
             ]
         }
@@ -48,5 +40,25 @@ schema = {
 
 # adding the schema 
 client.schema.create(schema)
+
+
+client = weaviate.connect_to_local()
+
+try:
+    # Note that you can use `client.collections.create_from_dict()` to create a collection from a v3-client-style JSON object
+    collection = client.collections.create(
+        name="TestArticle",
+        vectorizer_config=wvcc.Configure.Vectorizer.text2vec_cohere(),
+        generative_config=wvcc.Configure.Generative.cohere(),
+        properties=[
+            wvcc.Property(
+                name="title",
+                data_type=wvcc.DataType.TEXT
+            )
+        ]
+    )
+
+finally:
+    client.close()
 
 print("The schema has been defined.")
