@@ -1,5 +1,4 @@
 import weaviate
-import weaviate.classes.config as wvcc
 
 client = weaviate.connect_to_local() # Connect with default parameters
 
@@ -19,46 +18,25 @@ schema = {
             "vectorizer": "img2vec-neural", # the img2vec-neural Weaviate module
             "properties": [
                 {
-                    "name": "artwork",
+                    "name": "artwork_psql_id",
                     "dataType": ["string"],
-                    "description": "name of the artwork",
+                    "description": "id of the artwork in posgresql",
                 },
                 {
-                    "name": "author",
-                    "dataType": ["string"],
-                    "description": "name of the author",
+                    "name": "image",
+                    "dataType": ["blob"],
+                    "description": "blob of the image",
                 },
-                {
-                    "name": "arweave_link",
-                    "dataType":["string"],
-                    "description": "arweave link of the image",
-                }
             ]
         }
     ]
 }
 
 # adding the schema 
-client.schema.create(schema)
+# client.schema.create(schema)
 
 
 client = weaviate.connect_to_local()
-
-try:
-    # Note that you can use `client.collections.create_from_dict()` to create a collection from a v3-client-style JSON object
-    collection = client.collections.create(
-        name="TestArticle",
-        vectorizer_config=wvcc.Configure.Vectorizer.text2vec_cohere(),
-        generative_config=wvcc.Configure.Generative.cohere(),
-        properties=[
-            wvcc.Property(
-                name="title",
-                data_type=wvcc.DataType.TEXT
-            )
-        ]
-    )
-
-finally:
-    client.close()
+client.collections.create_from_dict(schema)
 
 print("The schema has been defined.")
