@@ -9,7 +9,16 @@ class ArtworkInline(admin.TabularInline):  # or admin.StackedInline for a differ
     model = Artwork
     extra = 1  # number of extra forms to display
     readonly_fields = ('id','picture_preview', )
-    fields = ('picture_preview', 'title', 'picture', 'picture_url', 'year', 'sizeY', 'sizeX')  # specify the order of fields
+    fields = (
+        'picture_preview', 
+        'title', 
+        'picture', 
+        'picture_image_weaviate_id',
+        'picture_url', 
+        'year', 
+        'sizeY', 
+        'sizeX',
+    )  # specify the order of fields
 
     def picture_preview(self, obj):
         if obj.picture_url:
@@ -30,10 +39,11 @@ class ArtistAdmin(admin.ModelAdmin):
         'notes', 
         'profile_image',
         'profile_image_url', 
-        'profile_image_preview'
+        'profile_image_preview',
+        'profile_image_weaviate_id',
         )  # specify the order of fields
     readonly_fields = ('id', 'profile_image_preview',) 
-    list_display = ('id', 'full_name', 'profile_image_preview')
+    list_display = ('full_name', 'id', 'profile_image_preview')
 
     def full_name(self, obj):
         if obj.firstname or obj.surname:
@@ -91,7 +101,7 @@ class ArtistAdmin(admin.ModelAdmin):
 class ArtworkAdmin(admin.ModelAdmin):
     def title_to_display(self, obj):
         return obj.title or 'No title yet'
-    list_display = ('id', 'title_to_display', 'artwork_image_preview')
+    list_display = ('title_to_display', 'id', 'artwork_image_preview')
     readonly_fields = ['artwork_image_preview_detail']
 
     def artwork_image_preview(self, obj):

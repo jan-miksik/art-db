@@ -16,7 +16,7 @@ class Artist(models.Model):
     gender = models.CharField(max_length=1, choices=GENDER_CHOICES, blank=True)
     auctions_turnover_2023_h1_USD = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True)
     profile_image_url = models.URLField(blank=True, null=True) #saved to Arweave
-    # profile_image_weaviate_id = models.CharField(max_length=200, blank=True)
+    profile_image_weaviate_id = models.CharField(max_length=200, blank=True)
     # profile_image_vector = models.JSONField()
 
     @property
@@ -37,7 +37,7 @@ class Artwork(models.Model):
     year = models.IntegerField(null=True, blank=True)
     sizeY = models.IntegerField(null=True, blank=True)
     sizeX = models.IntegerField(null=True, blank=True)
-    # picture_image_weaviate_id = models.CharField(max_length=200, blank=True)
+    picture_image_weaviate_id = models.CharField(max_length=200, blank=True)
     # picture_vector = models.JSONField()
 
     def save(self, *args, **kwargs):
