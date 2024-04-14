@@ -12,6 +12,7 @@ from django.http import JsonResponse
 from django.shortcuts import get_object_or_404
 from .models import Artist
 from django.views.decorators.csrf import csrf_protect
+from .weaviate.weaviate import search_similar_images_by_image_url
 
 class ArtistViewSet(viewsets.ModelViewSet):
     queryset = Artist.objects.all()
@@ -37,3 +38,15 @@ def upload_to_arweave_view(request, pk):
             return JsonResponse({'success': True, 'url': arweave_url})
         return JsonResponse({'success': False, 'error': 'No file provided'})
     return JsonResponse({'success': False, 'error': 'Invalid request method'})
+
+
+
+@api_view(['GET'])
+def search_authors_by_image_view(request):
+    image_url = request.GET.get('image_url')
+    limit = int(request.GET.get('limit', 2))
+    similar_images = search_similar_images_by_image_url(image_url, limit)
+    # TODO return unique authors of images from search_similar_images_by_image_url ?
+    # TODO return authors of images, call to db for artist with psql_id
+
+    return Response(similar_images)

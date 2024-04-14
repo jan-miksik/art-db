@@ -1,5 +1,4 @@
 import weaviate
-import weaviate
 import weaviate.classes as wvc
 
 def create_schema():
@@ -14,6 +13,11 @@ def create_schema():
                     name="artwork_psql_id",
                     data_type=wvc.config.DataType.TEXT,
                     description="id of the artwork in posgresql",
+                ),
+                wvc.config.Property(
+                    name="author_psql_id",
+                    data_type=wvc.config.DataType.TEXT,
+                    description="id of the author in posgresql",
                 ),
                 wvc.config.Property(
                     name="image",
