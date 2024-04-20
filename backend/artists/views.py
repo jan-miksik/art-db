@@ -2,7 +2,7 @@
 from django.shortcuts import render, redirect
 from .models import Artist
 from rest_framework import viewsets
-from .serializers import ArtistSerializer
+from .serializers import ArtistSerializer, ArtworkSerializer
 from rest_framework.decorators import api_view
 from rest_framework.response import Response
 from django.http import JsonResponse
@@ -12,8 +12,8 @@ from django.http import JsonResponse
 from django.shortcuts import get_object_or_404
 from .models import Artist
 from django.views.decorators.csrf import csrf_protect
-from .weaviate.weaviate import search_similar_images_by_image_url
-
+from .weaviate.weaviate import search_similar_artwork_ids_by_image_url
+from .models import Artwork, Artist
 class ArtistViewSet(viewsets.ModelViewSet):
     queryset = Artist.objects.all()
     serializer_class = ArtistSerializer
@@ -42,11 +42,26 @@ def upload_to_arweave_view(request, pk):
 
 
 @api_view(['GET'])
-def search_authors_by_image_view(request):
+def search_artworks_by_image_url(request):
     image_url = request.GET.get('image_url')
-    limit = int(request.GET.get('limit', 2))
-    similar_images = search_similar_images_by_image_url(image_url, limit)
-    # TODO return unique authors of images from search_similar_images_by_image_url ?
-    # TODO return authors of images, call to db for artist with psql_id
+    limit = int(request.GET.get('limit', 1))
+    similar_images = search_similar_artwork_ids_by_image_url(image_url, limit)
 
-    return Response(similar_images)
+    # Get the corresponding Artwork and Artist objects
+    response_data = []
+    for image in similar_images:
+        artwork = Artwork.objects.filter(id=image.properties['artwork_psql_id']).first()
+        author = Artist.objects.filter(id=image.properties['author_psql_id']).first()
+
+        if artwork and author:
+            # Serialize the Artwork and Artist objects
+            artwork_serializer = ArtworkSerializer(artwork)
+            author_serializer = ArtistSerializer(author)
+            response_data.append({
+                'artwork': artwork_serializer.data,
+                'author': author_serializer.data,
+            })
+
+    return Response(response_data)
+
+# http://localhost:8000/artists/search-artworks-by-image-url/?image_url=https://arweave.net/dwUZ_GgXgjV86SAE8NH9cPwb4YovEpvqnZ2Xo1LwoGU&limit=1

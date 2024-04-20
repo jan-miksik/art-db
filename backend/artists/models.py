@@ -40,21 +40,21 @@ class Artwork(models.Model):
     picture_image_weaviate_id = models.CharField(max_length=200, blank=True)
     # picture_vector = models.JSONField()
 
-    def save(self, *args, **kwargs):
+    # def save(self, *args, **kwargs):
         # Calculate the image vector using Weaviate
-        weaviate_client = weaviate.connect_to_local()
-        self.picture_vector = weaviate_client.data_object.get_vector(self.picture_url)
+        # weaviate_client = weaviate.connect_to_local()
+        # self.picture_vector = weaviate_client.data_object.get_vector(self.picture_url)
 
         # Add the image vector to Weaviate
-        data_properties = {
+        # data_properties = {
             # "author": self.author,
-            "arweave_link": self.picture_url,
-            "vector": self.picture_vector,
-        }
-        with weaviate_client.batch.dynamic() as batch:
-            batch.add_object(properties=data_properties, collection="Artworks")
+            # "arweave_link": self.picture_url,
+            # "vector": self.picture_vector,
+        # }
+        # with weaviate_client.batch.dynamic() as batch:
+        #     batch.add_object(properties=data_properties, collection="Artworks")
 
-        super().save(*args, **kwargs)
+        # super().save(*args, **kwargs)
 
     def __str__(self):
         return self.title
