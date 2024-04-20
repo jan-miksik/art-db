@@ -49,6 +49,7 @@ onUnmounted(() => {
   align-items: center;
   gap 0.5rem
   z-index 10000000000
+  background-color white
 
 
 .sort__toggle

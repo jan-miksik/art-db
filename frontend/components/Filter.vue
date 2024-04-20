@@ -87,6 +87,7 @@ const handleClickOutside = (event: any) => {
   align-items: center;
   width: 8rem;
   gap 0.5rem
+  background-color: white;
 
 .filter__triangel-1
   position: absolute;

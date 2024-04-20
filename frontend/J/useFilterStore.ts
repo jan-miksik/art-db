@@ -46,7 +46,7 @@ export const useFilterStore = defineStore('filter', () => {
   ]
 
   const isFilteringInProgress = ref(false)
-  const selectedGendersToShow = ref<SelectionOptionType[]>([genderOptions[0], genderOptions[1], genderOptions[2]])
+  const selectedGendersToShow = ref<SelectionOptionType[]>([])
 
   const reArangeSortedArtists = (fieldName: 'firstname') => {
     console.log('reArangeSortedArtists: ');
@@ -135,12 +135,30 @@ export const useFilterStore = defineStore('filter', () => {
     reArangeSortedArtists('firstname');
   }
 
+  const filterByIds = async (ids: string[]) => {
+    isFilteringInProgress.value = true;
+    
+    const filteredPeople = useArtistsStore().artistsAll.filter(person => {
+      if (ids.includes(person.id)) return true
+      return false
+    });
+    useArtistsStore().artists = filteredPeople;
+    await sleep(100)
+    reArangeSortedArtists('firstname');
+  }
+
+  const removeFilters = () => {
+    useArtistsStore().artists = useArtistsStore().artistsAll
+  }
+
   return {
+    filterByIds,
     FilterOption,
     FilterType,
     searchAndFilterByName,
     filterByBornInRange,
     filterByGender,
+    removeFilters,
     isFilteringInProgress,
     genderOptions,
     selectedGendersToShow,

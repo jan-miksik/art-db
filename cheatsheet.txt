@@ -9,11 +9,12 @@ $ python3 manage.py runserver
 $ python manage.py makemigrations
 $ python3 manage.py migrate
 
+$ export DJANGO_SETTINGS_MODULE=artist_registry.settings
 
 // 
 $ docker exec -it backend-db-1 psql -U postgres
 
-// create dump of database
+// create dump of database≤
 $ docker exec -i backend-db-1 pg_dump -U postgres art_db -Ft > dump_`date +%d-%m-%Y"_"%H_%M_%S`.tar
 
 

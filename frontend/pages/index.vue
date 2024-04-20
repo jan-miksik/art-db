@@ -1,6 +1,7 @@
 <template>
   <div>
     <div class="menu">
+      <SearchImageByAI/>
       <Filter />
       <Sort />
     </div>
@@ -59,7 +60,5 @@ onMounted(async () => {
   gap 2rem
   justify-content: center;
   width 100%
-  // left 0
-  // right 0
 
 </style>
