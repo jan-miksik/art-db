@@ -33,7 +33,7 @@ const handleSearchImages = async (event: Event) => {
     if(!selectedPicture.value) return
     const formData = new FormData();
     formData.append('image', selectedPicture.value);
-    formData.append('limit', "1");
+    formData.append('limit', "5");
     const response = await axios.post(`${config.public.DJANGO_SERVER_URL}/artists/search-artworks-by-image-data/`, formData, {
       headers: {
         'Content-Type': 'multipart/form-data'

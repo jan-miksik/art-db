@@ -4,6 +4,10 @@ import base64, requests
 from weaviate.util import generate_uuid5  # Generate a deterministic ID
 from weaviate.classes.query import Filter
 from artists.models import Artwork
+# import os
+# import django
+# django.setup()
+
 
 # from django.core.files.storage import default_storage
 # from django.core.files.base import ContentFile
@@ -138,20 +142,41 @@ def search_similar_images_by_weaviate_image_id(weaviate_image_id, author_psql_id
     weaviete_client.close()
     return response.objects
 
-
-def search_similar_authors_by_weaviate_image_id(weaviate_image_id, author_psql_id, limit=2):
+# python -c "from artists.weaviate.weaviate import search_similar_authors_by_weaviate_image_id; search_similar_authors_by_weaviate_image_id('9843a5ac-9563-52fc-b38f-8ae9c01da52f');"
+'''
+python -c "
+import os
+import django
+django.setup()
+from artists.weaviate.weaviate import search_similar_authors_by_weaviate_image_id
+search_similar_authors_by_weaviate_image_id('9843a5ac-9563-52fc-b38f-8ae9c01da52f')
+"
+'''
+def search_similar_authors_by_weaviate_image_id(weaviate_image_id, limit=5):
     weaviete_client = weaviate.connect_to_local() # Connect with default parameters
     artworks = weaviete_client.collections.get("Artworks")
     # Perform query
-    response = artworks.query.near_object(
+    initialResponse = artworks.query.near_object(
         near_object=weaviate_image_id,
-        limit=limit,
+        limit=1,
         # filters=Filter.by_property("author_psql_id").not_equal(author_psql_id),
         return_metadata=MetadataQuery(distance=True)
     )
-    # print(response.objects[0])
+
+    print('Initial Response ------', initialResponse.objects[0].properties['author_psql_id'])
+    # next queries,
+    nextResponse = artworks.query.near_object(
+        near_object=weaviate_image_id,
+        limit=3,
+        filters=Filter.by_property("author_psql_id").not_equal(initialResponse.objects[0].properties['author_psql_id']),
+        return_metadata=MetadataQuery(distance=True)
+    )
+
+    combined_responses = initialResponse.objects + nextResponse.objects
+
+    print('rrrrrrrrr', combined_responses)
     weaviete_client.close()
-    return response.objects
+    return combined_responses
 
 
 def search_similar_images_by_vector(query_vector, limit=2):
@@ -168,6 +193,15 @@ def search_similar_images_by_vector(query_vector, limit=2):
     return response.objects
 
 # python -c "from artists.weaviate.weaviate import read_all_artworks; read_all_artworks();"
+'''
+python -c "
+import os
+import django
+django.setup()
+from artists.weaviate.weaviate import read_all_artworks
+read_all_artworks()
+"
+'''
 def read_all_artworks():
     weaviete_client = weaviate.connect_to_local() # Connect with default parameters
     artworks = weaviete_client.collections.get("Artworks")
@@ -181,6 +215,15 @@ def read_all_artworks():
         weaviete_client.close()
 
 # python -c "from artists.weaviate.weaviate import get_image_by_weaviate_id; get_image_by_weaviate_id('021155da-fb99-5201-b240-9c9c46ec7965');"
+'''
+python -c "
+import os
+import django
+django.setup()
+from artists.weaviate.weaviate import get_image_by_weaviate_id
+get_image_by_weaviate_id('498defaf-5b7e-52e4-ac96-ae2b5dcc278b')
+"
+'''
 def get_image_by_weaviate_id(image_id):
     weaviete_client = weaviate.connect_to_local() # Connect with default parameters
     artworks = weaviete_client.collections.get("Artworks")
@@ -195,6 +238,15 @@ def get_image_by_weaviate_id(image_id):
 
 
 # python -c "from artists.weaviate.weaviate import remove_by_weaviate_id; remove_by_weaviate_id('8f422679-e269-510d-b04e-b87f4128f52c');"
+'''
+python -c "
+import os
+import django
+django.setup()
+from artists.weaviate.weaviate import remove_by_weaviate_id
+remove_by_weaviate_id('ab496144-d996-57a1-a200-8221208fb8e5')
+"
+'''
 def remove_by_weaviate_id(weaviate_id):
     weaviete_client = weaviate.connect_to_local() # Connect with default parameters
     artworks = weaviete_client.collections.get("Artworks")

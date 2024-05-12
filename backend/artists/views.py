@@ -96,3 +96,31 @@ def search_artworks_by_image_data(request):
         return Response(response_data)
     else:
         return Response({'error': 'Image data not provided'}, status=400)
+    
+@api_view(['POST'])
+def search_authors_by_image_data(request):
+    image_file = request.FILES.get('image')
+    limit = int(request.data.get('limit', 2))
+
+    if image_file:
+        # Read the file data into bytes
+        image_data_bytes = image_file.read()
+
+        # Convert bytes to base64 string (optional)
+        # image_data_base64 = base64.b64encode(image_data_bytes).decode('utf-8')
+
+        similar_images = search_similar_artwork_ids_by_image_data(image_data_bytes, limit)
+        response_data = []
+        for image in similar_images:
+            artwork = Artwork.objects.filter(id=image.properties['artwork_psql_id']).first()
+            author = Artist.objects.filter(id=image.properties['author_psql_id']).first()
+            if artwork and author:
+                artwork_serializer = ArtworkSerializer(artwork)
+                author_serializer = ArtistSerializer(author)
+                response_data.append({
+                    'artwork': artwork_serializer.data,
+                    'author': author_serializer.data,
+                })
+        return Response(response_data)
+    else:
+        return Response({'error': 'Image data not provided'}, status=400)
