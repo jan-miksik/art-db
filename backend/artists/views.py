@@ -12,7 +12,7 @@ from django.http import JsonResponse
 from django.shortcuts import get_object_or_404
 from .models import Artist
 from django.views.decorators.csrf import csrf_protect
-from .weaviate.weaviate import search_similar_artwork_ids_by_image_url, search_similar_artwork_ids_by_image_data
+from .weaviate.weaviate import search_similar_artwork_ids_by_image_url, search_similar_artwork_ids_by_image_data, search_similar_authors_ids_by_image_data
 from .models import Artwork, Artist
 import base64
 
@@ -109,7 +109,7 @@ def search_authors_by_image_data(request):
         # Convert bytes to base64 string (optional)
         # image_data_base64 = base64.b64encode(image_data_bytes).decode('utf-8')
 
-        similar_images = search_similar_artwork_ids_by_image_data(image_data_bytes, limit)
+        similar_images = search_similar_authors_ids_by_image_data(image_data_bytes, limit)
         response_data = []
         for image in similar_images:
             artwork = Artwork.objects.filter(id=image.properties['artwork_psql_id']).first()

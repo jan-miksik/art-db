@@ -24,7 +24,6 @@ const file = ref();
 const filterStore = useFilterStore()
 
 const handleSearchImages = async (event: Event) => {
-  console.log('handleSearchImages: ');
   const files = (event.target as HTMLInputElement).files
   if (files && files.length > 0) {
     selectedPicture.value = files[0]
@@ -34,7 +33,7 @@ const handleSearchImages = async (event: Event) => {
     const formData = new FormData();
     formData.append('image', selectedPicture.value);
     formData.append('limit', "5");
-    const response = await axios.post(`${config.public.DJANGO_SERVER_URL}/artists/search-artworks-by-image-data/`, formData, {
+    const response = await axios.post(`${config.public.DJANGO_SERVER_URL}/artists/search-authors-by-image-data/`, formData, {
       headers: {
         'Content-Type': 'multipart/form-data'
       }
@@ -42,9 +41,7 @@ const handleSearchImages = async (event: Event) => {
     searchResults.value = response.data
     console.log(searchResults.value)
     const matchingIds = response.data.map((item: any) => item.author.id);
-    console.log('matchingIds: ', matchingIds);
     filterStore.filterByIds(matchingIds)
-    // filter artists
   } catch (error) {
     console.error(error)
   }

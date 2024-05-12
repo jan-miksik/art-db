@@ -8,4 +8,5 @@ urlpatterns = [
     path('upload-to-arweave/<int:pk>/', csrf_exempt(views.upload_to_arweave_view), name='upload_to_arweave'),
     path('search-artworks-by-image-url/', csrf_exempt(views.search_artworks_by_image_url), name='search_artworks_by_image_url'),
     path('search-artworks-by-image-data/', csrf_exempt(views.search_artworks_by_image_data), name='search_artworks_by_image_data'),
+    path('search-authors-by-image-data/', csrf_exempt(views.search_authors_by_image_data), name='search_authors_by_image_data'),
 ]

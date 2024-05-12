@@ -3,7 +3,7 @@ from artists.models import Artwork
 from django.core.files.storage import default_storage
 from artists.weaviate.weaviate import add_image_to_weaviete
 
-# python -c "from artists.weaviate.data_helpers import add_all_artworks_to_weaviate;"
+# python -c "from artists.weaviate.data_helpers import add_all_artworks_to_weaviate; add_all_artworks_to_weaviate();"
 '''
 python -c "
 import os
