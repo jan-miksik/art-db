@@ -2,7 +2,10 @@
     <teleport v-if="isOpen && artistData" to="body" >
     <div class="artist-modal" @click="closeModal">
       <!-- <div class="artist-modal__close">X</div> -->
-      <h2 class="artist-modal__name" @click.stop>{{ artistData.name }}</h2>
+      <div class="artist-modal__name-and-show-similar">
+        <h2 class="artist-modal__name" @click.stop>{{ artistData.name }}</h2>
+        <span class="artist-modal__show-similar" @click.stop="showSimilarAuthors">show similar authors</span>
+      </div>
       <div class="aritst-modal__profile" @click.stop>
         <img
         class="artist-modal__profile-image"
@@ -57,10 +60,38 @@ import { Swiper, SwiperSlide } from 'swiper/vue'
 import { Navigation, Keyboard, Mousewheel } from 'swiper/modules';
 import 'swiper/css';
 import 'swiper/css/navigation';
+import axios from "axios";
+
+const filterStore = useFilterStore()
+const config = useRuntimeConfig();
 
 const swiperRef = ref();
 const closeModal = () => {
   isOpen.value = false;
+}
+
+const similarAuthorsResult = ref([]);
+
+const showSimilarAuthors = async () => {
+  console.log('show similar authors');
+
+  console.log('artistData.value.artworks[0]', artistData.value?.artworks[0])
+
+  try {
+    const queryParams = new URLSearchParams({
+      image_url: artistData.value?.artworks[0]?.picture_url ?? '',
+      limit: '5',
+    });
+    const response = await axios.get(`${config.public.DJANGO_SERVER_URL}/artists/search-authors-by-image-url/?${queryParams.toString()}`);
+
+    similarAuthorsResult.value = response.data
+    console.log('similarAuthorsResult', similarAuthorsResult.value)
+    const matchingIds = response.data.map((item: any) => item.author.id);
+    filterStore.filterByIds(matchingIds)
+    closeModal()
+  } catch (error) {
+    console.error(error)
+  }
 }
 
 const onSwiper = (swiper: any) => {
@@ -145,9 +176,6 @@ const onSwiper = (swiper: any) => {
 .artist-modal__name
   background-color: #141414;
   color: white;
-  position: absolute;
-  top: 0;
-  left: 160px;
   padding: 0.05rem 0.5rem;
   cursor default
 
@@ -192,6 +220,18 @@ const onSwiper = (swiper: any) => {
   color: #212121;
   background: #ffffff;
   padding: 0.1rem 1rem;
+
+.artist-modal__show-similar
+  color black
+
+.artist-modal__name-and-show-similar
+  position: absolute;
+  left: 160px;
+  top: 0;
+  display: flex;
+  gap: 1rem;
+  align-items: center;
+  cursor pointer
 
 // .artist-modal__swiper-prev-slide
 //   z-index: 10000000000;

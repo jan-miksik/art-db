@@ -4,21 +4,13 @@ import base64, requests
 from weaviate.util import generate_uuid5  # Generate a deterministic ID
 from weaviate.classes.query import Filter
 from artists.models import Artwork
-# import os
-# import django
-# django.setup()
 
-
-# from django.core.files.storage import default_storage
-# from django.core.files.base import ContentFile
-
-# weaviate_client = weaviate.connect_to_local() # Connect with default parameters
-# artworks = weaviate_client.collections.get("Artworks")
 
 def url_to_base64(url):
     image_response = requests.get(url)
     content = image_response.content
     return base64.b64encode(content).decode("utf-8")
+
 
 ############################
 # add image to weaviete
@@ -46,9 +38,23 @@ def url_to_base64(url):
 #         weaviate_client.close()
 #         return obj_uuid
 
+
+# def add_image_vector_to_weaviete(image_file, arweave_link):
+#     # Calculate the image vector using Weaviete
+#     vector = weaviate_client.image.encode(image_file)
+
+#     # Create a data object with the image properties
+#     data = {
+#         "vector": vector,
+#         "artwork_psql_id": arweave_link
+#     }
+
+#     # Add the data object to Weaviete
+#     weaviate_client.data_object.create(data, "Image")
+
 def add_image_to_weaviete(artwork_psql_id, author_psql_id, arweave_image_url):
     print("[[[[[ add_image_to_weaviete ]]]]]")
-    weaviate_client = weaviate.connect_to_local() # Connect with default parameters
+    weaviate_client = weaviate.connect_to_local()  # Connect with default parameters
     artworks = weaviate_client.collections.get("Artworks")
     uuid = None
 
@@ -69,27 +75,75 @@ def add_image_to_weaviete(artwork_psql_id, author_psql_id, arweave_image_url):
 
     finally:
         weaviate_client.close()
-    
+
     return uuid
 
-# python -c "from artists.weaviate.weaviate import add_image_to_weaviete; add_image_to_weaviete('25', '1', 'https://arweave.net/0zYEjsrKFVa-qt9k9pO7W7j1M-Xyzj_y4MeEq5NY1Hk')"
 
+# python -c "from artists.weaviate.weaviate import add_image_to_weaviete; add_image_to_weaviete('25', '1', 'https://arweave.net/0zYEjsrKFVa-qt9k9pO7W7j1M-Xyzj_y4MeEq5NY1Hk')"
 # python -c "from artists.weaviate.weaviate import add_image_to_weaviete; add_image_to_weaviete('11', '9', 'https://arweave.net/V7yA1C67Nj5goTDKjkW225xFq_NNZEDh4IS7TSfp-qw');"
 
 
+############################
+# Search for similar authors
+############################
+def search_similar_authors_ids_by_image_data(image_data_bytes, limit=2):
+    weaviate_client = weaviate.connect_to_local()  # Connect with default parameters
+    artworks = weaviate_client.collections.get("Artworks")
+    image_data_base64 = base64.b64encode(image_data_bytes).decode('utf-8')
 
-# def add_image_vector_to_weaviete(image_file, arweave_link):
-#     # Calculate the image vector using Weaviete
-#     vector = weaviate_client.image.encode(image_file)
+    responses = []
+    filters = None
 
-#     # Create a data object with the image properties
-#     data = {
-#         "vector": vector,
-#         "artwork_psql_id": arweave_link
-#     }
+    for _ in range(limit):
+        response = artworks.query.near_image(
+            near_image=image_data_base64,
+            limit=1,
+            filters=filters,
+            return_metadata=MetadataQuery(distance=True)
+        )
 
-#     # Add the data object to Weaviete
-#     weaviate_client.data_object.create(data, "Image")
+        if response.objects:
+            responses.append(response.objects[0])
+            author_psql_id = response.objects[0].properties['author_psql_id']
+            new_filter = Filter.by_property("author_psql_id").not_equal(author_psql_id)
+
+            if filters is None:
+                filters = new_filter
+            else:
+                filters = filters & new_filter
+
+    weaviate_client.close()
+    return responses
+
+
+def search_similar_authors_ids_by_image_url(image_url, limit=2):
+    weaviate_client = weaviate.connect_to_local()  # Connect with default parameters
+    artworks = weaviate_client.collections.get("Artworks")
+    image_data_base64 = url_to_base64(image_url)
+
+    responses = []
+    filters = None
+
+    for _ in range(limit):
+        response = artworks.query.near_image(
+            near_image=image_data_base64,
+            limit=1,
+            filters=filters,
+            return_metadata=MetadataQuery(distance=True)
+        )
+
+        if response.objects:
+            responses.append(response.objects[0])
+            author_psql_id = response.objects[0].properties['author_psql_id']
+            new_filter = Filter.by_property("author_psql_id").not_equal(author_psql_id)
+
+            if filters is None:
+                filters = new_filter
+            else:
+                filters = filters & new_filter
+
+    weaviate_client.close()
+    return responses
 
 
 ############################
@@ -97,7 +151,7 @@ def add_image_to_weaviete(artwork_psql_id, author_psql_id, arweave_image_url):
 ############################
 
 def search_similar_artwork_ids_by_image_url(image_url, limit=1):
-    weaviate_client = weaviate.connect_to_local() # Connect with default parameters
+    weaviate_client = weaviate.connect_to_local()  # Connect with default parameters
     artworks = weaviate_client.collections.get("Artworks")
     base64_string = url_to_base64(image_url)
 
@@ -127,39 +181,9 @@ def search_similar_artwork_ids_by_image_data(image_data_bytes, limit=2):
     weaviate_client.close()
     return response.objects
 
-def search_similar_authors_ids_by_image_data(image_data_bytes, limit=2):
-    weaviate_client = weaviate.connect_to_local() # Connect with default parameters
-    artworks = weaviate_client.collections.get("Artworks")
-    image_data_base64 = base64.b64encode(image_data_bytes).decode('utf-8')
-
-    responses = []
-    filters = None
-
-    for _ in range(limit):
-        response = artworks.query.near_image(
-            near_image=image_data_base64,
-            limit=1,
-            filters=filters,
-            return_metadata=MetadataQuery(distance=True)
-        )
-
-        if response.objects:
-            responses.append(response.objects[0])
-            author_psql_id = response.objects[0].properties['author_psql_id']
-            new_filter = Filter.by_property("author_psql_id").not_equal(author_psql_id)
-
-            if filters is None:
-                filters = new_filter
-            else:
-                filters = filters & new_filter
-
-    weaviate_client.close()
-    return responses
-
-
 
 def search_similar_images_by_weaviate_image_id(weaviate_image_id, author_psql_id, limit=2):
-    weaviate_client = weaviate.connect_to_local() # Connect with default parameters
+    weaviate_client = weaviate.connect_to_local()  # Connect with default parameters
     artworks = weaviate_client.collections.get("Artworks")
     # Perform query
     response = artworks.query.near_object(
@@ -172,6 +196,7 @@ def search_similar_images_by_weaviate_image_id(weaviate_image_id, author_psql_id
     weaviate_client.close()
     return response.objects
 
+
 # python -c "from artists.weaviate.weaviate import search_similar_authors_by_weaviate_image_id; search_similar_authors_by_weaviate_image_id('9843a5ac-9563-52fc-b38f-8ae9c01da52f');"
 '''
 python -c "
@@ -182,8 +207,10 @@ from artists.weaviate.weaviate import search_similar_authors_by_weaviate_image_i
 search_similar_authors_by_weaviate_image_id('2b265d11-20f9-55ba-9a2a-fbcdf89bdb07')
 "
 '''
+
+
 def search_similar_authors_by_weaviate_image_id(weaviate_image_id, limit=5):
-    weaviate_client = weaviate.connect_to_local() # Connect with default parameters
+    weaviate_client = weaviate.connect_to_local()  # Connect with default parameters
     artworks = weaviate_client.collections.get("Artworks")
     responses = []
     filters = None
@@ -234,7 +261,7 @@ def search_similar_authors_by_weaviate_image_id(weaviate_image_id, limit=5):
     #     return_metadata=MetadataQuery(distance=True)
     # )
 
-    # combined_responses = initialResponse.objects + nextResponse.objects + nextResponse2.objects 
+    # combined_responses = initialResponse.objects + nextResponse.objects + nextResponse2.objects
 
     # print('rrrrrrrrr', combined_responses)
     # weaviate_client.close()
@@ -242,17 +269,18 @@ def search_similar_authors_by_weaviate_image_id(weaviate_image_id, limit=5):
 
 
 def search_similar_images_by_vector(query_vector, limit=2):
-    weaviate_client = weaviate.connect_to_local() # Connect with default parameters
+    weaviate_client = weaviate.connect_to_local()  # Connect with default parameters
     artworks = weaviate_client.collections.get("Artworks")
     # Perform query
     response = artworks.query.near_vector(
-        near_vector=query_vector, # your query vector goes here
+        near_vector=query_vector,  # your query vector goes here
         limit=limit,
         return_metadata=MetadataQuery(distance=True)
     )
     # print(response.objects[0])
     weaviate_client.close()
     return response.objects
+
 
 # python -c "from artists.weaviate.weaviate import read_all_artworks; read_all_artworks();"
 '''
@@ -264,8 +292,10 @@ from artists.weaviate.weaviate import read_all_artworks
 read_all_artworks()
 "
 '''
+
+
 def read_all_artworks():
-    weaviate_client = weaviate.connect_to_local() # Connect with default parameters
+    weaviate_client = weaviate.connect_to_local()  # Connect with default parameters
     artworks = weaviate_client.collections.get("Artworks")
     print("Reading all artworks")
     artworks = weaviate_client.collections.get("Artworks")
@@ -275,6 +305,7 @@ def read_all_artworks():
         # Your code here
     finally:
         weaviate_client.close()
+
 
 # python -c "from artists.weaviate.weaviate import get_image_by_weaviate_id; get_image_by_weaviate_id('021155da-fb99-5201-b240-9c9c46ec7965');"
 '''
@@ -286,8 +317,10 @@ from artists.weaviate.weaviate import get_image_by_weaviate_id
 get_image_by_weaviate_id('498defaf-5b7e-52e4-ac96-ae2b5dcc278b')
 "
 '''
+
+
 def get_image_by_weaviate_id(image_id):
-    weaviate_client = weaviate.connect_to_local() # Connect with default parameters
+    weaviate_client = weaviate.connect_to_local()  # Connect with default parameters
     artworks = weaviate_client.collections.get("Artworks")
     print("Reading image by ID")
     artworks = weaviate_client.collections.get("Artworks")
@@ -297,6 +330,7 @@ def get_image_by_weaviate_id(image_id):
         return data_object
     finally:
         weaviate_client.close()
+
 
 # e3a39360-aacc-5214-829a-4f23b8a8c3eb {'author_psql_id': '1', 'artwork_psql_id': '1'}
 # python -c "from artists.weaviate.weaviate import remove_by_weaviate_id; remove_by_weaviate_id('8f422679-e269-510d-b04e-b87f4128f52c');"
@@ -309,8 +343,10 @@ from artists.weaviate.weaviate import remove_by_weaviate_id
 remove_by_weaviate_id('e3a39360-aacc-5214-829a-4f23b8a8c3eb')
 "
 '''
+
+
 def remove_by_weaviate_id(weaviate_id):
-    weaviate_client = weaviate.connect_to_local() # Connect with default parameters
+    weaviate_client = weaviate.connect_to_local()  # Connect with default parameters
     artworks = weaviate_client.collections.get("Artworks")
     print("Reading image by ID")
     artworks = weaviate_client.collections.get("Artworks")
@@ -320,8 +356,6 @@ def remove_by_weaviate_id(weaviate_id):
         return data_object
     finally:
         weaviate_client.close()
-
-
 
 # python -c "from artists.weaviate.weaviate import add_all_artworks_to_weaviate; add_all_artworks_to_weaviate();"
 # def add_all_artworks_to_weaviate():
@@ -333,11 +367,11 @@ def remove_by_weaviate_id(weaviate_id):
 #         author_psql_id = artwork.artist.id
 #         arweave_image_url = artwork.picture_url
 
-        # If the image is stored locally, get the absolute URL
-        # if not arweave_image_url and artwork.picture:
-            # arweave_image_url = default_storage.url(artwork.picture.name)
+# If the image is stored locally, get the absolute URL
+# if not arweave_image_url and artwork.picture:
+# arweave_image_url = default_storage.url(artwork.picture.name)
 
-            # if arweave_image_url:
-            #     uuid = add_image_to_weaviete(artwork_psql_id, author_psql_id, arweave_image_url)
-            #     artwork.picture_image_weaviate_id = uuid
-            #     artwork.save()
+# if arweave_image_url:
+#     uuid = add_image_to_weaviete(artwork_psql_id, author_psql_id, arweave_image_url)
+#     artwork.picture_image_weaviate_id = uuid
+#     artwork.save()
