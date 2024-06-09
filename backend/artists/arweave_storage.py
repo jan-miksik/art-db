@@ -6,6 +6,7 @@ from arweave.transaction_uploader import get_uploader
 import mimetypes
 from django.conf import settings
 
+
 def upload_to_arweave(file_path):
     mimetypes.init()
     mimetypes.types_map['.webp'] = 'image/webp'

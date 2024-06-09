@@ -3,7 +3,6 @@ from weaviate.classes.query import MetadataQuery
 import base64, requests
 from weaviate.util import generate_uuid5  # Generate a deterministic ID
 from weaviate.classes.query import Filter
-from artists.models import Artwork
 from weaviate.classes.query import GroupBy
 
 
@@ -43,8 +42,8 @@ def add_image_to_weaviete(artwork_psql_id, author_psql_id, arweave_image_url):
 
     return uuid
 
-
 # python -c "from artists.weaviate.weaviate import add_image_to_weaviete; add_image_to_weaviete('25', '1', 'https://arweave.net/0zYEjsrKFVa-qt9k9pO7W7j1M-Xyzj_y4MeEq5NY1Hk')"
+
 
 ############################
 # Search for similar authors

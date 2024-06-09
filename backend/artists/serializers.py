@@ -1,17 +1,19 @@
 from rest_framework import serializers
 from .models import Artist, Artwork
 
+
 class ArtworkSerializer(serializers.ModelSerializer):
     class Meta:
         model = Artwork
         fields = [
-            'id', 
-            'title', 
+            'id',
+            'title',
             'picture_url',
             'year',
             'sizeX',
             'sizeY',
-            ]  # add the fields you want to include
+        ]  # add the fields you want to include
+
 
 class ArtistSerializer(serializers.ModelSerializer):
     artworks = ArtworkSerializer(source='artwork_set', many=True, read_only=True)
@@ -19,14 +21,14 @@ class ArtistSerializer(serializers.ModelSerializer):
     class Meta:
         model = Artist
         fields = [
-            'id', 
+            'id',
             'firstname',
             'surname',
             'name',
-            'notes', 
-            'profile_image_url', 
-            'artworks', 
-            'born', 
-            'gender', 
+            'notes',
+            'profile_image_url',
+            'artworks',
+            'born',
+            'gender',
             'auctions_turnover_2023_h1_USD'
-            ]
+        ]
