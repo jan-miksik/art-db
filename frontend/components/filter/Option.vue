@@ -19,6 +19,8 @@
 
 <script setup lang="ts">
 import type { FilterOption, FilterType, SelectionOptionType } from '#imports';
+const filterStore = useFilterStore()
+const { textToSearch, rangeFrom, rangeTo } = storeToRefs(filterStore)
 
 const props = defineProps<{
   filterOption: FilterOption
@@ -27,10 +29,6 @@ const props = defineProps<{
   selectionOptions?: SelectionOptionType[]
   selectedOptions?: SelectionOptionType[]
 }>()
-
-const textToSearch = ref('')
-const rangeFrom = ref('')
-const rangeTo = ref('')
 
 const emit = defineEmits<{
   (e: 'search', text: string): void

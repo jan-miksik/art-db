@@ -4,6 +4,8 @@
       <SearchImageByAI/>
       <Filter />
       <Sort />
+<!--      <img src="~/assets/clear.svg" alt="clear" />-->
+      <div v-if="hasClearButton" class="clear-button" @click="handleClear">clear</div>
     </div>
     <Artist
       v-for="artist in useArtistsStore().artists"
@@ -18,9 +20,17 @@
 <script setup lang="ts">
 import axios from "axios";
 const config = useRuntimeConfig();
-
+const filterStore = useFilterStore()
 const randomRange = (min: number, max: number) => {
   return Math.floor(Math.random() * (max - min + 1) + min);
+};
+
+const hasClearButton = computed(() => {
+  return useFilterStore().hasFilters;
+});
+
+const handleClear = () => {
+  useFilterStore().removeFilters();
 };
 
 onMounted(async () => {
@@ -60,5 +70,15 @@ onMounted(async () => {
   gap 2rem
   justify-content: center;
   width 100%
+
+.clear-button
+  position absolute
+  right 25px
+  top 0
+  cursor pointer
+  padding 5px
+  &:hover
+    color white
+    background-color black
 
 </style>

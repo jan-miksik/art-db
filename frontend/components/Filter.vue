@@ -5,20 +5,20 @@
     </div>
 
     <div v-if="isOpenMenu" class="filter__menu">
-      <FilterOption 
-        :filterOption="filterStore.FilterOption.NAME" 
+      <FilterOption
+        :filterOption="filterStore.FilterOption.NAME"
         label="name"
         @search="filterStore.searchAndFilterByName"
         :filterType="filterStore.FilterType.SEARCH"
       />
-      <FilterOption 
-        :filterOption="filterStore.FilterOption.BORN" 
-        label="born" 
+      <FilterOption
+        :filterOption="filterStore.FilterOption.BORN"
+        label="born"
         @range="filterStore.filterByBornInRange"
         :filterType="filterStore.FilterType.RANGE"
       />
-      <FilterOption 
-        :filterOption="filterStore.FilterOption.GENDER" 
+      <FilterOption
+        :filterOption="filterStore.FilterOption.GENDER"
         :selectionOptions="filterStore.genderOptions"
         :selectedOptions="filterStore.selectedGendersToShow"
         @selection="filterStore.filterByGender"
@@ -39,7 +39,6 @@ const toggleMenu = () => {
 }
 
 // const handleSearchName = (text: string) => {
-//   console.log('handleSearchName text: ', text);
 // }
 
 const filterStore = useFilterStore()

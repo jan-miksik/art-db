@@ -4,6 +4,7 @@ import base64, requests
 from weaviate.util import generate_uuid5  # Generate a deterministic ID
 from weaviate.classes.query import Filter
 from artists.models import Artwork
+from weaviate.classes.query import GroupBy
 
 
 def url_to_base64(url):
@@ -11,6 +12,74 @@ def url_to_base64(url):
     content = image_response.content
     return base64.b64encode(content).decode("utf-8")
 
+
+############################
+# add image to weaviete
+############################
+
+def add_image_to_weaviete(artwork_psql_id, author_psql_id, arweave_image_url):
+    print("[[[[[ add_image_to_weaviete ]]]]]")
+    weaviate_client = weaviate.connect_to_local()  # Connect with default parameters
+    artworks = weaviate_client.collections.get("Artworks")
+    uuid = None
+
+    try:
+        base64_string = url_to_base64(arweave_image_url)
+        data_properties = {
+            "artwork_psql_id": artwork_psql_id,
+            "author_psql_id": author_psql_id,
+            "image": base64_string
+        }
+        # Generate a deterministic ID, it will generate the same ID for the same data
+        obj_uuid = generate_uuid5(data_properties)
+        print("Adding image to Weaviate", obj_uuid)
+        uuid = artworks.data.insert(
+            properties=data_properties,
+            uuid=obj_uuid
+        )
+
+    finally:
+        weaviate_client.close()
+
+    return uuid
+
+
+# python -c "from artists.weaviate.weaviate import add_image_to_weaviete; add_image_to_weaviete('25', '1', 'https://arweave.net/0zYEjsrKFVa-qt9k9pO7W7j1M-Xyzj_y4MeEq5NY1Hk')"
+
+############################
+# Search for similar authors
+############################
+
+def search_similar_authors_ids_by_base64(image_data_base64, limit=2):
+    weaviate_client = weaviate.connect_to_local()  # Connect with default parameters
+    artworks = weaviate_client.collections.get("Artworks")
+
+    responses = artworks.query.near_image(
+        near_image=image_data_base64,
+        group_by=GroupBy(
+            prop="author_psql_id",
+            number_of_groups=limit,
+            objects_per_group=1
+        )
+    )
+
+    weaviate_client.close()
+    return responses
+
+
+def search_similar_authors_ids_by_image_data(image_data_bytes, limit=2):
+    image_data_base64 = base64.b64encode(image_data_bytes).decode('utf-8')
+    return search_similar_authors_ids_by_base64(image_data_base64, limit)
+
+
+def search_similar_authors_ids_by_image_url(image_url, limit=2):
+    image_data_base64 = url_to_base64(image_url)
+    return search_similar_authors_ids_by_base64(image_data_base64, limit)
+
+
+# ++++++++++++++++++++ #
+# ++++++++++++++++++++ #
+# ++++++++++++++++++++ #
 
 ############################
 # add image to weaviete
@@ -52,99 +121,6 @@ def url_to_base64(url):
 #     # Add the data object to Weaviete
 #     weaviate_client.data_object.create(data, "Image")
 
-def add_image_to_weaviete(artwork_psql_id, author_psql_id, arweave_image_url):
-    print("[[[[[ add_image_to_weaviete ]]]]]")
-    weaviate_client = weaviate.connect_to_local()  # Connect with default parameters
-    artworks = weaviate_client.collections.get("Artworks")
-    uuid = None
-
-    try:
-        base64_string = url_to_base64(arweave_image_url)
-        data_properties = {
-            "artwork_psql_id": artwork_psql_id,
-            "author_psql_id": author_psql_id,
-            "image": base64_string
-        }
-        # Generate a deterministic ID, it will generate the same ID for the same data
-        obj_uuid = generate_uuid5(data_properties)
-        print("Adding image to Weaviate", obj_uuid)
-        uuid = artworks.data.insert(
-            properties=data_properties,
-            uuid=obj_uuid
-        )
-
-    finally:
-        weaviate_client.close()
-
-    return uuid
-
-
-# python -c "from artists.weaviate.weaviate import add_image_to_weaviete; add_image_to_weaviete('25', '1', 'https://arweave.net/0zYEjsrKFVa-qt9k9pO7W7j1M-Xyzj_y4MeEq5NY1Hk')"
-# python -c "from artists.weaviate.weaviate import add_image_to_weaviete; add_image_to_weaviete('11', '9', 'https://arweave.net/V7yA1C67Nj5goTDKjkW225xFq_NNZEDh4IS7TSfp-qw');"
-
-
-############################
-# Search for similar authors
-############################
-def search_similar_authors_ids_by_image_data(image_data_bytes, limit=2):
-    weaviate_client = weaviate.connect_to_local()  # Connect with default parameters
-    artworks = weaviate_client.collections.get("Artworks")
-    image_data_base64 = base64.b64encode(image_data_bytes).decode('utf-8')
-
-    responses = []
-    filters = None
-
-    for _ in range(limit):
-        response = artworks.query.near_image(
-            near_image=image_data_base64,
-            limit=1,
-            filters=filters,
-            return_metadata=MetadataQuery(distance=True)
-        )
-
-        if response.objects:
-            responses.append(response.objects[0])
-            author_psql_id = response.objects[0].properties['author_psql_id']
-            new_filter = Filter.by_property("author_psql_id").not_equal(author_psql_id)
-
-            if filters is None:
-                filters = new_filter
-            else:
-                filters = filters & new_filter
-
-    weaviate_client.close()
-    return responses
-
-
-def search_similar_authors_ids_by_image_url(image_url, limit=2):
-    weaviate_client = weaviate.connect_to_local()  # Connect with default parameters
-    artworks = weaviate_client.collections.get("Artworks")
-    image_data_base64 = url_to_base64(image_url)
-
-    responses = []
-    filters = None
-
-    for _ in range(limit):
-        response = artworks.query.near_image(
-            near_image=image_data_base64,
-            limit=1,
-            filters=filters,
-            return_metadata=MetadataQuery(distance=True)
-        )
-
-        if response.objects:
-            responses.append(response.objects[0])
-            author_psql_id = response.objects[0].properties['author_psql_id']
-            new_filter = Filter.by_property("author_psql_id").not_equal(author_psql_id)
-
-            if filters is None:
-                filters = new_filter
-            else:
-                filters = filters & new_filter
-
-    weaviate_client.close()
-    return responses
-
 
 ############################
 # Search for similar images
@@ -165,8 +141,9 @@ def search_similar_artwork_ids_by_image_url(image_url, limit=1):
     weaviate_client.close()
     return response.objects
 
-
 # python -c "from artists.weaviate.weaviate import search_similar_artwork_ids_by_image_url; search_similar_artwork_ids_by_image_url('https://arweave.net/dwUZ_GgXgjV86SAE8NH9cPwb4YovEpvqnZ2Xo1LwoGU');"
+
+
 def search_similar_artwork_ids_by_image_data(image_data_bytes, limit=2):
     weaviate_client = weaviate.connect_to_local()  # Connect with default parameters
     artworks = weaviate_client.collections.get("Artworks")

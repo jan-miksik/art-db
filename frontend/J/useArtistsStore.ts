@@ -24,7 +24,6 @@ export type Artist = {
 export const useArtistsStore = defineStore('artists', () => {
   const artists = ref<Artist[]>([])
   const artistsAll = ref<Artist[]>([])
-  console.log('artists: ', artists);
 
   return {
     artists,

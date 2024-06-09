@@ -29,7 +29,6 @@ def artists_endpoint(request):
     return Response(serializer.data)
 
 
-
 @csrf_protect
 def upload_to_arweave_view(request, pk):
     artist = get_object_or_404(Artist, pk=pk)
@@ -52,12 +51,9 @@ def search_authors_by_image_data(request):
         # Read the file data into bytes
         image_data_bytes = image_file.read()
 
-        # Convert bytes to base64 string (optional)
-        # image_data_base64 = base64.b64encode(image_data_bytes).decode('utf-8')
-
         similar_images = search_similar_authors_ids_by_image_data(image_data_bytes, limit)
         response_data = []
-        for image in similar_images:
+        for image in similar_images.objects:
             artwork = Artwork.objects.filter(id=image.properties['artwork_psql_id']).first()
             author = Artist.objects.filter(id=image.properties['author_psql_id']).first()
             if artwork and author:
@@ -77,9 +73,10 @@ def search_authors_by_image_url(request):
     limit = int(request.GET.get('limit', 1))
     similar_images = search_similar_authors_ids_by_image_url(image_url, limit)
 
+
     # Get the corresponding Artwork and Artist objects
     response_data = []
-    for image in similar_images:
+    for image in similar_images.objects:
         artwork = Artwork.objects.filter(id=image.properties['artwork_psql_id']).first()
         author = Artist.objects.filter(id=image.properties['author_psql_id']).first()
 

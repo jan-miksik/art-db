@@ -1,12 +1,12 @@
 <template>
     <teleport v-if="isOpen && artistData" to="body" >
     <div class="artist-modal" @click="closeModal">
-      <!-- <div class="artist-modal__close">X</div> -->
+       <div class="artist-modal__close"><img src="~/assets/close.svg" alt="close" width="30"> </div>
       <div class="artist-modal__name-and-show-similar">
         <h2 class="artist-modal__name" @click.stop>{{ artistData.name }}</h2>
         <span class="artist-modal__show-similar" @click.stop="showSimilarAuthors">show similar authors</span>
       </div>
-      <div class="aritst-modal__profile" @click.stop>
+      <div class="artist-modal__profile" @click.stop>
         <img
         class="artist-modal__profile-image"
         :src="artistData.profile_image_url"
@@ -54,8 +54,8 @@
 </template>
 
 <script setup lang="ts">
-import useAritstModal from "./useArtistModal";
-const { isOpen, artistData } = useAritstModal();
+import useArtistModal from "./useArtistModal";
+const { isOpen, artistData } = useArtistModal();
 import { Swiper, SwiperSlide } from 'swiper/vue'
 import { Navigation, Keyboard, Mousewheel } from 'swiper/modules';
 import 'swiper/css';
@@ -73,10 +73,10 @@ const closeModal = () => {
 const similarAuthorsResult = ref([]);
 
 const showSimilarAuthors = async () => {
-  console.log('show similar authors');
-
-  console.log('artistData.value.artworks[0]', artistData.value?.artworks[0])
-
+  // filterStore.selectedArtistForSearchSimilar.value = null
+  console.log('show similar authors', filterStore.selectedArtistForSearchSimilar);
+  console.log('artistData.value?.artworks[0]', artistData.value)
+  filterStore.selectedArtistForSearchSimilar = artistData.value
   try {
     const queryParams = new URLSearchParams({
       image_url: artistData.value?.artworks[0]?.picture_url ?? '',
@@ -85,7 +85,6 @@ const showSimilarAuthors = async () => {
     const response = await axios.get(`${config.public.DJANGO_SERVER_URL}/artists/search-authors-by-image-url/?${queryParams.toString()}`);
 
     similarAuthorsResult.value = response.data
-    console.log('similarAuthorsResult', similarAuthorsResult.value)
     const matchingIds = response.data.map((item: any) => item.author.id);
     filterStore.filterByIds(matchingIds)
     closeModal()
@@ -115,7 +114,6 @@ const onSwiper = (swiper: any) => {
 // }
 
 // const handleSwipeNext = () => {
-//   console.log('swiperRef.value: ', swiperRef.value);
 //   swiperRef.value.slideNext();
 // }
 
@@ -159,7 +157,7 @@ const onSwiper = (swiper: any) => {
   filter: grayscale(1);
   cursor default
 
-.aritst-modal__profile
+.artist-modal__profile
   top 10px
   left 10px
   position absolute
@@ -223,6 +221,11 @@ const onSwiper = (swiper: any) => {
 
 .artist-modal__show-similar
   color black
+  cursor pointer
+  &:hover
+    color #1fb001
+
+
 
 .artist-modal__name-and-show-similar
   position: absolute;
@@ -231,7 +234,7 @@ const onSwiper = (swiper: any) => {
   display: flex;
   gap: 1rem;
   align-items: center;
-  cursor pointer
+  cursor default
 
 // .artist-modal__swiper-prev-slide
 //   z-index: 10000000000;

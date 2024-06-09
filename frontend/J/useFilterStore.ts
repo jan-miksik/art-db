@@ -30,6 +30,17 @@ import MalePng from '~/assets/male.png'
 
 export const useFilterStore = defineStore('filter', () => {
 
+  const selectedGendersToShow = ref<SelectionOptionType[]>([])
+  const isFilterByBornInRange = ref(false)
+  const isFilterByName = ref(false)
+  const isFilteringInProgress = ref(false)
+  const selectedArtistForSearchSimilar = ref<Artist>()
+  const isFilterByGender = computed(() => selectedGendersToShow.value.length > 0)
+  const textToSearch = ref('')
+  const rangeFrom = ref('')
+  const rangeTo = ref('')
+  const hasFilters = computed(() => rangeFrom.value || rangeTo.value || textToSearch.value || isFilterByGender.value)
+
   const genderOptions = [
     {
       sign: FluidSvg,
@@ -45,11 +56,9 @@ export const useFilterStore = defineStore('filter', () => {
     },
   ]
 
-  const isFilteringInProgress = ref(false)
-  const selectedGendersToShow = ref<SelectionOptionType[]>([])
 
-  const reArangeSortedArtists = (fieldName: 'firstname') => {
-    console.log('reArangeSortedArtists: ');
+
+  const reArrangeSortedArtists = (fieldName: 'firstname') => {
     let topPosition = 200
     useArtistsStore().artists.forEach((artist, index) => {
       if (index === 0) {
@@ -60,7 +69,7 @@ export const useFilterStore = defineStore('filter', () => {
         artist.position.y = topPosition
         return
       }
-      
+
       if (index > 0) {
         if (artist.position.y + 120 < topPosition) {
           artist.position.y = topPosition + 120
@@ -80,6 +89,11 @@ export const useFilterStore = defineStore('filter', () => {
   }
 
   const searchAndFilterByName = async (whatToSearch: string) => {
+    if (whatToSearch) {
+      isFilterByName.value = true;
+    } else {
+        isFilterByName.value = false;
+    }
     isFilteringInProgress.value = true;
     const searchTextLower = whatToSearch.toLowerCase();
     const filteredPeople = useArtistsStore().artistsAll.filter(person => {
@@ -87,11 +101,15 @@ export const useFilterStore = defineStore('filter', () => {
     });
     useArtistsStore().artists = filteredPeople;
     await sleep(100)
-    reArangeSortedArtists('firstname');
+    reArrangeSortedArtists('firstname');
   }
+
 
   const filterByBornInRange = async (from: number, to: number) => {
     isFilteringInProgress.value = true;
+    if (from || to) {
+        isFilterByBornInRange.value = true
+    }
 
     const filteredPeople = useArtistsStore().artistsAll.filter(person => {
       if (from === 0 || isNaN(to) || !to || from > to) {
@@ -105,7 +123,7 @@ export const useFilterStore = defineStore('filter', () => {
 
     useArtistsStore().artists = filteredPeople;
     await sleep(100)
-    reArangeSortedArtists('firstname');
+    reArrangeSortedArtists('firstname');
   }
 
   const filterByGender = async (selectedGender: SelectionOptionType) => {
@@ -115,7 +133,7 @@ export const useFilterStore = defineStore('filter', () => {
     } else {
       selectedGendersToShow.value.push(selectedGender)
     }
-    
+
     const filteredPeople = useArtistsStore().artistsAll.filter(person => {
       return selectedGendersToShow.value.some(option => {
         if (option.enumValue === GenderOptionEnum.NON_BINARY && person.gender === 'N') {
@@ -132,13 +150,12 @@ export const useFilterStore = defineStore('filter', () => {
     });
     useArtistsStore().artists = filteredPeople;
     await sleep(100)
-    reArangeSortedArtists('firstname');
+    reArrangeSortedArtists('firstname');
   }
 
   const filterByIds = async (ids: string[]) => {
-    console.log('ids: ', ids);
     isFilteringInProgress.value = true;
-    
+
     // const filteredPeople = useArtistsStore().artistsAll.filter(person => {
     //   if (ids.includes(person.id)) return true
     //   return false
@@ -147,10 +164,17 @@ export const useFilterStore = defineStore('filter', () => {
 
     useArtistsStore().artists = filteredPeople2;
     await sleep(100)
-    reArangeSortedArtists('firstname');
+    reArrangeSortedArtists('firstname');
   }
 
   const removeFilters = () => {
+    selectedGendersToShow.value = []
+    selectedArtistForSearchSimilar.value = undefined;
+    // isFilterByBornInRange.value = false;
+    // isFilterByName.value = false;
+    textToSearch.value = '';
+    rangeFrom.value = '';
+    rangeTo.value = '';
     useArtistsStore().artists = useArtistsStore().artistsAll
   }
 
@@ -165,6 +189,11 @@ export const useFilterStore = defineStore('filter', () => {
     isFilteringInProgress,
     genderOptions,
     selectedGendersToShow,
+    selectedArtistForSearchSimilar,
+    hasFilters,
+    textToSearch,
+    rangeFrom,
+    rangeTo,
     // genderOptionEnumsArray,
   }
 })

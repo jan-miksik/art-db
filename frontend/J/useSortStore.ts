@@ -29,7 +29,7 @@ export const useSortStore = defineStore('sort', () => {
     return new Promise(resolve => setTimeout(resolve, ms));
   }
 
-  const reArangeSortedArtists = (fieldName: 'firstname' | 'surname' | 'born' | 'gender' | 'auctions_turnover_2023_h1_USD') => {
+  const reArrangeSortedArtists = (fieldName: 'firstname' | 'surname' | 'born' | 'gender' | 'auctions_turnover_2023_h1_USD') => {
     let topPosition = 200
     useArtistsStore().artists.forEach((artist, index) => {
       if (index === 0) {
@@ -40,7 +40,7 @@ export const useSortStore = defineStore('sort', () => {
         artist.position.y = topPosition
         return
       }
-      
+
       if (index > 0) {
         if (artist.position.y + 120 < topPosition) {
           artist.position.y = topPosition + 120
@@ -63,13 +63,13 @@ export const useSortStore = defineStore('sort', () => {
         return a[fieldName].localeCompare(b[fieldName])
       })
         await sleep(100)
-        reArangeSortedArtists(fieldName)
+        reArrangeSortedArtists(fieldName)
     } else {
       useArtistsStore().artists.sort((a, b) => {
         return b[fieldName].localeCompare(a[fieldName])
       })
         await sleep(100)
-        reArangeSortedArtists(fieldName)
+        reArrangeSortedArtists(fieldName)
     }
     setTimeout(() => {
       isSortingInProgress.value = false
@@ -84,13 +84,13 @@ export const useSortStore = defineStore('sort', () => {
         return +b[fieldName] - +a[fieldName]
       })
       await sleep(100)
-      reArangeSortedArtists(fieldName)
+      reArrangeSortedArtists(fieldName)
     } else {
       useArtistsStore().artists.sort((a, b) => {
         return +a[fieldName] - +b[fieldName]
       })
       await sleep(100)
-      reArangeSortedArtists(fieldName)
+      reArrangeSortedArtists(fieldName)
     }
       await sleep(1000)
       isSortingInProgress.value = false
@@ -114,7 +114,7 @@ export const useSortStore = defineStore('sort', () => {
 
     switch (field) {
       case SortOption.FIRSTNAME: {
-        alphabetSort('firstname') 
+        alphabetSort('firstname')
         break
       }
       case SortOption.SURNAME: {

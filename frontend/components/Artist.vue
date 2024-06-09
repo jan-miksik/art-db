@@ -13,7 +13,7 @@
   >
     <img
       ref="artistProfileImage"
-      class="artist__artwork-preview-image"
+      :class="['artist__artwork-preview-image', { 'artist--is-selected-artist-for-search-similar': artistData?.id === useFilterStore().selectedArtistForSearchSimilar?.id}]"
       :src="artistData.artworks[0].picture_url"
       :alt="artistData.name"
     />
@@ -42,8 +42,9 @@ const props = defineProps<{
   artistData: Artist
 }>()
 import interact from 'interactjs'
-import useAritstModal from './useArtistModal'
-const { openArtistModal } = useAritstModal()
+import useArtistModal from './useArtistModal'
+const { openArtistModal } = useArtistModal()
+const filterStore = useFilterStore()
 
 import useMouseActionDetector from '~/J/useMouseActionDetector'
 import { type Artist } from '../J/useArtistsStore'
@@ -147,4 +148,7 @@ const handlePieceStyle = computed(() => {
   font-weight: 300;
   letter-spacing: 5px;
   position: relative
+
+.artist--is-selected-artist-for-search-similar
+  border 2px solid red
 </style>
