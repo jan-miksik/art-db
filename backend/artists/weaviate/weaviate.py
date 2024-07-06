@@ -25,8 +25,8 @@ def add_image_to_weaviete(artwork_psql_id, author_psql_id, arweave_image_url):
     try:
         base64_string = url_to_base64(arweave_image_url)
         data_properties = {
-            "artwork_psql_id": artwork_psql_id,
-            "author_psql_id": author_psql_id,
+            "artwork_psql_id": str(artwork_psql_id),  # Convert to string
+            "author_psql_id": str(author_psql_id),  # Convert to string
             "image": base64_string
         }
         # Generate a deterministic ID, it will generate the same ID for the same data
@@ -36,6 +36,19 @@ def add_image_to_weaviete(artwork_psql_id, author_psql_id, arweave_image_url):
             properties=data_properties,
             uuid=obj_uuid
         )
+
+        # Verify that the artwork was successfully added to Weaviate
+        try:
+            added_artwork = artworks.query.fetch_object_by_id(uuid)
+            if added_artwork is not None:
+                print(f"Artwork {artwork_psql_id} successfully added to Weaviate with ID {uuid}")
+                return uuid
+            else:
+                print(f"Failed to verify artwork {artwork_psql_id} in Weaviate")
+                return None
+        except Exception as e:
+            print(f"Error verifying artwork {artwork_psql_id} in Weaviate: {str(e)}")
+            return None
 
     finally:
         weaviate_client.close()

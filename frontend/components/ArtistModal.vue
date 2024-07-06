@@ -37,7 +37,7 @@
           <!-- @slideChange="handleOnSlideChange" -->
           <swiper-slide @click.stop class="artist-modal__slide" v-for="(piece, index) in artistData.artworks">
             <img
-              class='artist-modal__artwork-preview-image'
+              :class="['artist-modal__artwork-preview-image', {'artist-modal__artwork-preview-image--swipe-on': artistData.artworks.length > 1}]"
               :src="piece.picture_url"
               :alt="piece.title"
               @click.stop
@@ -169,7 +169,9 @@ const onSwiper = (swiper: any) => {
   width: 90%;
   max-height: 65%;
   object-fit: contain;
-  cursor: ew-resize;
+  cursor: default;
+  &--swipe-on
+    cursor: ew-resize;
 
 .artist-modal__name
   background-color: #141414;
@@ -190,7 +192,7 @@ const onSwiper = (swiper: any) => {
 
 .artist-modal__swiper
   overflow: visible;
-  cursor: ew-resize;
+  //cursor: ew-resize;
   height: 60vh;
 
 .artist-modal__slide

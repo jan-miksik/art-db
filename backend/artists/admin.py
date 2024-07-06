@@ -3,6 +3,7 @@ from .models import Artist, Artwork
 from django.utils.html import format_html
 from .arweave_storage import upload_to_arweave
 import os
+from .weaviate.weaviate import add_image_to_weaviete
 
 
 class ArtworkInline(admin.TabularInline):  # or admin.StackedInline for a different layout
@@ -27,7 +28,6 @@ class ArtworkInline(admin.TabularInline):  # or admin.StackedInline for a differ
             return 'No Image Found'
 
     picture_preview.short_description = 'Artwork Preview'
-
 
 class ArtistAdmin(admin.ModelAdmin):
     site_header = 'Artist Admin area'
@@ -70,6 +70,8 @@ class ArtistAdmin(admin.ModelAdmin):
         super().save_model(request, obj, form, change)
 
     def save_related(self, request, form, formsets, change):
+        print("save_related artwork to db")
+
         super().save_related(request, form, formsets, change)
 
         # After the parent Artist model and related Artwork models are saved,
@@ -87,6 +89,21 @@ class ArtistAdmin(admin.ModelAdmin):
                         # Delete the file from the media folder
                         if os.path.isfile(file_path):
                             os.remove(file_path)
+
+                    if not artwork.picture_image_weaviate_id and artwork.id and artwork.artist.id and arweave_url:
+                        # Add the artwork to Weaviate
+                        weaviate_id = add_image_to_weaviete(artwork.id, artwork.artist.id, arweave_url)
+                        print(f"======== weaviate_id: {weaviate_id}")
+
+                        if weaviate_id is not None:
+                            artwork.picture_image_weaviate_id = weaviate_id
+                            artwork.save()
+                        else:
+                            # Handle the case when the artwork could not be added to Weaviate
+                            print(f"Failed to add artwork {artwork.id} to Weaviate")
+                    else:
+                        print(
+                            f"Skipping Weaviate save for artwork {artwork.id}. picture_image_weaviate_id already exists or missing required data.")
 
     def profile_image_preview(self, obj):
         if obj.profile_image_url:
@@ -115,6 +132,7 @@ class ArtworkAdmin(admin.ModelAdmin):
     artwork_image_preview_detail.short_description = 'Artwork Preview Detail'
 
     def save_model(self, request, obj, form, change):
+        print(f"Saving artwork to db {obj.id}")
         if 'picture' in form.changed_data:
             obj.save()
             file_path = obj.picture.path
@@ -124,6 +142,20 @@ class ArtworkAdmin(admin.ModelAdmin):
                 # Delete the file from the media folder
                 if os.path.isfile(file_path):
                     os.remove(file_path)
+
+        if not obj.picture_image_weaviate_id and obj.id and obj.artist.id and obj.picture_url:
+            # Add the artwork to Weaviate
+            weaviate_id = add_image_to_weaviete(obj.id, obj.artist.id, obj.picture_url)
+            print(f"------- weaviate_id: {weaviate_id}")
+            if weaviate_id is not None:
+                obj.picture_image_weaviate_id = weaviate_id
+                obj.save()
+            else:
+                # Handle the case when the artwork could not be added to Weaviate
+                print(f"Failed to add artwork {obj.id} to Weaviate")
+        else:
+            print(
+                f"Skipping Weaviate save for artwork {obj.id}. picture_image_weaviate_id already exists or missing required data.")
         super().save_model(request, obj, form, change)
 
 
