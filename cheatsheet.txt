@@ -1,3 +1,6 @@
+##########################
+######## BASICS ##########
+##########################
 $ docker compose up -d
 $ docker compose down
 $ source venv/bin/activate
@@ -11,14 +14,20 @@ $ python3 manage.py migrate
 
 $ export DJANGO_SETTINGS_MODULE=artist_registry.settings
 
-// 
+
+##########################
+######## POSTGRESS #######
+##########################
+//
 $ docker exec -it backend-db-1 psql -U postgres
 
 // create dump of database≤
 $ docker exec -i backend-db-1 pg_dump -U postgres art_db -Ft > dump_`date +%d-%m-%Y"_"%H_%M_%S`.tar
 
+############# recreate db ############
+// in one command
+$ docker exec -it backend-db-1 dropdb -U postgres art_db && docker exec -it backend-db-1 createdb -U postgres art_db && cat railway_dump_08-04-2024_14_38_39.tar | docker exec -i backend-db-1 pg_restore -U postgres -d art_db
 
-#### recreate db
 // drob db
 $ docker exec -it backend-db-1 dropdb -U postgres art_db
 
@@ -27,11 +36,10 @@ $ docker exec -it backend-db-1 createdb -U postgres art_db
 
 // restore database
 $ cat /path/to/your_dump_file | docker exec -i backend-db-1 pg_restore -U postgres -d art_db
+#####################################
 
-// in one command
-$ docker exec -it backend-db-1 dropdb -U postgres art_db && docker exec -it backend-db-1 createdb -U postgres art_db && cat railway_dump_08-04-2024_14_38_39.tar | docker exec -i backend-db-1 pg_restore -U postgres -d art_db
-################
 
+################ ON SERVER ###############
 // get db from server
 $ pg_dump -U <username> -h <host> -p <port> -W -F t <db_name> > <output_filename>
 $ pg_dump -U postgres -h viaduct.proxy.rlwy.net -p 39730 -W -F t railway > railway_dump_`date +%d-%m-%Y"_"%H_%M_%S`.tar
@@ -39,27 +47,13 @@ $ pg_dump -U postgres -h viaduct.proxy.rlwy.net -p 39730 -W -F t railway > railw
 // restore db on server
 $ pg_restore -U <username> -h <host> -p <port> -W -F t -d <db_name> <dump_file_name>
 $ pg_restore -U postgres -h viaduct.proxy.rlwy.net -p 39730 -W -F t -d railway <dump_file_name>
-
-+ NO 
-{
-  docker exec -t -e PGPASSWORD=art_db_user-password a-db-db-1 pg_dump -U art_db_user -F t art_db > dump_`date +%d-%m-%Y"_"%H_%M_%S`.tar
-  docker exec -t a-db-db-1 pg_dump -U art_db_user -F t art_db > dump.tar
-  docker exec -it a-db-db-1 bash
-  docker exec -i a-db-db-1 pg_dump -U art_db_user art_db > dump.sql
-  docker exec -i <postgresql_container_id> pg_restore -U postgres -F t -d mydb > db.tar
-}
-
+############################################
 
 
 
 $ python manage.py createsuperuser
-
 $ docker exec -it backend-db-1 bash
 $ psql -U postgres -d art_db
-
-// setup env variables
-https://dev.to/defidelity/protect-your-sensitive-data-a-guide-to-env-files-in-django-499e
-
 
 // create postgres user with roles
 CREATE USER postgres WITH PASSWORD 'password';
@@ -69,3 +63,24 @@ ALTER ROLE postgres WITH SUPERUSER CREATEROLE CREATEDB REPLICATION BYPASSRLS;
 $ docker exec -it backend-db-1 psql -U postgres
 DROP DATABASE art_db;
 CREATE DATABASE art_db;
+
+// setup env variables
+https://dev.to/defidelity/protect-your-sensitive-data-a-guide-to-env-files-in-django-499e
+
+
+
+##########################
+######## WEAVIATE ########
+##########################
+
+curl -X POST \
+  'http://localhost:8080/v1/graphql' \
+  -H 'Content-Type: application/json' \
+  -d '{"query":"{ Aggregate { Artworks { meta { count } } } }"}'
+
+
+
+
+
+
+
