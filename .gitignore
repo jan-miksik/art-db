@@ -5,3 +5,4 @@ media
 .env
 .DS_Store
 frontend/.yarn/install-stage.gz
+.idea
