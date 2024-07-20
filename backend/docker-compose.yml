@@ -1,19 +1,6 @@
 version: '3.8'
 
 services:
-  # for VPN
-  # gluetun:
-  #   image: qmcgaw/gluetun
-  #   cap_add:
-  #     - NET_ADMIN
-  #   environment:
-  #     - VPN_SERVICE_PROVIDER=mullvad
-  #     - VPN_TYPE=openvpn
-  #     - OPENVPN_USER=9929775807838938
-  #     - SERVER_CITIES=Prague
-  #   volumes:
-  #     - /gluetun:/gluetun
-
   db:
     image: postgres
     volumes:
@@ -52,6 +39,21 @@ services:
     image: cr.weaviate.io/semitechnologies/img2vec-pytorch:resnet50
     environment:
       ENABLE_CUDA: '0'
+
+  django-backend:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "8000:8000"
+    environment:
+      - DJANGO_SETTINGS_MODULE=artists_registry.settings
+      - DATABASE_URL=postgres://$PGUSER:$POSTGRES_PASSWORD@db:5432/$PGDATABASE
+
+  reverse-proxy:
+    build: ./reverse-proxy
+    ports:
+      - "80:80"
 
 volumes:
   postgres_data:
