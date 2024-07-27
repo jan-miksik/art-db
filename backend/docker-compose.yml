@@ -50,11 +50,6 @@ services:
       - DJANGO_SETTINGS_MODULE=artists_registry.settings
       - DATABASE_URL=postgres://$PGUSER:$POSTGRES_PASSWORD@db:5432/$PGDATABASE
 
-  reverse-proxy:
-    build: ./reverse-proxy
-    ports:
-      - "80:80"
-
 volumes:
   postgres_data:
   weaviate_data:

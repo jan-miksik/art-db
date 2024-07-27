@@ -12,16 +12,16 @@ def url_to_base64(url):
     return base64.b64encode(content).decode("utf-8")
 
 
-def connect_to_weaviate():
-    return weaviate.connect_to_custom(
-        http_host=os.getenv("WEAVIATE_URL"),  # URL only, no http prefix
-        http_port=8080,
-        http_secure=True,   # Set to True if https
-        grpc_host=os.getenv("WEAVIATE_GPC_URL"),
-        grpc_port=50051,      # Default is 50051, WCD uses 443
-        grpc_secure=True,   # Edit as needed
-        auth_credentials=AuthApiKey(os.getenv("WEAVIATE_API_KEY")),
-    )
+# def connect_to_weaviate():
+#     return weaviate.connect_to_custom(
+#         http_host=os.getenv("WEAVIATE_URL"),  # URL only, no http prefix
+#         http_port=8080,
+#         http_secure=True,   # Set to True if https
+#         grpc_host=os.getenv("WEAVIATE_GPC_URL"),
+#         grpc_port=50051,      # Default is 50051, WCD uses 443
+#         grpc_secure=True,   # Edit as needed
+#         auth_credentials=AuthApiKey(os.getenv("WEAVIATE_API_KEY")),
+#     )
 
 
 ############################
