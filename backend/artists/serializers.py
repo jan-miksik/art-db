@@ -30,5 +30,6 @@ class ArtistSerializer(serializers.ModelSerializer):
             'artworks',
             'born',
             'gender',
-            'auctions_turnover_2023_h1_USD'
+            'auctions_turnover_2023_h1_USD',
+            'similar_authors_postgres_ids',
         ]

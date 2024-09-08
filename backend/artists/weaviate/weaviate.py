@@ -4,6 +4,7 @@ import base64, requests
 from weaviate.util import generate_uuid5  # Generate a deterministic ID
 from weaviate.classes.query import Filter
 from weaviate.classes.query import GroupBy
+from weaviate import Client
 import os
 
 def url_to_base64(url):

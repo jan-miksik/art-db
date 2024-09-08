@@ -1,5 +1,5 @@
 from django.db import models
-
+from django.contrib.postgres.fields import ArrayField
 
 class Artist(models.Model):
     GENDER_CHOICES = [
@@ -16,6 +16,7 @@ class Artist(models.Model):
     auctions_turnover_2023_h1_USD = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True)
     profile_image_url = models.URLField(blank=True, null=True)  # saved to Arweave
     profile_image_weaviate_id = models.CharField(max_length=200, blank=True)
+    similar_authors_postgres_ids = ArrayField(models.CharField(max_length=200), blank=True, default=list)
 
     @property
     def name(self):

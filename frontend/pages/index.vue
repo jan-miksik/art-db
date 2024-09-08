@@ -1,7 +1,7 @@
 <template>
   <div>
     <div class="menu">
-      <SearchImageByAI/>
+<!--      <SearchImageByAI/>-->
       <Filter />
       <Sort />
 <!--      <img src="~/assets/clear.svg" alt="clear" />-->

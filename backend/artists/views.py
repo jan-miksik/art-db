@@ -91,7 +91,7 @@ def search_authors_by_image_url(request):
 @api_view(['POST'])
 def search_artworks_by_image_data(request):
     image_file = request.FILES.get('image')
-    limit = int(request.data.get('limit', 2))
+    limit = int(request.data.get('limit', 10))
 
     if image_file:
         # Read the file data into bytes

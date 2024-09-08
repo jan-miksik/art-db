@@ -73,24 +73,27 @@ const closeModal = () => {
 const similarAuthorsResult = ref([]);
 
 const showSimilarAuthors = async () => {
-  // filterStore.selectedArtistForSearchSimilar.value = null
-  console.log('show similar authors', filterStore.selectedArtistForSearchSimilar);
-  console.log('artistData.value?.artworks[0]', artistData.value)
   filterStore.selectedArtistForSearchSimilar = artistData.value
-  try {
-    const queryParams = new URLSearchParams({
-      image_url: artistData.value?.artworks[0]?.picture_url ?? '',
-      limit: '5',
-    });
-    const response = await axios.get(`${config.public.DJANGO_SERVER_URL}/artists/search-authors-by-image-url/?${queryParams.toString()}`);
+  const similarAuthors = artistData.value?.similar_authors_postgres_ids.map((id: string) => +id)
+  filterStore.filterByIds(similarAuthors || [])
+  closeModal()
 
-    similarAuthorsResult.value = response.data
-    const matchingIds = response.data.map((item: any) => item.author.id);
-    filterStore.filterByIds(matchingIds)
-    closeModal()
-  } catch (error) {
-    console.error(error)
-  }
+  // In case if will be used live image search
+  // try {
+  //   const queryParams = new URLSearchParams({
+  //     image_url: artistData.value?.artworks[0]?.picture_url ?? '',
+  //     limit: '5',
+  //   });
+  //   const response = await axios.get(`${config.public.DJANGO_SERVER_URL}/artists/search-authors-by-image-url/?${queryParams.toString()}`);
+  //
+  //   similarAuthorsResult.value = response.data
+  //   const matchingIds = response.data.map((item: any) => item.author.id);
+  //   console.log('matchingIds', matchingIds)
+  //   filterStore.filterByIds(matchingIds)
+  //   closeModal()
+  // } catch (error) {
+  //   console.error(error)
+  // }
 }
 
 const onSwiper = (swiper: any) => {
