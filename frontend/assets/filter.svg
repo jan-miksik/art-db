@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<svg
+   version="1.1"
+   width="20.000011"
+   height="20"
+   viewBox="0 0 20.000011 20.000001"
+   xml:space="preserve"
+   id="svg68"
+   xmlns="http://www.w3.org/2000/svg"
+   xmlns:svg="http://www.w3.org/2000/svg">
+
+<defs
+   id="defs60">
+</defs>
+<g
+   style="opacity:1;fill:none;fill-rule:nonzero;stroke:none;stroke-width:0;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:10;stroke-dasharray:none"
+   transform="matrix(2.81,0,0,2.81,-70.249316,-72.62164)"
+   id="g66">
+	<circle
+   cx="45"
+   cy="45"
+   r="45"
+   style="opacity:1;fill:none;fill-rule:nonzero;stroke:none;stroke-width:1;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:10;stroke-dasharray:none"
+   id="circle62" />
+	<path
+   d="m 29.245516,32.084796 v -2.041489 c 0,-0.07273 0.02402,-0.143513 0.06833,-0.201413 l 2.752128,-3.600717 C 32.190707,26.07807 32.073474,25.844 31.867043,25.844 H 25.2498 c -0.206228,0 -0.323487,0.234246 -0.198932,0.397177 l 2.752128,3.600717 c 0.04431,0.0579 0.06833,0.128686 0.06833,0.201413 v 2.740344 c 0,0.138394 0.152491,0.223478 0.271708,0.15181 l 0.940567,-0.56558 c 0.100711,-0.06037 0.161921,-0.168403 0.161921,-0.285085 z"
+   style="opacity:1;fill:#262626;fill-opacity:1;fill-rule:nonzero;stroke:none;stroke-width:0.177228;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:10;stroke-dasharray:none"
+   stroke-linecap="round"
+   id="path280" />
+</g>
+</svg>

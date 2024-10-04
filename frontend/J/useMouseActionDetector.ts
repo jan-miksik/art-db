@@ -20,14 +20,14 @@ export default function useMouseActionDetector() {
 
   const mouseUpHandler = () => {
 
-    isDragging.value ? "drag" : "click"
     setTimeout(() => {
         isDragging.value = false;
-    }, 500);
+    }, 300);
   };
 
   const mouseLeaveHandler = () => {
     isOverPieceOrSetup.value = false;
+    isDragging.value = false;
   };
 
   const touchmoveHandler = () => {

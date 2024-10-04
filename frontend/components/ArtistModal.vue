@@ -73,6 +73,7 @@ const closeModal = () => {
 const similarAuthorsResult = ref([]);
 
 const showSimilarAuthors = async () => {
+  filterStore.isShowSimilarAuthors = true
   filterStore.selectedArtistForSearchSimilar = artistData.value
   const similarAuthors = artistData.value?.similar_authors_postgres_ids.map((id: string) => +id)
   filterStore.filterByIds(similarAuthors || [])

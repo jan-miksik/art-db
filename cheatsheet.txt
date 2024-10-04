@@ -1,18 +1,22 @@
 ##########################
 ######## BASICS ##########
 ##########################
+
+### run server ###
 $ docker compose up -d
-$ docker compose down
 $ source venv/bin/activate
+$ export DJANGO_SETTINGS_MODULE=artist_registry.settings
+$ python3 manage.py runserver
+
+
+$ docker compose down
 $ poetry shell
 // create python virtual env
 $ python3 -m venv venv
 
-$ python3 manage.py runserver
 $ python manage.py makemigrations
 $ python3 manage.py migrate
 
-$ export DJANGO_SETTINGS_MODULE=artist_registry.settings
 
 
 ##########################
@@ -26,7 +30,7 @@ $ docker exec -i backend-db-1 pg_dump -U postgres art_db -Ft > dump_`date +%d-%m
 
 ############# recreate db ############
 // in one command
-$ docker exec -it backend-db-1 dropdb -U postgres art_db && docker exec -it backend-db-1 createdb -U postgres art_db && cat railway_dump_08-04-2024_14_38_39.tar | docker exec -i backend-db-1 pg_restore -U postgres -d art_db
+$ docker exec -it backend-db-1 dropdb -U postgres art_db && docker exec -it backend-db-1 createdb -U postgres art_db && cat dump_08-09-2024_21_05_57.tar | docker exec -i backend-db-1 pg_restore -U postgres -d art_db
 
 // drob db
 $ docker exec -it backend-db-1 dropdb -U postgres art_db

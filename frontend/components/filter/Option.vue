@@ -1,7 +1,7 @@
 <template>
   <div :class="['filter-option', `filter-option--${filterType}`]">
       <div class="filter-option__search" v-if="filterType === FilterType.SEARCH">
-          <img src="~/assets/search.svg" height="20"><input v-model="textToSearch" class="filter-option__search-input" @input="handleSearchInputChange" placeholder="name"/>
+          <img src="~/assets/search.svg" height="20"><input v-model="textToSearch" class="filter-option__search-input" @input="handleSearchInputChange" placeholder=""/>
       </div>
       <div class="filter-option__range" v-if="filterType === FilterType.RANGE">
           {{ label || filterOption }}
@@ -80,15 +80,30 @@ input[type="number"] {
     border-bottom 1px solid #000
 
 .filter-option__search-input
-  width 6.5rem
+  width 5rem
 
 .filter-option
   text-align: center
   line-height: 1.5rem
   z-index 10000000000
 
+.filter-option--SEARCH
+  position absolute
+  top 0
+  left 0
+
+.filter-option--RANGE
+  position absolute
+  top 60px
+  left 0
+  //background pink
+
+
 .filter-option--SELECTION
   margin-right auto
+  position absolute
+  top 90px
+  left 0
 
 .filter-option__selection
   display: flex
@@ -116,5 +131,6 @@ input[type="number"] {
 .filter-option__range-to
 .filter-option__range-from
   width: 2rem;
+  background: transparent;
 
 </style>

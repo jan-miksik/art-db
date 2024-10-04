@@ -1,11 +1,13 @@
 <template>
   <div>
+      <Filter />
     <div class="menu">
 <!--      <SearchImageByAI/>-->
-      <Filter />
       <Sort />
 <!--      <img src="~/assets/clear.svg" alt="clear" />-->
-      <div v-if="hasClearButton" class="clear-button" @click="handleClear">clear</div>
+      <div v-if="hasClearButton" class="clear-button" @click="handleClear">
+        <img src="~/assets/close.svg" width="16" :class="['filter-toggle-img',{'filter-toggle&#45;&#45;open': isOpenMenu}]">
+      </div>
     </div>
     <Artist
       v-for="artist in useArtistsStore().artists"
@@ -73,8 +75,8 @@ onMounted(async () => {
 
 .clear-button
   position absolute
-  right 25px
-  top 0
+  left 50px
+  top 28px
   cursor pointer
   padding 5px
   &:hover

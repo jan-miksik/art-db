@@ -1,8 +1,10 @@
 <template>
   <div class="sort" ref="menuRef">
     <!-- <div class="sort__toggle" @click="toggleMenu">△▼△▼△</div> -->
-    <div class="sort__toggle" @click="toggleMenu"><span class="sort__toggel-v">V</span><span class="sort__toggel-reversed-v">V</span></div> 
-
+    <div class="sort__toggle" @click="toggleMenu">
+      <!--      <span class="sort__toggel-v">V</span><span class="sort__toggel-reversed-v">V</span> -->
+        <img src="~/assets/sort.svg" width="30">
+    </div>
     <div v-if="isOpenMenu" class="sort__menu">
       <SortOption :sortOption="sortStore.SortOption.SURNAME" label="name"/>
       <SortOption :sortOption="sortStore.SortOption.BORN" label="born"/>

@@ -1,16 +1,18 @@
 <template>
   <div class="filter" ref="menuRef">
-    <div class="filter-toggle" @click="toggleMenu">ϒ
-      <!-- <img src="~/assets/filter.png" width="50"> -->
-    </div>
-
-    <div v-if="isOpenMenu" class="filter__menu">
       <FilterOption
         :filterOption="filterStore.FilterOption.NAME"
-        label="name"
+        label=""
         @search="filterStore.searchAndFilterByName"
         :filterType="filterStore.FilterType.SEARCH"
       />
+    <div :class="['filter-toggle']" @click="toggleMenu">
+      <!-- ϒ-->
+      filter
+<!--      <img src="~/assets/close.svg" width="20" :class="['filter-toggle-img',{'filter-toggle&#45;&#45;open': isOpenMenu}]">-->
+    </div>
+
+    <div v-if="isOpenMenu" class="filter__menu">
       <FilterOption
         :filterOption="filterStore.FilterOption.BORN"
         label="born"
@@ -70,15 +72,26 @@ const handleClickOutside = (event: any) => {
   align-items: center;
   gap 0.5rem
   z-index 10000000000
+  position relative
 
 .filter-toggle
-  width: 8rem;
   font-weight 700
-  font-size: 1.5rem;
-  cursor pointer
+  font-size: 1.2rem;
   z-index 10000000000
   font-family 'Roboto', sans-serif
   text-align center
+  transition all 0.3s
+  position: absolute;
+  top: 30px;
+  left: 0;
+  cursor url('~/assets/filter.svg'), pointer
+
+.filter-toggle-img
+  transition all 0.2s
+  rotate 45deg
+
+.filter-toggle--open
+  rotate 0deg
 
 .filter__menu
   display: flex;

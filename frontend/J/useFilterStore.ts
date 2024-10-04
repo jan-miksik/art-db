@@ -39,7 +39,8 @@ export const useFilterStore = defineStore('filter', () => {
   const textToSearch = ref('')
   const rangeFrom = ref('')
   const rangeTo = ref('')
-  const hasFilters = computed(() => rangeFrom.value || rangeTo.value || textToSearch.value || isFilterByGender.value)
+  const isShowSimilarAuthors = ref(false)
+  const hasFilters = computed(() => rangeFrom.value || rangeTo.value || textToSearch.value || isFilterByGender.value || isShowSimilarAuthors.value)
 
   const genderOptions = [
     {
@@ -175,6 +176,7 @@ export const useFilterStore = defineStore('filter', () => {
     textToSearch.value = '';
     rangeFrom.value = '';
     rangeTo.value = '';
+    isShowSimilarAuthors.value = false;
     useArtistsStore().artists = useArtistsStore().artistsAll
   }
 
@@ -194,6 +196,7 @@ export const useFilterStore = defineStore('filter', () => {
     textToSearch,
     rangeFrom,
     rangeTo,
+    isShowSimilarAuthors,
     // genderOptionEnumsArray,
   }
 })
