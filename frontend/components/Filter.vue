@@ -9,7 +9,7 @@
     <div :class="['filter-toggle']" @click="toggleMenu">
       <!-- ϒ-->
       filter
-<!--      <img src="~/assets/close.svg" width="20" :class="['filter-toggle-img',{'filter-toggle&#45;&#45;open': isOpenMenu}]">-->
+      <!--      <img src="~/assets/close.svg" width="20" :class="['filter-toggle-img',{'filter-toggle&#45;&#45;open': isOpenMenu}]">-->
     </div>
 
     <div v-if="isOpenMenu" class="filter__menu">

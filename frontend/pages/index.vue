@@ -6,7 +6,7 @@
       <Sort />
 <!--      <img src="~/assets/clear.svg" alt="clear" />-->
       <div v-if="hasClearButton" class="clear-button" @click="handleClear">
-        <img src="~/assets/close.svg" width="16" :class="['filter-toggle-img',{'filter-toggle&#45;&#45;open': isOpenMenu}]">
+        <img src="~/assets/close.svg" width="16" :class="['filter-toggle-img']">
       </div>
     </div>
     <Artist
@@ -15,14 +15,16 @@
       :artist-data="artist"
       class="artist"
       />
-      <ArtistModal />
+<!--    <ArtistsTable />-->
+    <ArtistModal />
   </div>
 </template>
 
-<script setup lang="ts">
+<script setup lang="tsx">
 import axios from "axios";
 const config = useRuntimeConfig();
 const filterStore = useFilterStore()
+
 const randomRange = (min: number, max: number) => {
   return Math.floor(Math.random() * (max - min + 1) + min);
 };
@@ -82,5 +84,6 @@ onMounted(async () => {
   &:hover
     color white
     background-color black
+
 
 </style>

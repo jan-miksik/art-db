@@ -7,19 +7,15 @@
         <span class="artist-modal__show-similar" @click.stop="showSimilarAuthors">show similar authors</span>
       </div>
       <div class="artist-modal__profile" @click.stop>
-        <img
-        class="artist-modal__profile-image"
-        :src="artistData.profile_image_url"
-        :alt="artistData.name"
-        @click.stop
+        <BaseImage
+          :image-file="{
+            url: artistData.profile_image_url,
+            lastUpdated: artistData.artworks[0].year
+          }"
+          :external-css-class="['artist-modal__profile-image']"
+          @click.stop
         />
       </div>
-      <!-- <img v-for="(piece, index) in artistData.artworks"
-        class="artist-modal__artwork-preview-image"
-        :src="piece.picture_url"
-        :alt="piece.title"
-        @click.stop
-      /> -->
       <div class="artist-modal__swiper-container">
         <div @click.stop class="artist-modal__swiper-inner-container">
         <!-- <div v-if="hasNextSlide" class="artist-modal__swiper-next-slide" @click="handleSwipeNext"/>
@@ -36,11 +32,12 @@
           >
           <!-- @slideChange="handleOnSlideChange" -->
           <swiper-slide @click.stop class="artist-modal__slide" v-for="(piece, index) in artistData.artworks">
-            <img
-              :class="['artist-modal__artwork-preview-image', {'artist-modal__artwork-preview-image--swipe-on': artistData.artworks.length > 1}]"
-              :src="piece.picture_url"
-              :alt="piece.title"
-              @click.stop
+            <BaseImage
+              :image-file="{
+                url: piece.picture_url,
+                lastUpdated: artistData.artworks[0].year
+              }"
+              :external-css-class="['artist-modal__artwork-preview-image', {'artist-modal__artwork-preview-image--swipe-on': artistData.artworks.length > 1}]"
             />
             <div class="artist-modal__artwork-description">
               {{ piece.title }}<span v-if="piece.year !== null">{{', ' + piece.year }}</span>

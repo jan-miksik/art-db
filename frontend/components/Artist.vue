@@ -11,11 +11,12 @@
     @touchmove="touchmoveHandler"
     @touchend="touchendHandler"
   >
-    <img
-      ref="artistProfileImage"
-      :class="['artist__artwork-preview-image', { 'artist--is-selected-artist-for-search-similar': artistData?.id === useFilterStore().selectedArtistForSearchSimilar?.id}]"
-      :src="artistData.artworks[0].picture_url"
-      :alt="artistData.name"
+    <BaseImage
+      :image-file="{
+        url: artistData.artworks[0].picture_url,
+        lastUpdated: artistData.artworks[0].year
+      }"
+      :external-css-class="['artist__artwork-preview-image', { 'artist--is-selected-artist-for-search-similar': artistData?.id === useFilterStore().selectedArtistForSearchSimilar?.id}]"
     />
     <svg
       class="artist__name-svg-circle"
@@ -116,7 +117,7 @@ const handlePieceStyle = computed(() => {
 })
 </script>
 
-<style lang="stylus" scoped>
+<style lang="stylus">
 .artist
   position absolute
 

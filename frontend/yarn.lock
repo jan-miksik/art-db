@@ -2222,6 +2222,24 @@ __metadata:
   languageName: node
   linkType: hard
 
+"@tanstack/table-core@npm:8.20.5":
+  version: 8.20.5
+  resolution: "@tanstack/table-core@npm:8.20.5"
+  checksum: 10c0/3c27b5debd61b6bd9bfbb40bfc7c5d5af90873ae1a566b20e3bf2d2f4f2e9a78061c081aacc5259a00e256f8df506ec250eb5472f5c01ff04baf9918b554982b
+  languageName: node
+  linkType: hard
+
+"@tanstack/vue-table@npm:^8.20.5":
+  version: 8.20.5
+  resolution: "@tanstack/vue-table@npm:8.20.5"
+  dependencies:
+    "@tanstack/table-core": "npm:8.20.5"
+  peerDependencies:
+    vue: ">=3.2"
+  checksum: 10c0/17f787355778e70de28010641cb6165e251c2edc77a1e57acf1ca48354df1a788e0a1b18f2adde785299f2d65c4d10e27c0d8e511be5379e585ab7f1c4f15e13
+  languageName: node
+  linkType: hard
+
 "@trysound/sax@npm:0.2.0":
   version: 0.2.0
   resolution: "@trysound/sax@npm:0.2.0"
@@ -3865,6 +3883,13 @@ __metadata:
   version: 5.1.1
   resolution: "devalue@npm:5.1.1"
   checksum: 10c0/f6717a856fd54216959abd341cb189e47a9b37d72d8419e055ae77567ff4ed0fb683b1ffb6a71067f645adae5991bffabe6468a3e2385937bff49273e71c1f51
+  languageName: node
+  linkType: hard
+
+"dexie@npm:^4.0.8":
+  version: 4.0.8
+  resolution: "dexie@npm:4.0.8"
+  checksum: 10c0/d35a817d986c334a2de5f1a0d5ef373b3d9464de7b520f9af50c00ea2f974386632a3f949add83ba1fce9e929908d96db19726377f641f4768c137a554969a2d
   languageName: node
   linkType: hard
 
@@ -6431,9 +6456,11 @@ __metadata:
   dependencies:
     "@akord/akord-js": "npm:^5.0.3"
     "@pinia/nuxt": "npm:^0.5.1"
+    "@tanstack/vue-table": "npm:^8.20.5"
     "@types/node": "npm:18"
     axios: "npm:^1.6.7"
     blob: "npm:^0.1.0"
+    dexie: "npm:^4.0.8"
     interactjs: "npm:^1.10.26"
     nuxt: "npm:^3.13.2"
     nuxt-swiper: "npm:^1.2.2"
