@@ -17,7 +17,9 @@ const props = defineProps<{
   imageFile: ImageFile
   externalCssClass?: any
 }>()
-const { imageFile, externalCssClass } = toRefs(props)
+const { externalCssClass } = toRefs(props)
+
+const imageFileComputed = computed(() => props.imageFile)
 
 const isVisible = ref(false)
 
@@ -43,7 +45,7 @@ const fullImageFetchpriority = computed(() => {
 
 
 const fullImageSrcComputed = computed(() => {
-  // return imageFile.value.url
+  // return imageFileComputed.value.url
   return fullImageSrc.value
 })
 
@@ -51,18 +53,18 @@ const fullImageSrcComputed = computed(() => {
 const giveFullImageSourcePlease = async () => {
 
   if (fullImageSrc.value || fullImageFileInIDB.value) return
-  fullImageFileInIDB.value = await getImage(imageFile.value.url)
+  fullImageFileInIDB.value = await getImage(imageFileComputed.value.url)
 
   if (!fullImageFileInIDB.value) {
-    addImage(imageFile.value)
-    fullImageSrc.value = imageFile.value.url
+    addImage(imageFileComputed.value)
+    fullImageSrc.value = imageFileComputed.value.url
     return
   }
 
   if (fullImageFileInIDB.value) {
-    if (fullImageFileInIDB.value.lastUpdated !== imageFile.value.lastUpdated) {
-      updateImage(imageFile.value)
-      fullImageSrc.value = imageFile.value.url
+    if (fullImageFileInIDB.value.lastUpdated !== imageFileComputed.value.lastUpdated) {
+      updateImage(imageFileComputed.value)
+      fullImageSrc.value = imageFileComputed.value.url
       return
     }
 
@@ -106,6 +108,12 @@ onMounted(async () => {
 onUnmounted(() => {
   fullImageRef.value?.removeEventListener('load', loadedFullImage)
 })
+
+// watch(isVisible, (newVal) => {
+//   if (newVal) {
+//     giveFullImageSourcePlease()
+//   }
+// }, { immediate: true })
 
 </script>
 

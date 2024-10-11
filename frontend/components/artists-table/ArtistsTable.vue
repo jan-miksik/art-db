@@ -40,10 +40,11 @@ import {
   createColumnHelper,
 } from '@tanstack/vue-table'
 import BaseImage from "~/components/BaseImage.vue";
+import useArtistModal from "./../useArtistModal";
+const { openArtistModal } = useArtistModal()
 
-
-const openModal = (artist: any) => {
-  console.log('open modal', artist)
+const openModal = (artistData: any) => {
+  openArtistModal(artistData)
 }
 
 const columnHelper = createColumnHelper<Artist>()
@@ -57,7 +58,8 @@ const columns = [
           url: props.row.original.profile_image_url,
           lastUpdated: props.row.original.artworks[0].year
         },
-        externalCssClass: ['artist-table__profile-image']
+        externalCssClass: ['artist-table__profile-image'],
+        key: props.row.original.id
       });
     },
   }),
@@ -69,10 +71,10 @@ const columns = [
     header: () => '',
     cell: props => {
       return (
-      <div class="artist-table__artworks-preview">
+      <div class="artist-table__artworks-preview" key={`${props.row.original.id}-artworks`}>
         {props.row.original.artworks.map((artwork, index) => (
           <BaseImage
-            key={index}
+            key={`${props.row.original.id}-artwork`}
             imageFile={{
               url: artwork.picture_url,
               lastUpdated: artwork.year
@@ -94,6 +96,10 @@ const table = useVueTable({
   },
   columns,
   getCoreRowModel: getCoreRowModel(),
+})
+
+watch(() => useArtistsStore().artists, () => {
+  console.log('useArtistsStore().artists', useArtistsStore().artists)
 })
 
 </script>

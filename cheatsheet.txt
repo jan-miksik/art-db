@@ -3,6 +3,9 @@
 ##########################
 
 ### run server ###
+// shorted
+$ docker compose up -d && source venv/bin/activate && export DJANGO_SETTINGS_MODULE=artist_registry.settings && python3 manage.py runserver
+
 $ docker compose up -d
 $ source venv/bin/activate
 $ export DJANGO_SETTINGS_MODULE=artist_registry.settings

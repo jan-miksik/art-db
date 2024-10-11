@@ -149,7 +149,12 @@ export const useFilterStore = defineStore('filter', () => {
         return false;
       });
     });
-    useArtistsStore().artists = filteredPeople;
+
+    if (filteredPeople.length === 0) {
+      useArtistsStore().artists = useArtistsStore().artistsAll;
+    } else {
+      useArtistsStore().artists = filteredPeople;
+    }
     await sleep(100)
     reArrangeSortedArtists('firstname');
   }

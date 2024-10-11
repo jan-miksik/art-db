@@ -8,22 +8,34 @@
       <div v-if="hasClearButton" class="clear-button" @click="handleClear">
         <img src="~/assets/close.svg" width="16" :class="['filter-toggle-img']">
       </div>
+
+      <div class="toggle-table-and-bubbles" @click="handleToggleTableAndBubbles">
+        {{ isTable ? 'bubbles' : 'table' }}
+      </div>
     </div>
-<!--    <Artist-->
-<!--      v-for="artist in useArtistsStore().artists"-->
-<!--      :key="artist.id"-->
-<!--      :artist-data="artist"-->
-<!--      class="artist"-->
-<!--      />-->
-    <ArtistsTable />
+    <ArtistsTable v-if="isTable"/>
+    <Artist
+      v-else
+      v-for="artist in useArtistsStore().artists"
+      :key="artist.id"
+      :artist-data="artist"
+      class="artist"
+      />
+
     <ArtistModal />
   </div>
 </template>
 
 <script setup lang="tsx">
 import axios from "axios";
+
 const config = useRuntimeConfig();
 const filterStore = useFilterStore()
+const isTable = ref(false)
+
+const handleToggleTableAndBubbles = () => {
+  isTable.value = !isTable.value
+}
 
 const randomRange = (min: number, max: number) => {
   return Math.floor(Math.random() * (max - min + 1) + min);
@@ -84,5 +96,16 @@ onMounted(async () => {
     color white
     background-color black
 
-
+.toggle-table-and-bubbles
+  position: absolute;
+  right: 0;
+  top: 5rem;
+  cursor: pointer;
+  padding: 5px;
+  rotate: 90deg;
+  text-transform: uppercase;
+  font-family: sans-serif;
+  &:hover
+    color white
+    background-color black
 </style>
