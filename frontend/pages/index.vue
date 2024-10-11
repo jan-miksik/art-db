@@ -9,13 +9,13 @@
         <img src="~/assets/close.svg" width="16" :class="['filter-toggle-img']">
       </div>
     </div>
-    <Artist
-      v-for="artist in useArtistsStore().artists"
-      :key="artist.id"
-      :artist-data="artist"
-      class="artist"
-      />
-<!--    <ArtistsTable />-->
+<!--    <Artist-->
+<!--      v-for="artist in useArtistsStore().artists"-->
+<!--      :key="artist.id"-->
+<!--      :artist-data="artist"-->
+<!--      class="artist"-->
+<!--      />-->
+    <ArtistsTable />
     <ArtistModal />
   </div>
 </template>
@@ -69,7 +69,6 @@ onMounted(async () => {
 
 .menu
   position absolute
-  position fixed
   display flex
   gap 2rem
   justify-content: center;

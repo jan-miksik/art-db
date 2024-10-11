@@ -19,7 +19,7 @@
       </tr>
     </thead>
     <tbody>
-      <tr v-for="row in table.getRowModel().rows" :key="row.id">
+      <tr v-for="row in table.getRowModel().rows" :key="row.id" @click="openModal(row.original)">
         <td v-for="cell in row.getVisibleCells()" :key="cell.id">
           <FlexRender
             :render="cell.column.columnDef.cell"
@@ -42,6 +42,9 @@ import {
 import BaseImage from "~/components/BaseImage.vue";
 
 
+const openModal = (artist: any) => {
+  console.log('open modal', artist)
+}
 
 const columnHelper = createColumnHelper<Artist>()
 
@@ -49,15 +52,13 @@ const columns = [
     columnHelper.accessor('profile_image_url', {
     header: () => '',
     cell: props => {
-      return (
-        <BaseImage
-          imageFile={{
-            url: props.row.original.profile_image_url,
-            lastUpdated: props.row.original.artworks[0].year
-          }}
-          externalCssClass={['artist-table__profile-image']}
-        />
-      );
+      return h(BaseImage, {
+        imageFile: {
+          url: props.row.original.profile_image_url,
+          lastUpdated: props.row.original.artworks[0].year
+        },
+        externalCssClass: ['artist-table__profile-image']
+      });
     },
   }),
   columnHelper.accessor('name', {
@@ -103,6 +104,16 @@ const table = useVueTable({
   position relative
   top 200px
   margin: auto
+  width: 90%
+  margin-bottom 30rem
+  border-spacing 0
+
+.artists-table tr:nth-child(2n)
+  background-color: #f0f0f0;
+
+.artists-table tr:hover
+  background: linear-gradient(46deg, #c7c7cc, rgba(177, 184, 182, 0.56), #4d503f3d);
+  cursor pointer
 
 .artist-table__profile-image
   width 70px
