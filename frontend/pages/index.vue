@@ -31,7 +31,7 @@ import axios from "axios";
 
 const config = useRuntimeConfig();
 const filterStore = useFilterStore()
-const isTable = ref(false)
+const isTable = ref(true)
 
 const handleToggleTableAndBubbles = () => {
   isTable.value = !isTable.value

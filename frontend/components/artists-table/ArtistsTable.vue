@@ -32,7 +32,9 @@
 </template>
 
 <script setup lang="tsx">
-const filterStore = useFilterStore()
+import { watch, computed } from 'vue'
+import { useFilterStore } from '~/J/useFilterStore'
+import { useSortStore } from '~/J/useSortStore'
 import {
   FlexRender,
   getCoreRowModel,
@@ -50,7 +52,7 @@ const openModal = (artistData: any) => {
 const columnHelper = createColumnHelper<Artist>()
 
 const columns = [
-    columnHelper.accessor('profile_image_url', {
+  columnHelper.accessor('profile_image_url', {
     header: () => '',
     cell: props => {
       return h(BaseImage, {
@@ -71,23 +73,24 @@ const columns = [
     header: () => '',
     cell: props => {
       return (
-      <div class="artist-table__artworks-preview" key={`${props.row.original.id}-artworks`}>
-        {props.row.original.artworks.map((artwork, index) => (
-          <BaseImage
-            key={`${props.row.original.id}-artwork`}
-            imageFile={{
-              url: artwork.picture_url,
-              lastUpdated: artwork.year
-            }}
-            externalCssClass={['artist-table__artwork-preview-image']}
-          />
-        ))}
-      </div>
-    );
+        <div class="artist-table__artworks-preview" key={`${props.row.original.id}-artworks`}>
+          {props.row.original.artworks.map((artwork, index) => (
+            <BaseImage
+              key={`${props.row.original.id}-artwork`}
+              imageFile={{
+                url: artwork.picture_url,
+                lastUpdated: artwork.year
+              }}
+              externalCssClass={['artist-table__artwork-preview-image']}
+            />
+          ))}
+        </div>
+      );
     },
   }),
 ]
 
+const sortedArtists = ref(useArtistsStore().artists)
 const data = computed(() => useArtistsStore().artists)
 
 const table = useVueTable({
@@ -98,9 +101,13 @@ const table = useVueTable({
   getCoreRowModel: getCoreRowModel(),
 })
 
-watch(() => useArtistsStore().artists, () => {
+const sortStore = useSortStore()
+
+watch(() => sortStore.activeSort, () => {
+  // table.setData(data.value)
   console.log('useArtistsStore().artists', useArtistsStore().artists)
-})
+  sortedArtists.value = useArtistsStore().artists
+}, { deep: true })
 
 </script>
 
@@ -146,7 +153,5 @@ th
   object-position center
   //filter: grayscale(1);
   cursor default
-
-
 
 </style>
