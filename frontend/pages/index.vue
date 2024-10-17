@@ -92,6 +92,7 @@ onMounted(async () => {
   top 28px
   cursor pointer
   padding 5px
+  z-index: 10000000000
   &:hover
     color white
     background-color black

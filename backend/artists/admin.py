@@ -4,7 +4,7 @@ from django.utils.html import format_html
 from .arweave_storage import upload_to_arweave
 import os
 from .weaviate.weaviate import add_image_to_weaviete
-
+from django import forms
 
 class ArtworkInline(admin.TabularInline):  # or admin.StackedInline for a different layout
     model = Artwork
@@ -29,14 +29,28 @@ class ArtworkInline(admin.TabularInline):  # or admin.StackedInline for a differ
 
     picture_preview.short_description = 'Artwork Preview'
 
+# Create a custom form for ArtistAdmin
+class ArtistAdminForm(forms.ModelForm):
+    class Meta:
+        model = Artist
+        fields = '__all__'
+
+    media_types = forms.MultipleChoiceField(
+        choices=Artist.MEDIA_TYPE_CHOICES,
+        widget=forms.CheckboxSelectMultiple,
+        required=False
+    )
+
 class ArtistAdmin(admin.ModelAdmin):
-    site_header = 'Artist Admin area'
+    site_header = 'Artist Admin Area'
+    form = ArtistAdminForm  # Use the custom form
     inlines = [ArtworkInline]
     fields = (
         'firstname',
         'surname',
         'born',
         'gender',
+        'media_types',  # This will now use checkboxes for multiple selection
         'auctions_turnover_2023_h1_USD',
         'notes',
         'profile_image',
@@ -45,7 +59,7 @@ class ArtistAdmin(admin.ModelAdmin):
         'profile_image_weaviate_id',
     )  # specify the order of fields
     readonly_fields = ('id', 'profile_image_preview',)
-    list_display = ('full_name', 'id', 'profile_image_preview')
+    list_display = ('name', 'id', 'profile_image_preview')
 
     @staticmethod
     def full_name(obj):

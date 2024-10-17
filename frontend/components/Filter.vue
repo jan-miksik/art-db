@@ -14,10 +14,11 @@
 
     <div v-if="isOpenMenu" class="filter__menu">
       <FilterOption
-        :filterOption="filterStore.FilterOption.BORN"
-        label="born"
-        @range="filterStore.filterByBornInRange"
-        :filterType="filterStore.FilterType.RANGE"
+        :filterOption="filterStore.FilterOption.MEDIA_TYPE"
+        :selectionOptions="filterStore.mediaTypeOptions"
+        :selectedOptions="filterStore.selectedMediaToShow"
+        @selection="filterStore.filterByMediaType"
+        :filterType="filterStore.FilterType.SELECTION_TEXT"
       />
       <FilterOption
         :filterOption="filterStore.FilterOption.GENDER"
@@ -26,7 +27,14 @@
         @selection="filterStore.filterByGender"
         :filterType="filterStore.FilterType.SELECTION"
       />
-      <!-- <FilterOption :filterOption="filterStore.FilterOption.GENDER" label="gender"/> -->
+      <FilterOption
+        :filterOption="filterStore.FilterOption.BORN"
+        label="born"
+        @range="filterStore.filterByBornInRange"
+        :filterType="filterStore.FilterType.RANGE"
+      />
+
+
       <!-- <FilterOption :filterOption="filterStore.FilterOption.AUCTIONS_TURNOVER_2023_H1_USD" label="auctions 2023"/> -->
     </div>
   </div>
@@ -67,12 +75,8 @@ const handleClickOutside = (event: any) => {
   background: white;
 }
 .filter
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap 0.5rem
   z-index 10000000000
-  position relative
+  position absolute
 
 .filter-toggle
   font-weight 700
@@ -96,9 +100,10 @@ const handleClickOutside = (event: any) => {
 .filter__menu
   display: flex;
   flex-direction: column;
-  align-items: center;
-  width: 8rem;
-  gap 0.5rem
+  align-items: flex-start;
+  margin-top: 2.5rem;
+  width: fit-content;
+  gap: 0.5rem;
   background-color: white;
 
 .filter__triangel-1

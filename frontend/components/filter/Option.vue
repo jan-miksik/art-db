@@ -11,7 +11,12 @@
       <div class="filter-option__selection" v-if="filterType === FilterType.SELECTION">
         <div v-for="(selectionOption) in selectionOptions" @click="() => handleSelectionChange(selectionOption)" :class="['filter-option__selection-option', {'filter-option__selection-option--is-selected': isOptionSelected(selectionOption)}]">
           <!-- {{ selectionOption.sign }} -->
-          <img :src="selectionOption.sign" height="16"/>
+          <img v-if="selectionOption.sign" :src="selectionOption.sign" height="16"/>
+        </div>
+      </div>
+      <div class="filter-option__selection" v-if="filterType === FilterType.SELECTION_TEXT">
+        <div v-for="(selectionOption) in selectionOptions" @click="() => handleSelectionChange(selectionOption)" :class="['filter-option__selection-option-text-container', {'filter-option__selection-option--is-selected': isOptionSelected(selectionOption)}]">
+          <span class="filter-option__selection-option-text" v-if="selectionOption.text">{{ selectionOption.text }}</span>
         </div>
       </div>
     </div>
@@ -26,14 +31,14 @@ const props = defineProps<{
   filterOption: FilterOption
   label?: string
   filterType: FilterType
-  selectionOptions?: SelectionOptionType[]
-  selectedOptions?: SelectionOptionType[]
+  selectionOptions?: SelectionOptionType<any>[]
+  selectedOptions?: SelectionOptionType<any>[]
 }>()
 
 const emit = defineEmits<{
   (e: 'search', text: string): void
   (e: 'range', rangeFrom: string, rangeTo: string): void
-  (e: 'selection', selectedOption?: SelectionOptionType): void
+  (e: 'selection', selectedOption?: SelectionOptionType<any>): void
 }>()
 
 
@@ -45,11 +50,11 @@ const handleRangeChange = () => {
   emit('range', rangeFrom.value, rangeTo.value)
 }
 
-const handleSelectionChange = (selectionOption: SelectionOptionType) => {
+const handleSelectionChange = (selectionOption: SelectionOptionType<any>) => {
   emit('selection', selectionOption)
 }
 
-const isOptionSelected = (selectionOption: SelectionOptionType) => {
+const isOptionSelected = (selectionOption: SelectionOptionType<any>) => {
   return props.selectedOptions?.some((selectedOption) => selectedOption.enumValue === selectionOption.enumValue)
 }
 
@@ -88,27 +93,48 @@ input[type="number"] {
   z-index 10000000000
 
 .filter-option--SEARCH
-  position absolute
-  top 0
-  left 0
+  //position absolute
+  //top 0
+  //left 0
 
 .filter-option--RANGE
-  position absolute
-  top 60px
-  left 0
+  //position absolute
+  //top 60px
+  //left 0
   //background pink
 
 
 .filter-option--SELECTION
-  margin-right auto
-  position absolute
-  top 90px
-  left 0
+  //margin-right auto
+  //position absolute
+  //top 90px
+  //left 0
+
+.filter-option--SELECTION_TEXT
+  //margin-right auto
+  //position absolute
+  //top 120px
+  //left 0
 
 .filter-option__selection
   display: flex
   gap 0.5rem
   font-size: 1.2rem
+
+.filter-option__selection-option-text-container
+  opacity: 0.35
+  cursor: pointer
+  padding: 2px;
+
+.filter-option__selection-option-text
+  border 1px solid gray
+  border-radius: 5px
+  padding: 4px 6px;
+  font-family 'Roboto', sans-serif
+  cursor: pointer
+  font-size: 14px
+  &:hover
+    background-color: #b0b0b0
 
 .filter-option__selection-option
   opacity: 0.2

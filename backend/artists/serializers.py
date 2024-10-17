@@ -32,4 +32,5 @@ class ArtistSerializer(serializers.ModelSerializer):
             'gender',
             'auctions_turnover_2023_h1_USD',
             'similar_authors_postgres_ids',
+            'media_types',
         ]

@@ -4,13 +4,15 @@ export enum FilterOption {
   'NAME',
   'BORN',
   'GENDER',
-  'AUCTIONS_TURNOVER_2023_H1_USD'
+  'AUCTIONS_TURNOVER_2023_H1_USD',
+  'MEDIA_TYPE',
 }
 
 export enum FilterType {
   SEARCH = 'SEARCH',
   RANGE = 'RANGE',
   SELECTION = 'SELECTION',
+  SELECTION_TEXT = 'SELECTION_TEXT',
 }
 
 export enum GenderOptionEnum {
@@ -19,9 +21,17 @@ export enum GenderOptionEnum {
   WOMAN = "WOMAN",
 }
 
-export type SelectionOptionType = {
-  sign: string,
-  enumValue: GenderOptionEnum
+export enum MediaTypeOptionEnum {
+  PAINTING = "PAINTING",
+  NFT = "NFT",
+  DIGITAL = "DIGITAL",
+  SCULPTURE = "SCULPTURE",
+}
+
+export type SelectionOptionType<T> = {
+  text?: string,
+  sign?: string,
+  enumValue: T
 }
 
 import FluidSvg from '~/assets/fluid.svg'
@@ -30,17 +40,27 @@ import MalePng from '~/assets/male.png'
 
 export const useFilterStore = defineStore('filter', () => {
 
-  const selectedGendersToShow = ref<SelectionOptionType[]>([])
+  const selectedGendersToShow = ref<SelectionOptionType<GenderOptionEnum>[]>([])
+  const selectedMediaToShow = ref<SelectionOptionType<MediaTypeOptionEnum>[]>([])
   const isFilterByBornInRange = ref(false)
   const isFilterByName = ref(false)
   const isFilteringInProgress = ref(false)
   const selectedArtistForSearchSimilar = ref<Artist>()
   const isFilterByGender = computed(() => selectedGendersToShow.value.length > 0)
+  const isFilterByMediaType = computed(() => selectedMediaToShow.value.length > 0)
   const textToSearch = ref('')
   const rangeFrom = ref('')
   const rangeTo = ref('')
   const isShowSimilarAuthors = ref(false)
-  const hasFilters = computed(() => rangeFrom.value || rangeTo.value || textToSearch.value || isFilterByGender.value || isShowSimilarAuthors.value)
+  const hasFilters = computed(() =>
+      rangeFrom.value ||
+      rangeTo.value ||
+      textToSearch.value ||
+      isFilterByGender.value ||
+      isShowSimilarAuthors.value ||
+      isFilterByMediaType.value ||
+      isFilterByMediaType.value
+  )
 
   const genderOptions = [
     {
@@ -56,6 +76,23 @@ export const useFilterStore = defineStore('filter', () => {
       enumValue: GenderOptionEnum.WOMAN
     },
   ]
+
+  const mediaTypeOptions = [
+    {
+      text: 'painting',
+      enumValue: MediaTypeOptionEnum.PAINTING
+    },
+    {
+      text: 'nft',
+      enumValue: MediaTypeOptionEnum.NFT
+    },
+    {
+      text: 'sculpture',
+      enumValue: MediaTypeOptionEnum.SCULPTURE
+    },
+  ]
+
+
 
 
 
@@ -127,7 +164,42 @@ export const useFilterStore = defineStore('filter', () => {
     reArrangeSortedArtists('firstname');
   }
 
-  const filterByGender = async (selectedGender: SelectionOptionType) => {
+  const filterByMediaType = async (selectedMediaType: SelectionOptionType<MediaTypeOptionEnum>) => {
+    isFilteringInProgress.value = true;
+    if (selectedMediaToShow.value.some((option) => option.enumValue === selectedMediaType.enumValue)) {
+      selectedMediaToShow.value = selectedMediaToShow.value.filter(o => o.enumValue !== selectedMediaType.enumValue)
+    } else {
+      selectedMediaToShow.value.push(selectedMediaType)
+    }
+
+    const filteredPeople = useArtistsStore().artistsAll.filter(person => {
+      return selectedMediaToShow.value.some(option => {
+        if (option.enumValue === MediaTypeOptionEnum.PAINTING && person.media_types.includes('painting')) {
+          return true;
+        }
+        if (option.enumValue === MediaTypeOptionEnum.NFT && person.media_types.includes('nft')) {
+          return true;
+        }
+        if (option.enumValue === MediaTypeOptionEnum.DIGITAL && person.media_types.includes('digital')) {
+          return true;
+        }
+        if (option.enumValue === MediaTypeOptionEnum.SCULPTURE && person.media_types.includes('sculpture')) {
+          return true;
+        }
+        return false;
+      });
+    });
+
+    if (filteredPeople.length === 0) {
+      useArtistsStore().artists = useArtistsStore().artistsAll;
+    } else {
+      useArtistsStore().artists = filteredPeople;
+    }
+    await sleep(100)
+    reArrangeSortedArtists('firstname');
+  }
+
+  const filterByGender = async (selectedGender: SelectionOptionType<GenderOptionEnum>) => {
     isFilteringInProgress.value = true;
     if (selectedGendersToShow.value.some((option) => option.enumValue === selectedGender.enumValue)) {
       selectedGendersToShow.value = selectedGendersToShow.value.filter(o => o.enumValue !== selectedGender.enumValue)
@@ -175,6 +247,7 @@ export const useFilterStore = defineStore('filter', () => {
 
   const removeFilters = () => {
     selectedGendersToShow.value = []
+    selectedMediaToShow.value = []
     selectedArtistForSearchSimilar.value = undefined;
     // isFilterByBornInRange.value = false;
     // isFilterByName.value = false;
@@ -192,16 +265,18 @@ export const useFilterStore = defineStore('filter', () => {
     searchAndFilterByName,
     filterByBornInRange,
     filterByGender,
+    filterByMediaType,
     removeFilters,
     isFilteringInProgress,
     genderOptions,
+    mediaTypeOptions,
     selectedGendersToShow,
+    selectedMediaToShow,
     selectedArtistForSearchSimilar,
     hasFilters,
     textToSearch,
     rangeFrom,
     rangeTo,
     isShowSimilarAuthors,
-    // genderOptionEnumsArray,
   }
 })

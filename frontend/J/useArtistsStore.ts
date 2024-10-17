@@ -20,6 +20,7 @@ export type Artist = {
   gender: "W" | "M" | "N"
   auctions_turnover_2023_h1_USD: number
   similar_authors_postgres_ids: string[]
+  media_types: 'nft' | 'digital' | 'painting' | 'sculpture'
 }
 
 export const useArtistsStore = defineStore('artists', () => {

@@ -18,8 +18,20 @@
         </th>
       </tr>
     </thead>
-    <tbody>
-      <tr v-for="row in table.getRowModel().rows" :key="row.id" @click="openModal(row.original)">
+    <TransitionGroup
+      name="list"
+      tag="tbody"
+      :css="false"
+      @before-enter="onBeforeEnter"
+      @enter="onEnter"
+      @leave="onLeave"
+    >
+      <tr
+        v-for="(row, index) in table.getRowModel().rows"
+        :key="row.original.id"
+        :data-index="index"
+        @click="openModal(row.original)"
+      >
         <td v-for="cell in row.getVisibleCells()" :key="cell.id">
           <FlexRender
             :render="cell.column.columnDef.cell"
@@ -27,14 +39,14 @@
           />
         </td>
       </tr>
-    </tbody>
+    </TransitionGroup>
   </table>
 </template>
 
 <script setup lang="tsx">
-import { watch, computed } from 'vue'
-import { useFilterStore } from '~/J/useFilterStore'
-import { useSortStore } from '~/J/useSortStore'
+import {watch, computed, ref} from 'vue'
+import {useFilterStore} from '~/J/useFilterStore'
+import {useSortStore} from '~/J/useSortStore'
 import {
   FlexRender,
   getCoreRowModel,
@@ -43,7 +55,9 @@ import {
 } from '@tanstack/vue-table'
 import BaseImage from "~/components/BaseImage.vue";
 import useArtistModal from "./../useArtistModal";
-const { openArtistModal } = useArtistModal()
+import gsap from 'gsap'
+
+const {openArtistModal} = useArtistModal()
 
 const openModal = (artistData: any) => {
   openArtistModal(artistData)
@@ -73,26 +87,66 @@ const columns = [
     header: () => '',
     cell: props => {
       return (
-        <div class="artist-table__artworks-preview" key={`${props.row.original.id}-artworks`}>
-          {props.row.original.artworks.map((artwork, index) => (
-            <BaseImage
-              key={`${props.row.original.id}-artwork`}
-              imageFile={{
-                url: artwork.picture_url,
-                lastUpdated: artwork.year
-              }}
-              externalCssClass={['artist-table__artwork-preview-image']}
-            />
-          ))}
-        </div>
+          <div class="artist-table__artworks-preview" key={`${props.row.original.id}-artworks`}>
+            {props.row.original.artworks.map((artwork, index) => (
+                <BaseImage
+                    key={`${props.row.original.id}-artwork`}
+                    imageFile={{
+                      url: artwork.picture_url,
+                      lastUpdated: artwork.year
+                    }}
+                    externalCssClass={['artist-table__artwork-preview-image']}
+                />
+            ))}
+          </div>
       );
     },
   }),
 ]
 
-const sortedArtists = ref(useArtistsStore().artists)
-const data = computed(() => useArtistsStore().artists)
+const artistsStore = useArtistsStore()
+const sortStore = useSortStore()
 
+// Animation functions
+const onBeforeEnter = (el: Element) => {
+  const element = el as HTMLElement
+  element.style.opacity = '0'
+  element.style.transform = 'translateY(30px)'
+}
+
+const onEnter = (el: HTMLElement, done: () => void) => {
+  const element = el as HTMLElement
+  const delay = el.dataset.index ? parseInt(el.dataset.index) * 0.1 : 0
+
+  gsap.to(element, {
+    opacity: 1,
+    y: 0,
+    duration: 0.6,
+    delay,
+    ease: 'power2.out',
+    onComplete: done
+  })
+}
+
+const onLeave = (el: Element, done: () => void) => {
+  const element = el as HTMLElement
+  gsap.to(element, {
+    opacity: 0,
+    y: 30,
+    duration: 0.6,
+    ease: 'power2.in',
+    onComplete: done
+  })
+}
+
+// Create a reactive data source
+const data = computed(() => {
+  return [...artistsStore.artists]
+})
+
+console.log('data', data.value)
+
+// Create the table with computed data
 const table = useVueTable({
   get data() {
     return data.value
@@ -101,18 +155,13 @@ const table = useVueTable({
   getCoreRowModel: getCoreRowModel(),
 })
 
-const sortStore = useSortStore()
-
-watch(() => sortStore.activeSort, () => {
-  // table.setData(data.value)
-  console.log('useArtistsStore().artists', useArtistsStore().artists)
-  sortedArtists.value = useArtistsStore().artists
-}, { deep: true })
-
+// Optional: force table refresh when data changes
+watch(() => data.value, () => {
+  table.getRowModel().rows
+}, {deep: true})
 </script>
 
 <style lang="stylus">
-
 .artists-table
   position relative
   top 200px
@@ -131,7 +180,6 @@ watch(() => sortStore.activeSort, () => {
 .artist-table__profile-image
   width 70px
   height 70px
-  //border-radius 50%
   object-fit cover
   object-position center
   filter: grayscale(1);
@@ -146,12 +194,26 @@ th
   gap 1rem
 
 .artist-table__artwork-preview-image
-  //width 70px
   height 70px
-  //border-radius 50%
   object-fit contain
   object-position center
-  //filter: grayscale(1);
   cursor default
 
+// Animation classes
+.list-move,
+.list-enter-active,
+.list-leave-active
+  transition: all 0.6s ease
+
+.list-leave-active
+  position: absolute
+  width: 100%
+
+.list-enter-from
+  opacity: 0
+  transform: translateY(30px)
+
+.list-leave-to
+  opacity: 0
+  transform: translateY(-30px)
 </style>
