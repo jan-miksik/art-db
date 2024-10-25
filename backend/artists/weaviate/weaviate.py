@@ -6,11 +6,60 @@ from weaviate.classes.query import Filter
 from weaviate.classes.query import GroupBy
 from weaviate import Client
 import os
+from PIL import Image
+from io import BytesIO
+import uuid
+import time
+from contextlib import contextmanager
+
+@contextmanager
+def get_weaviate_client():
+    """Context manager for handling Weaviate client connections"""
+    client = None
+    try:
+        client = weaviate.connect_to_local()
+        yield client
+    finally:
+        if client is not None:
+            client.close()
+
+
+def resize_image_if_needed(base64_string, max_size_mb=10):
+    """Resize the image if it's too large"""
+    # Decode base64 to binary
+    img_data = base64.b64decode(base64_string)
+    img = Image.open(BytesIO(img_data))
+
+    # Calculate current size in MB
+    current_size = len(img_data) / (1024 * 1024)
+
+    if current_size > max_size_mb:
+        # Calculate new dimensions to reduce size while maintaining aspect ratio
+        ratio = (max_size_mb / current_size) ** 0.5
+        new_width = int(img.width * ratio)
+        new_height = int(img.height * ratio)
+
+        # Resize image
+        img = img.resize((new_width, new_height), Image.Resampling.LANCZOS)
+
+        # Convert back to base64
+        buffered = BytesIO()
+        img.save(buffered, format=img.format or 'JPEG', quality=85)
+        return base64.b64encode(buffered.getvalue()).decode()
+
+    return base64_string
+
 
 def url_to_base64(url):
-    image_response = requests.get(url)
-    content = image_response.content
-    return base64.b64encode(content).decode("utf-8")
+    """Convert image URL to base64 with size checking"""
+    response = requests.get(url)
+    response.raise_for_status()
+
+    # Convert to base64
+    base64_string = base64.b64encode(response.content).decode()
+
+    # Resize if needed
+    return resize_image_if_needed(base64_string)
 
 
 # def connect_to_weaviate():
@@ -29,44 +78,74 @@ def url_to_base64(url):
 # add image to weaviete
 ############################
 
+def check_object_exists(artworks, obj_uuid):
+    """Check if an object exists in Weaviate"""
+    try:
+        result = artworks.query.fetch_object_by_id(str(obj_uuid))
+        return result is not None
+    except:
+        return False
+
+def remove_if_exists(artworks, obj_uuid):
+    """Remove object if it exists in Weaviate"""
+    try:
+        if check_object_exists(artworks, obj_uuid):
+            artworks.data.delete_by_id(str(obj_uuid))
+            print(f"Removing already existing object with UUID: {obj_uuid}")
+            time.sleep(0.5)  # Give Weaviate time to process the deletion
+    except Exception as e:
+        print(f"Error removing existing object: {str(e)}")
+
+
 def add_image_to_weaviete(artwork_psql_id, author_psql_id, arweave_image_url):
     print("[[[[[ add_image_to_weaviete ]]]]]")
-    weaviate_client = weaviate.connect_to_local()  # Connect with default parameters
-    artworks = weaviate_client.collections.get("Artworks")
-    uuid = None
+    max_retries = 3
+    current_try = 0
 
-    try:
-        base64_string = url_to_base64(arweave_image_url)
-        data_properties = {
-            "artwork_psql_id": str(artwork_psql_id),  # Convert to string
-            "author_psql_id": str(author_psql_id),  # Convert to string
-            "image": base64_string
-        }
-        # Generate a deterministic ID, it will generate the same ID for the same data
-        obj_uuid = generate_uuid5(data_properties)
-        print("Adding image to Weaviate", obj_uuid)
-        uuid = artworks.data.insert(
-            properties=data_properties,
-            uuid=obj_uuid
-        )
+    while current_try < max_retries:
+        with get_weaviate_client() as weaviate_client:
+            try:
+                artworks = weaviate_client.collections.get("Artworks")
 
-        # Verify that the artwork was successfully added to Weaviate
-        try:
-            added_artwork = artworks.query.fetch_object_by_id(uuid)
-            if added_artwork is not None:
-                print(f"Artwork {artwork_psql_id} successfully added to Weaviate with ID {uuid}")
-                return uuid
-            else:
+                # Convert image to base64 with size handling
+                try:
+                    base64_string = url_to_base64(arweave_image_url)
+                except Exception as e:
+                    print(f"Error converting image to base64: {str(e)}")
+                    return None
+
+                data_properties = {
+                    "artwork_psql_id": str(artwork_psql_id),
+                    "author_psql_id": str(author_psql_id),
+                    "image": base64_string
+                }
+
+                # Generate a deterministic ID, it will generate the same ID for the same data
+                obj_uuid = generate_uuid5(data_properties)
+                print(f"Adding image to Weaviate with UUID: {obj_uuid}")
+
+                remove_if_exists(artworks, obj_uuid)
+
+                uuid_str = artworks.data.insert(
+                    properties=data_properties,
+                    uuid=str(obj_uuid)
+                )
+
+                if check_object_exists(artworks, uuid_str):
+                    print(f"Artwork {artwork_psql_id} successfully added to Weaviate with ID {uuid_str}")
+                    return uuid_str
+
                 print(f"Failed to verify artwork {artwork_psql_id} in Weaviate")
                 return None
-        except Exception as e:
-            print(f"Error verifying artwork {artwork_psql_id} in Weaviate: {str(e)}")
-            return None
 
-    finally:
-        weaviate_client.close()
+            except Exception as e:
+                print(f"Attempt {current_try + 1} failed: {str(e)}")
+                current_try += 1
+                if current_try < max_retries:
+                    time.sleep(2)  # Wait before retrying
 
-    return uuid
+    print(f"Failed to add artwork to Weaviate after {max_retries} attempts")
+    return None
 
 # python -c "from artists.weaviate.weaviate import add_image_to_weaviete; add_image_to_weaviete('25', '1', 'https://arweave.net/0zYEjsrKFVa-qt9k9pO7W7j1M-Xyzj_y4MeEq5NY1Hk')"
 

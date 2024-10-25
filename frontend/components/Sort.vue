@@ -106,7 +106,8 @@ onUnmounted(() => {
 .auctions-sort
   position absolute
   top: -24px;
-  left: 84px;
+  left: 90px;
   rotate: 0deg;
   padding-left: 0.5rem;
+  text-align: start;
 </style>
