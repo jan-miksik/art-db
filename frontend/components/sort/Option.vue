@@ -1,6 +1,6 @@
 <template>
   <div class="sort-option" @click="sortStore.setSort(sortOption)">
-        <span v-if="sortStore.activeSort.field === sortOption">
+        <span v-if="sortStore.activeSort.field === sortOption && isSortSignBeforeText">
           <span v-if="sortStore.activeSort.direction === sortStore.SortDirection.ASC
             ">
             △
@@ -8,7 +8,7 @@
           <span v-else> ▼ </span>
         </span>
         {{ label || sortOption }}
-        <span v-if="sortStore.activeSort.field === sortOption">
+        <span v-if="sortStore.activeSort.field === sortOption && !isSortSignBeforeText">
           <span v-if="sortStore.activeSort.direction === sortStore.SortDirection.ASC
             ">
             △
@@ -24,6 +24,7 @@ import type { SortOption } from '#imports';
 const props = defineProps<{
   sortOption: SortOption
   label?: string
+  isSortSignBeforeText?: boolean
 }>()
 const sortStore = useSortStore()
 

@@ -6,10 +6,10 @@
       <img src="~/assets/sort.svg" width="30">
     </div>
     <div v-if="isOpenMenu" class="sort__menu">
-      <SortOption :sortOption="sortStore.SortOption.SURNAME" label="name"/>
-      <SortOption :sortOption="sortStore.SortOption.BORN" label="born"/>
+      <SortOption :sortOption="sortStore.SortOption.SURNAME" label="name" class="name-sort" isSortSignBeforeText/>
+      <SortOption :sortOption="sortStore.SortOption.BORN" label="born" class="born-sort" isSortSignBeforeText/>
       <!-- <SortOption :sortOption="sortStore.SortOption.GENDER" label="gender"/> -->
-      <SortOption :sortOption="sortStore.SortOption.AUCTIONS_TURNOVER_2023_H1_USD" label="auctions 2023"/>
+      <SortOption :sortOption="sortStore.SortOption.AUCTIONS_TURNOVER_2023_H1_USD" label="auctions 2023" class="auctions-sort" :isSortSignBeforeText="false"/>
     </div>
   </div>
 </template>
@@ -79,8 +79,34 @@ onUnmounted(() => {
   flex-direction: column;
   align-items: center;
   width: 8.1rem;
+  position relative
 
 .sort__triangel-1
   position: absolute;
   top: 0.8rem;
+
+.name-sort
+  position absolute
+  top: -30px;
+  right: 93px;
+  rotate 0deg
+  padding-right: 0.5rem;
+  text-align: end;
+  width: 4rem;
+
+.born-sort
+  position absolute
+  top: 5px;
+  right: 65px;
+  padding-right: 0.5rem;
+  rotate: 0deg;
+  text-align: end;
+  width: 4rem;
+
+.auctions-sort
+  position absolute
+  top: -24px;
+  left: 84px;
+  rotate: 0deg;
+  padding-left: 0.5rem;
 </style>
