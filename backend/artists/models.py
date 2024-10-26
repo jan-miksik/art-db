@@ -19,7 +19,7 @@ class Artist(models.Model):
     surname = models.CharField(max_length=200, blank=True)
     born = models.IntegerField(null=True, blank=True)
     gender = models.CharField(max_length=1, choices=GENDER_CHOICES, blank=True)
-    auctions_turnover_2023_h1_USD = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True)
+    auctions_turnover_2023_h1_USD = models.DecimalField(max_digits=16, decimal_places=2, null=True, blank=True)
     profile_image_url = models.URLField(blank=True, null=True)  # saved to Arweave
     profile_image_weaviate_id = models.CharField(max_length=200, blank=True)
     similar_authors_postgres_ids = ArrayField(models.CharField(max_length=200), blank=True, default=list)
