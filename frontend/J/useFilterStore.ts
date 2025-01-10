@@ -92,10 +92,6 @@ export const useFilterStore = defineStore('filter', () => {
     },
   ]
 
-
-
-
-
   const reArrangeSortedArtists = (fieldName: 'firstname') => {
     let topPosition = 200
     useArtistsStore().artists.forEach((artist, index) => {
@@ -126,136 +122,108 @@ export const useFilterStore = defineStore('filter', () => {
     return new Promise(resolve => setTimeout(resolve, ms));
   }
 
-  const searchAndFilterByName = async (whatToSearch: string) => {
-    if (whatToSearch) {
-      isFilterByName.value = true;
-    } else {
-        isFilterByName.value = false;
-    }
+  const applyAllFilters = async () => {
     isFilteringInProgress.value = true;
-    const searchTextLower = whatToSearch.toLowerCase();
-    const filteredPeople = useArtistsStore().artistsAll.filter(person => {
-      return person.name.toLowerCase().includes(searchTextLower);
-    });
-    useArtistsStore().artists = filteredPeople;
-    await sleep(100)
+    let filteredResults = [...useArtistsStore().artistsAll];
+
+    if (textToSearch.value) {
+      const searchTextLower = textToSearch.value.toLowerCase();
+      filteredResults = filteredResults.filter(person => 
+        person.name.toLowerCase().includes(searchTextLower)
+      );
+    }
+
+    if (rangeFrom.value || rangeTo.value) {
+      const from = Number(rangeFrom.value);
+      const to = Number(rangeTo.value);
+      
+      filteredResults = filteredResults.filter(person => {
+        if (from && !to) return person.born >= from;
+        if (!from && to) return person.born <= to;
+        if (from && to) return person.born >= from && person.born <= to;
+        return true;
+      });
+    }
+
+    if (selectedGendersToShow.value.length > 0) {
+      filteredResults = filteredResults.filter(person =>
+        selectedGendersToShow.value.some(option => {
+          if (option.enumValue === GenderOptionEnum.NON_BINARY && person.gender === 'N') return true;
+          if (option.enumValue === GenderOptionEnum.WOMAN && person.gender === 'W') return true;
+          if (option.enumValue === GenderOptionEnum.MAN && person.gender === 'M') return true;
+          return false;
+        })
+      );
+    }
+
+    if (selectedMediaToShow.value.length > 0) {
+      filteredResults = filteredResults.filter(person =>
+        selectedMediaToShow.value.some(option => {
+          if (option.enumValue === MediaTypeOptionEnum.PAINTING && person.media_types.includes('painting')) return true;
+          if (option.enumValue === MediaTypeOptionEnum.NFT && person.media_types.includes('nft')) return true;
+          if (option.enumValue === MediaTypeOptionEnum.DIGITAL && person.media_types.includes('digital')) return true;
+          if (option.enumValue === MediaTypeOptionEnum.SCULPTURE && person.media_types.includes('sculpture')) return true;
+          return false;
+        })
+      );
+    }
+
+    useArtistsStore().artists = filteredResults;
+    await sleep(100);
     reArrangeSortedArtists('firstname');
+    isFilteringInProgress.value = false;
   }
 
+  const searchAndFilterByName = async (whatToSearch: string) => {
+    textToSearch.value = whatToSearch;
+    isFilterByName.value = !!whatToSearch;
+    await applyAllFilters();
+  }
 
   const filterByBornInRange = async (from: number, to: number) => {
-    isFilteringInProgress.value = true;
-    if (from || to) {
-        isFilterByBornInRange.value = true
-    }
-
-    const filteredPeople = useArtistsStore().artistsAll.filter(person => {
-      if (from === 0 || isNaN(to) || !to || from > to) {
-        return person.born >= from;
-      }
-      if (to === 0 || isNaN(to) || !from) {
-        return person.born <= to;
-      }
-      return person.born >= from && person.born <= to;
-    });
-
-    useArtistsStore().artists = filteredPeople;
-    await sleep(100)
-    reArrangeSortedArtists('firstname');
+    rangeFrom.value = from.toString();
+    rangeTo.value = to.toString();
+    isFilterByBornInRange.value = !!(from || to);
+    await applyAllFilters();
   }
 
   const filterByMediaType = async (selectedMediaType: SelectionOptionType<MediaTypeOptionEnum>) => {
-    isFilteringInProgress.value = true;
     if (selectedMediaToShow.value.some((option) => option.enumValue === selectedMediaType.enumValue)) {
-      selectedMediaToShow.value = selectedMediaToShow.value.filter(o => o.enumValue !== selectedMediaType.enumValue)
+      selectedMediaToShow.value = selectedMediaToShow.value.filter(o => o.enumValue !== selectedMediaType.enumValue);
     } else {
-      selectedMediaToShow.value.push(selectedMediaType)
+      selectedMediaToShow.value.push(selectedMediaType);
     }
-
-    const filteredPeople = useArtistsStore().artistsAll.filter(person => {
-      return selectedMediaToShow.value.some(option => {
-        if (option.enumValue === MediaTypeOptionEnum.PAINTING && person.media_types.includes('painting')) {
-          return true;
-        }
-        if (option.enumValue === MediaTypeOptionEnum.NFT && person.media_types.includes('nft')) {
-          return true;
-        }
-        if (option.enumValue === MediaTypeOptionEnum.DIGITAL && person.media_types.includes('digital')) {
-          return true;
-        }
-        if (option.enumValue === MediaTypeOptionEnum.SCULPTURE && person.media_types.includes('sculpture')) {
-          return true;
-        }
-        return false;
-      });
-    });
-
-    if (filteredPeople.length === 0) {
-      useArtistsStore().artists = useArtistsStore().artistsAll;
-    } else {
-      useArtistsStore().artists = filteredPeople;
-    }
-    await sleep(100)
-    reArrangeSortedArtists('firstname');
+    await applyAllFilters();
   }
 
   const filterByGender = async (selectedGender: SelectionOptionType<GenderOptionEnum>) => {
-    isFilteringInProgress.value = true;
     if (selectedGendersToShow.value.some((option) => option.enumValue === selectedGender.enumValue)) {
-      selectedGendersToShow.value = selectedGendersToShow.value.filter(o => o.enumValue !== selectedGender.enumValue)
+      selectedGendersToShow.value = selectedGendersToShow.value.filter(o => o.enumValue !== selectedGender.enumValue);
     } else {
-      selectedGendersToShow.value.push(selectedGender)
+      selectedGendersToShow.value.push(selectedGender);
     }
-
-    const filteredPeople = useArtistsStore().artistsAll.filter(person => {
-      return selectedGendersToShow.value.some(option => {
-        if (option.enumValue === GenderOptionEnum.NON_BINARY && person.gender === 'N') {
-          return true;
-        }
-        if (option.enumValue === GenderOptionEnum.WOMAN && person.gender === 'W') {
-          return true;
-        }
-        if (option.enumValue === GenderOptionEnum.MAN && person.gender === 'M') {
-          return true;
-        }
-        return false;
-      });
-    });
-
-    if (filteredPeople.length === 0) {
-      useArtistsStore().artists = useArtistsStore().artistsAll;
-    } else {
-      useArtistsStore().artists = filteredPeople;
-    }
-    await sleep(100)
-    reArrangeSortedArtists('firstname');
+    await applyAllFilters();
   }
 
   const filterByIds = async (ids: number[]) => {
     isFilteringInProgress.value = true;
 
-    // const filteredPeople = useArtistsStore().artistsAll.filter(person => {
-    //   if (ids.includes(person.id)) return true
-    //   return false
-    // });
-    const filteredPeople2 = ids.map(id => useArtistsStore().artistsAll.find(artist => +artist.id === +id)) as Artist[];
+    const filteredPeople = ids.map(id => useArtistsStore().artistsAll.find(artist => +artist.id === +id)) as Artist[];
 
-    useArtistsStore().artists = filteredPeople2;
+    useArtistsStore().artists = filteredPeople;
     await sleep(100)
     reArrangeSortedArtists('firstname');
   }
 
-  const removeFilters = () => {
-    selectedGendersToShow.value = []
-    selectedMediaToShow.value = []
+  const removeFilters = async () => {
+    selectedGendersToShow.value = [];
+    selectedMediaToShow.value = [];
     selectedArtistForSearchSimilar.value = undefined;
-    // isFilterByBornInRange.value = false;
-    // isFilterByName.value = false;
     textToSearch.value = '';
     rangeFrom.value = '';
     rangeTo.value = '';
     isShowSimilarAuthors.value = false;
-    useArtistsStore().artists = useArtistsStore().artistsAll
+    await applyAllFilters();
   }
 
   return {

@@ -43,7 +43,7 @@ class Artist(models.Model):
 class Artwork(models.Model):
     artist = models.ForeignKey(Artist, on_delete=models.CASCADE)
     title = models.CharField(max_length=250, default='without name', blank=True)
-    picture = models.ImageField(upload_to='artworks/', null=True, blank=True)
+    picture = models.ImageField(upload_to='artworks/', null=True, blank=True, max_length=255)
     picture_url = models.URLField(blank=True, null=True)  # saved to Arweave
     year = models.IntegerField(null=True, blank=True)
     sizeY = models.IntegerField(null=True, blank=True)
