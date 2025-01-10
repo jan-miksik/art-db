@@ -1,10 +1,16 @@
 <template>
   <img
+    v-if="fullImageSrcComputed"
     :class="[{ 'image__full': !externalCssClass }, externalCssClass]"
     ref="fullImageRef"
     :loading="fullImageLoading"
     :fetchpriority="fullImageFetchpriority"
     :src="fullImageSrcComputed"
+  />
+  <div 
+    v-else 
+    ref="fullImageRef"
+    :class="['anim-bg', { 'image__full': !externalCssClass }, externalCssClass]"
   />
 </template>
 
@@ -49,10 +55,22 @@ const fullImageSrcComputed = computed(() => {
   return fullImageSrc.value
 })
 
+const handleSetupMissingImage = () => {
+  // Create an SVG with black background as a data URL
+  const blackSvg = `data:image/svg+xml;charset=utf-8,<svg xmlns="http://www.w3.org/2000/svg" width="100%" height="100%" viewBox="0 0 100 100"><rect width="100%" height="100%" fill="black"/></svg>`
+  fullImageSrc.value = blackSvg
+  fullImageRef.value?.classList.remove('anim-bg')
+}
+
 
 const giveFullImageSourcePlease = async () => {
 
   if (fullImageSrc.value || fullImageFileInIDB.value) return
+  if (!props.imageFile.url) {
+    handleSetupMissingImage()
+    return
+  }
+  
   fullImageFileInIDB.value = await getImage(imageFileComputed.value.url)
 
   if (!fullImageFileInIDB.value) {
@@ -67,7 +85,6 @@ const giveFullImageSourcePlease = async () => {
       fullImageSrc.value = imageFileComputed.value.url
       return
     }
-
     fullImageSrc.value = URL.createObjectURL(fullImageFileInIDB.value.blob)
   }
 }

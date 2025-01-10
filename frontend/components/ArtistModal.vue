@@ -4,8 +4,8 @@
        <div class="artist-modal__close"><img src="~/assets/close.svg" alt="close" width="30"> </div>
       <div class="artist-modal__name-and-show-similar">
         <h2 class="artist-modal__name" @click.stop>{{ artistData.name }}</h2>
-        <!--        TODO fix this one-->
-        <!--        <span class="artist-modal__show-similar" @click.stop="showSimilarAuthors">show similar authors</span>-->
+        <!-- TODO: fix searching similar authors with AI -->
+        <!-- <span class="artist-modal__show-similar" @click.stop="showSimilarAuthors">show similar authors</span> -->
       </div>
       <div class="artist-modal__profile" @click.stop>
         <BaseImage
