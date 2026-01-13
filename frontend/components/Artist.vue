@@ -76,30 +76,39 @@ const randomizeRotation = () => {
 const randomizedRotation = computed(() => randomizeRotation())
 
 onMounted(() => {
-  interact(artistRef.value as any)
-    .draggable({
-      inertia: false,
-      autoScroll: true,
-      listeners: {
-        move(event: any) {
-          const xRaw = props.artistData.position.x + event.dx
-          const yRaw = props.artistData.position.y + event.dy
-          const x = xRaw > 0 ? xRaw : 0
-          props.artistData.position.x = x
-          props.artistData.position.y = yRaw
+  if (artistRef.value) {
+    interact(artistRef.value)
+      .draggable({
+        inertia: false,
+        autoScroll: true,
+        listeners: {
+          move(event: { dx: number; dy: number }) {
+            const xRaw = props.artistData.position.x + event.dx
+            const yRaw = props.artistData.position.y + event.dy
+            const x = xRaw > 0 ? xRaw : 0
+            props.artistData.position.x = x
+            props.artistData.position.y = yRaw
+          }
         }
-      }
-    })
-    .resizable({
-      // resize from edges and corners
-      edges: { left: false, right: true, bottom: false, top: false },
-      modifiers: [
-        interact.modifiers.restrictSize({
-          min: { width: 10, height: 10 }
-        })
-      ],
-      inertia: false
-    })
+      })
+      .resizable({
+        // resize from edges and corners
+        edges: { left: false, right: true, bottom: false, top: false },
+        modifiers: [
+          interact.modifiers.restrictSize({
+            min: { width: 10, height: 10 }
+          })
+        ],
+        inertia: false
+      })
+  }
+})
+
+onUnmounted(() => {
+  // Clean up interact.js to prevent memory leaks
+  if (artistRef.value) {
+    interact(artistRef.value).unset()
+  }
 })
 
 const handleOnMouseDown = () => {

@@ -1,11 +1,10 @@
 from rest_framework import viewsets
 from .serializers import ArtistSerializer, ArtworkSerializer
-from rest_framework.decorators import api_view
+from rest_framework.decorators import api_view, permission_classes
+from rest_framework.permissions import AllowAny, IsAdminUser
 from rest_framework.response import Response
 from artists.arweave_storage import upload_to_arweave
-from django.http import JsonResponse
 from django.shortcuts import get_object_or_404
-from django.views.decorators.csrf import csrf_protect
 from .weaviate.weaviate import search_similar_artwork_ids_by_image_url, search_similar_artwork_ids_by_image_data, \
     search_similar_authors_ids_by_image_data, search_similar_authors_ids_by_image_url
 from .models import Artwork, Artist
@@ -16,27 +15,31 @@ class ArtistViewSet(viewsets.ModelViewSet):
     serializer_class = ArtistSerializer
 
 
+# Public endpoint - anyone can browse artists
 @api_view(['GET'])
+@permission_classes([AllowAny])
 def artists_endpoint(request):
     models = Artist.objects.all()
     serializer = ArtistSerializer(models, many=True)
     return Response(serializer.data)
 
 
-@csrf_protect
+# Protected endpoint - only admin users can upload to Arweave
+@api_view(['POST'])
+@permission_classes([IsAdminUser])
 def upload_to_arweave_view(request, pk):
     artist = get_object_or_404(Artist, pk=pk)
-    if request.method == 'POST':
-        file = request.FILES.get('file')
-        if file:
-            file_path = file.temporary_file_path()
-            arweave_url = upload_to_arweave(file_path)
-            return JsonResponse({'success': True, 'url': arweave_url})
-        return JsonResponse({'success': False, 'error': 'No file provided'})
-    return JsonResponse({'success': False, 'error': 'Invalid request method'})
+    file = request.FILES.get('file')
+    if file:
+        file_path = file.temporary_file_path()
+        arweave_url = upload_to_arweave(file_path)
+        return Response({'success': True, 'url': arweave_url})
+    return Response({'success': False, 'error': 'No file provided'}, status=400)
 
 
+# Public endpoint - anyone can search by image
 @api_view(['POST'])
+@permission_classes([AllowAny])
 def search_authors_by_image_data(request):
     image_file = request.FILES.get('image')
     limit = int(request.data.get('limit', 2))
@@ -62,7 +65,9 @@ def search_authors_by_image_data(request):
         return Response({'error': 'Image data not provided'}, status=400)
 
 
+# Public endpoint - anyone can search by image URL
 @api_view(['GET'])
+@permission_classes([AllowAny])
 def search_authors_by_image_url(request):
     image_url = request.GET.get('image_url')
     limit = int(request.GET.get('limit', 1))
@@ -85,10 +90,9 @@ def search_authors_by_image_url(request):
     return Response(response_data)
 
 
-# ++++++++++++++++++++++++ #
-# ++++++++++++++++++++++++ #
-# ++++++++++++++++++++++++ #
+# Public endpoint - anyone can search artworks by image
 @api_view(['POST'])
+@permission_classes([AllowAny])
 def search_artworks_by_image_data(request):
     image_file = request.FILES.get('image')
     limit = int(request.data.get('limit', 10))
@@ -114,7 +118,9 @@ def search_artworks_by_image_data(request):
         return Response({'error': 'Image data not provided'}, status=400)
 
 
+# Public endpoint - anyone can search artworks by image URL
 @api_view(['GET'])
+@permission_classes([AllowAny])
 def search_artworks_by_image_url(request):
     image_url = request.GET.get('image_url')
     limit = int(request.GET.get('limit', 1))

@@ -1,6 +1,5 @@
 import arweave
 from django.conf import settings
-import os
 from arweave.arweave_lib import Transaction
 from arweave.transaction_uploader import get_uploader
 import mimetypes
@@ -12,7 +11,8 @@ def upload_to_arweave(file_path):
     mimetypes.types_map['.webp'] = 'image/webp'
     mime_type, _ = mimetypes.guess_type(file_path)
 
-    wallet_path = os.path.join(settings.MEDIA_ROOT, 'arweave_wallet.json')
+    # SECURITY: Wallet path from settings (configurable via ARWEAVE_WALLET_PATH env var)
+    wallet_path = settings.ARWEAVE_WALLET_PATH
     wallet = arweave.Wallet(wallet_path)
 
     with open(file_path, "rb", buffering=0) as file_handler:

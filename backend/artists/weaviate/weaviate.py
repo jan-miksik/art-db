@@ -1,6 +1,10 @@
 import weaviate
 from weaviate.classes.query import MetadataQuery
-import base64, requests
+import base64
+import requests
+from urllib.parse import urlparse
+import ipaddress
+import socket
 from weaviate.util import generate_uuid5  # Generate a deterministic ID
 from weaviate.classes.query import Filter
 from weaviate.classes.query import GroupBy
@@ -11,6 +15,9 @@ from io import BytesIO
 import uuid
 import time
 from contextlib import contextmanager
+import logging
+
+logger = logging.getLogger(__name__)
 
 @contextmanager
 def get_weaviate_client():
@@ -50,10 +57,66 @@ def resize_image_if_needed(base64_string, max_size_mb=10):
     return base64_string
 
 
-def url_to_base64(url):
-    """Convert image URL to base64 with size checking"""
-    response = requests.get(url)
+def is_safe_url(url):
+    """
+    SECURITY: Validate URL to prevent SSRF attacks.
+    Blocks requests to localhost, private networks, and non-HTTP(S) schemes.
+    """
+    try:
+        parsed = urlparse(url)
+
+        # Only allow http and https schemes
+        if parsed.scheme not in ('http', 'https'):
+            logger.warning(f"SSRF protection: Blocked non-HTTP scheme: {parsed.scheme}")
+            return False
+
+        hostname = parsed.hostname
+        if not hostname:
+            return False
+
+        # Block localhost variations
+        if hostname in ('localhost', '127.0.0.1', '0.0.0.0', '::1'):
+            logger.warning(f"SSRF protection: Blocked localhost access: {hostname}")
+            return False
+
+        # Resolve hostname to IP and check if it's private
+        try:
+            ip = ipaddress.ip_address(socket.gethostbyname(hostname))
+            if ip.is_private or ip.is_loopback or ip.is_reserved or ip.is_link_local:
+                logger.warning(f"SSRF protection: Blocked private/reserved IP: {ip}")
+                return False
+        except (socket.gaierror, ValueError):
+            # If we can't resolve, allow it (could be valid external domain)
+            pass
+
+        return True
+    except Exception as e:
+        logger.error(f"SSRF protection: URL validation error: {e}")
+        return False
+
+
+def url_to_base64(url, timeout=10):
+    """
+    Convert image URL to base64 with size checking.
+    SECURITY: Includes SSRF protection and request timeout.
+    """
+    # Validate URL for SSRF protection
+    if not is_safe_url(url):
+        raise ValueError(f"URL blocked by security policy: {url}")
+
+    # Make request with timeout and verify SSL
+    response = requests.get(
+        url,
+        timeout=timeout,
+        verify=True,
+        headers={'User-Agent': 'ArtDB-ImageFetcher/1.0'}
+    )
     response.raise_for_status()
+
+    # Validate content type
+    content_type = response.headers.get('content-type', '')
+    if not content_type.startswith('image/'):
+        raise ValueError(f"URL does not point to an image: {content_type}")
 
     # Convert to base64
     base64_string = base64.b64encode(response.content).decode()

@@ -14,9 +14,21 @@ from pathlib import Path
 import os
 
 from dotenv import load_dotenv
+from django.core.exceptions import ImproperlyConfigured
 
-# Load environment variables from .env file
-load_dotenv()
+# Load environment variables based on DJANGO_ENV
+# Uses .env.local for development or .env.production for production
+env = os.getenv('DJANGO_ENV', 'local').lower()
+env_file = f'.env.{env}'
+
+# Load environment-specific file (required)
+if not os.path.exists(env_file):
+    raise ImproperlyConfigured(
+        f"Environment file '{env_file}' not found. "
+        f"Create it from '{env_file}.example' template. "
+        f"Current DJANGO_ENV: {env}"
+    )
+load_dotenv(env_file)
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -25,14 +37,20 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/5.0/howto/deployment/checklist/
 
-# SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = 'django-insecure-bxp#bec1r2p-=mos4@c1(m2=9tvp&#6a6dm=4c^$cs@$c+z&yv'
+# SECURITY: Secret key from environment variable
+SECRET_KEY = os.getenv('DJANGO_SECRET_KEY')
+if not SECRET_KEY:
+    raise ImproperlyConfigured(
+        "DJANGO_SECRET_KEY environment variable is required. "
+        "Generate one with: python -c \"from django.core.management.utils import get_random_secret_key; print(get_random_secret_key())\""
+    )
 
-# SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
+# SECURITY: Debug mode from environment variable (default: False)
+DEBUG = os.getenv('DEBUG', 'False').lower() == 'true'
 
-ALLOWED_HOSTS = ['localhost', '127.0.0.1', "0.0.0.0", "django-server-production-9daf.up.railway.app"]
-# ALLOWED_HOST = ['*']
+ALLOWED_HOSTS = os.getenv('ALLOWED_HOSTS', 'localhost,127.0.0.1').split(',')
+if DEBUG:
+    ALLOWED_HOSTS.extend(['localhost', '127.0.0.1', '0.0.0.0'])
 
 # Application definition
 
@@ -62,12 +80,24 @@ MIDDLEWARE = [
 ]
 
 
-CORS_ALLOW_ALL_ORIGINS = True
+# SECURITY: CORS configuration from environment
+# Set CORS_ALLOWED_ORIGINS as comma-separated list in .env for production
+# Example: CORS_ALLOWED_ORIGINS=http://localhost:3000,https://yourdomain.com
+CORS_ALLOW_ALL_ORIGINS = DEBUG  # Only allow all origins in debug mode
+# Parse and clean CORS allowed origins (strip whitespace, filter empty strings)
+cors_origins_raw = os.getenv('CORS_ALLOWED_ORIGINS', 'http://localhost:3000')
 CORS_ALLOWED_ORIGINS = [
-    "http://localhost:3000",
-    "http://0.0.0.0",
-    'http://*'
+    origin.strip() 
+    for origin in cors_origins_raw.split(',') 
+    if origin.strip() and not origin.strip().endswith('*')  # Reject wildcards
 ]
+# Ensure at least one origin is set in production
+if not DEBUG and not CORS_ALLOWED_ORIGINS:
+    raise ImproperlyConfigured(
+        "CORS_ALLOWED_ORIGINS must be set in production. "
+        "Set it as a comma-separated list in your .env file."
+    )
+CORS_ALLOW_CREDENTIALS = True
 
 ROOT_URLCONF = 'artist_registry.urls'
 
@@ -153,15 +183,27 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
 MEDIA_URL = '/media/'
 
-# AWS_ACCESS_KEY_ID = 'AKIA4N7WU65Z4YIBEIJ2'
-# AWS_SECRET_ACCESS_KEY = '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'
+# Arweave wallet path - SECURITY: Store outside web root in production
+ARWEAVE_WALLET_PATH = os.getenv('ARWEAVE_WALLET_PATH', os.path.join(MEDIA_ROOT, 'arweave_wallet.json'))
 
-# AWS_STORAGE_BUCKET_NAME = 'art-db-django'
-# AWS_S3_CUSTOM_DOMAIN = '%s.s3.amazonaws.com' % AWS_STORAGE_BUCKET_NAME
-# AWS_S3_FILE_OVERWRITE = False
+# SECURITY: Production security settings
+if not DEBUG:
+    # HTTPS settings
+    SECURE_SSL_REDIRECT = True
+    SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
 
-# DEFAULT_FILE_STORAGE = 'storages.backends.s3boto3.S3Boto3Storage'
+    # HSTS settings
+    SECURE_HSTS_SECONDS = 31536000  # 1 year
+    SECURE_HSTS_INCLUDE_SUBDOMAINS = True
+    SECURE_HSTS_PRELOAD = True
 
-# STATICFILES_STORAGE = 'artists.arweave_storage.ArweaveStorage'
+    # Cookie security
+    SESSION_COOKIE_SECURE = True
+    CSRF_COOKIE_SECURE = True
+    CSRF_COOKIE_HTTPONLY = True
+    SESSION_COOKIE_HTTPONLY = True
 
-# DEFAULT_FILE_STORAGE = 'artists.arweave_storage.ArweaveStorage'
+    # Other security settings
+    X_FRAME_OPTIONS = 'DENY'
+    SECURE_CONTENT_TYPE_NOSNIFF = True
+    SECURE_BROWSER_XSS_FILTER = True

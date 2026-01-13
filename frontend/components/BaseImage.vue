@@ -34,6 +34,7 @@ const fullImageSrc = ref('')
 const fullImageFileInIDB = ref<ImageIDB>()
 const fullImageRef = ref()
 const isFullImageLoaded = ref(false)
+let observer: IntersectionObserver | null = null
 
 
 const fullImageLoading = computed(() => {
@@ -101,29 +102,34 @@ watch(isVisible, (newVal) => {
 })
 
 onMounted(async () => {
-
   fullImageRef.value?.classList.add('anim-bg')
-  fullImageRef.value.addEventListener('load', loadedFullImage)
+  fullImageRef.value?.addEventListener('load', loadedFullImage)
 
-  const observer = new IntersectionObserver((entries) => {
+  observer = new IntersectionObserver((entries) => {
     // The callback will be called when the image enters or leaves the viewport
     if (entries[0].isIntersecting) {
       // The image has entered the viewport
       isVisible.value = true
       // We don't need the observer anymore, so we disconnect it
-      observer.disconnect()
+      observer?.disconnect()
     }
   }, {
     threshold: 0
   })
 
   // Start observing the image
-  observer.observe(fullImageRef.value)
+  if (fullImageRef.value) {
+    observer.observe(fullImageRef.value)
+  }
 })
 
 
 onUnmounted(() => {
+  // Clean up event listener
   fullImageRef.value?.removeEventListener('load', loadedFullImage)
+  // Clean up IntersectionObserver to prevent memory leaks
+  observer?.disconnect()
+  observer = null
 })
 
 // watch(isVisible, (newVal) => {
