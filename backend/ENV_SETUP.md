@@ -43,7 +43,17 @@ The `settings.py` file automatically loads the appropriate environment file base
 - `CORS_ALLOWED_ORIGINS` - Comma-separated list of allowed CORS origins
 
 ### Optional
-- `ARWEAVE_WALLET_PATH` - Path to Arweave wallet file
+- `ARWEAVE_WALLET_B64` - Base64-encoded contents of `arweave_wallet.json`
+- `ARWEAVE_WALLET_PATH` - Path to Arweave wallet file (defaults to `MEDIA_ROOT/arweave_wallet.json`)
+
+## Arweave wallet in production (Railway)
+
+Set the wallet file as an env var and let the entrypoint write it to disk on boot:
+
+1. Base64 the wallet locally (no newlines): `base64 -w 0 arweave_wallet.json` (macOS: `base64 arweave_wallet.json`)
+2. Add the value to Railway as `ARWEAVE_WALLET_B64`
+3. (Optional) Set `ARWEAVE_WALLET_PATH` if you want a non-default location
+4. On start, `entrypoint.sh` will decode to the path and apply `0600` permissions
 
 ## Security Notes
 

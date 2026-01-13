@@ -86,9 +86,9 @@ def is_safe_url(url):
                 logger.warning(f"SSRF protection: Blocked private/reserved IP: {ip}")
                 return False
         except (socket.gaierror, ValueError):
-            # If we can't resolve, allow it (could be valid external domain)
-            pass
-
+            # If we can't resolve, block it - unresolvable hosts are suspicious
+            logger.warning(f"SSRF protection: Blocked unresolvable host: {hostname}")
+            return False
         return True
     except Exception as e:
         logger.error(f"SSRF protection: URL validation error: {e}")

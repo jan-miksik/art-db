@@ -1,7 +1,9 @@
 from django.test import TestCase, Client
+from django.urls import reverse
+from django.core.files.uploadedfile import SimpleUploadedFile
+from unittest.mock import patch
 from .models import Artwork, Artist
 from .weaviate.weaviate import add_image_to_weaviete
-from django.urls import reverse
 import base64, requests
 
 
@@ -80,19 +82,45 @@ class SearchArtworksByImageDataTestCase(TestCase):
     def test_search_artworks_by_image_data(self):
         client = Client()
 
-        def url_to_base64(url):
-            image_response = requests.get(url)
-            content = image_response.content
-            return base64.b64encode(content).decode("utf-8")
+        # Create minimal artist/artwork to satisfy response serialization
+        artist = Artist.objects.create(
+            notes="TBD",
+            profile_image="image_181.png",
+            firstname="Test",
+            surname="Artist",
+            born=1985,
+            gender="M",
+            auctions_turnover_2023_h1_USD="100.00",
+            profile_image_url="https://example.com/profile.png",
+        )
+        artwork = Artwork.objects.create(
+            artist=artist,
+            title="Test Work",
+            picture="artworks/test.webp",
+            picture_url="https://example.com/art.png",
+            year=2020,
+            sizeY=100,
+            sizeX=100,
+        )
 
-        image_url = 'https://arweave.net/dwUZ_GgXgjV86SAE8NH9cPwb4YovEpvqnZ2Xo1LwoGU'
-        image_data = url_to_base64(image_url)
-        payload = {
-            'image': image_data,
-            'limit': 2
-        }
+        # Dummy result object mimicking the weaviate response shape
+        class DummyImage:
+            def __init__(self, artwork_id, author_id):
+                self.properties = {
+                    "artwork_psql_id": artwork_id,
+                    "author_psql_id": author_id,
+                }
+
+        dummy_results = [DummyImage(artwork.id, artist.id)]
+
+        file = SimpleUploadedFile("test.jpg", b"fake-image-bytes", content_type="image/jpeg")
         url = reverse('search_artworks_by_image_data')
-        response = client.post(url, data=payload, content_type='application/json')
-        print(response)
+
+        with patch('artists.views.search_similar_artwork_ids_by_image_data', return_value=dummy_results):
+            response = client.post(url, {'image': file, 'limit': 2})
+
         self.assertEqual(response.status_code, 200)
-        # Add more assertions to check the response data
+        data = response.json()
+        self.assertEqual(len(data), 1)
+        self.assertEqual(data[0]['artwork']['id'], artwork.id)
+        self.assertEqual(data[0]['author']['id'], artist.id)
