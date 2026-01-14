@@ -1,4 +1,6 @@
 import { useArtistsStore } from './useArtistsStore'
+import { sleep } from '~/composables/useUtils'
+import { useArtistArrangement } from '~/composables/useArtistArrangement'
 
 export enum FilterOption {
   'NAME',
@@ -39,6 +41,7 @@ import FemalePng from '~/assets/female.png'
 import MalePng from '~/assets/male.png'
 
 export const useFilterStore = defineStore('filter', () => {
+  const { reArrangeSortedArtists } = useArtistArrangement()
 
   const selectedGendersToShow = ref<SelectionOptionType<GenderOptionEnum>[]>([])
   const selectedMediaToShow = ref<SelectionOptionType<MediaTypeOptionEnum>[]>([])
@@ -91,36 +94,6 @@ export const useFilterStore = defineStore('filter', () => {
       enumValue: MediaTypeOptionEnum.SCULPTURE
     },
   ]
-
-  const reArrangeSortedArtists = (fieldName: 'firstname') => {
-    let topPosition = 200
-    useArtistsStore().artists.forEach((artist, index) => {
-      if (index === 0) {
-        artist.position.y = topPosition
-      }
-
-      if (index > 0 && useArtistsStore().artists[index - 1][fieldName] === artist[fieldName]) {
-        artist.position.y = topPosition
-        return
-      }
-
-      if (index > 0) {
-        if (artist.position.y + 120 < topPosition) {
-          artist.position.y = topPosition + 120
-          topPosition = topPosition + 120
-        } else if (artist.position.y + 350 > topPosition) {
-          artist.position.y = topPosition + 120
-          topPosition = topPosition + 120
-        } else {
-          topPosition = artist.position.y
-        }
-      }
-    })
-  }
-
-  const sleep = async (ms: number) => {
-    return new Promise(resolve => setTimeout(resolve, ms));
-  }
 
   const applyAllFilters = async () => {
     isFilteringInProgress.value = true;

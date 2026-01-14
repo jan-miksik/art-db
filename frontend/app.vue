@@ -6,4 +6,6 @@
 
 <script setup lang="ts"></script>
 
-<style scoped></style>
+<style>
+@import '~/assets/css/z-index.css';
+</style>

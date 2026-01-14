@@ -4,9 +4,8 @@
     :class="['artist', {'artist__sorting-in-progress': !isDragging}]"
     :style="handlePieceStyle"
     @click="openArtistModal(artistData)"
-    @keydown="handleKeyDown"
     @mousedown="handleOnMouseDown"
-    @mousemove="mouseMoveHandler"
+    @mousemove="(e) => mouseMoveHandler(e)"
     @mouseleave="mouseLeaveHandler"
     @mouseup="mouseUpHandler"
     @touchmove="touchmoveHandler"
@@ -45,11 +44,11 @@
 import { useFilterStore } from '#imports'
 import interact from 'interactjs'
 import useArtistModal from './useArtistModal'
-const { openArtistModal } = useArtistModal()
-const filterStore = useFilterStore()
-
 import useMouseActionDetector from '~/J/useMouseActionDetector'
 import { type Artist } from '../J/useArtistsStore'
+import { randomRange } from '~/composables/useUtils'
+
+const { openArtistModal } = useArtistModal()
 const props = defineProps<{
   artistData: Artist
 }>()
@@ -68,12 +67,7 @@ const {
 } = useMouseActionDetector()
 
 const localZIndex = ref(1)
-const artistRef = ref<HTMLElement>()
-const isMouseDown = ref(false)
-
-const randomRange = (min: number, max: number) => {
-  return Math.floor(Math.random() * (max - min + 1) + min)
-}
+const artistRef = ref<HTMLButtonElement | null>(null)
 
 const randomizeRotation = () => {
   return {
@@ -120,17 +114,10 @@ onUnmounted(() => {
   }
 })
 
-const handleOnMouseDown = () => {
-  mouseDownHandler()
+const handleOnMouseDown = (event: MouseEvent) => {
+  mouseDownHandler(event)
   localZIndex.value = zIndexOfLastSelectedPiece.value
   zIndexOfLastSelectedPiece.value++
-}
-
-const handleKeyDown = (event: KeyboardEvent) => {
-  if (event.key === 'Enter' || event.key === ' ') {
-    event.preventDefault()
-    openArtistModal(props.artistData)
-  }
 }
 
 const handlePieceStyle = computed(() => {

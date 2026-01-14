@@ -7,8 +7,10 @@
       </div>
       <div class="filter-option__range" v-if="filterType === FilterType.RANGE">
           {{ label || filterOption }}
-          <input class="filter-option__range-from" placeholder="min" type="number" v-model="rangeFrom" @input="handleRangeChange"/> -
-          <input class="filter-option__range-to" placeholder="max" type="number" v-model="rangeTo" @input="handleRangeChange"/>
+          <label for="filter-range-from-input" class="visually-hidden">Minimum value</label>
+          <input id="filter-range-from-input" class="filter-option__range-from" placeholder="min" type="number" v-model="rangeFrom" @input="handleRangeChange"/> -
+          <label for="filter-range-to-input" class="visually-hidden">Maximum value</label>
+          <input id="filter-range-to-input" class="filter-option__range-to" placeholder="max" type="number" v-model="rangeTo" @input="handleRangeChange"/>
       </div>
       <div class="filter-option__selection" v-if="filterType === FilterType.SELECTION">
         <div v-for="(selectionOption) in selectionOptions" @click="() => handleSelectionChange(selectionOption)" :class="['filter-option__selection-option', {'filter-option__selection-option--is-selected': isOptionSelected(selectionOption)}]">

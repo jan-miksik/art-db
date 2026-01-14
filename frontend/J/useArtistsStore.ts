@@ -48,12 +48,12 @@ export const useArtistsStore = defineStore('artists', () => {
     } catch (err: any) {
       if (err.name === 'AbortError' || err.code === 'ECONNABORTED') {
         error.value = "Request timed out. Please try again."
-      } else if (err.response) {
-        error.value = `Server error: ${err.response.status}`
-      } else if (err.request) {
-        error.value = "Network error. Please check your connection."
+      } else if (err.status || err.statusCode) {
+        const status = err.status || err.statusCode
+        const dataMessage = err.data ? `: ${typeof err.data === 'string' ? err.data : JSON.stringify(err.data)}` : ''
+        error.value = `Server error: ${status}${dataMessage}`
       } else {
-        error.value = err instanceof Error ? err.message : "An unexpected error occurred."
+        error.value = err instanceof Error ? err.message : "Network error. Please check your connection."
       }
       console.error("Error fetching artists:", err)
     } finally {

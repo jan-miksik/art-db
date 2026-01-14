@@ -1,11 +1,9 @@
 <template>
     <teleport v-if="isOpen && artistData" to="body" >
-    <div class="artist-modal" @click="closeModal">
+    <div ref="modalRef" class="artist-modal" @click="closeModal">
        <div class="artist-modal__close"><img src="~/assets/close.svg" alt="close" width="30"> </div>
       <div class="artist-modal__name-and-show-similar">
         <h2 class="artist-modal__name" @click.stop>{{ artistData.name }}</h2>
-        <!-- TODO: fix searching similar authors with AI -->
-        <!-- <span class="artist-modal__show-similar" @click.stop="showSimilarAuthors">show similar authors</span> -->
       </div>
       <div class="artist-modal__profile" @click.stop>
         <BaseImage
@@ -60,15 +58,32 @@ import 'swiper/css/navigation';
 
 const filterStore = useFilterStore()
 
+const modalRef = ref<HTMLElement>()
+const { activate: activateFocusTrap, deactivate: deactivateFocusTrap } = useFocusTrap(modalRef)
+
 const swiperRef = ref<SwiperType>();
 const closeModal = () => {
   isOpen.value = false;
 }
 
+watch(isOpen, (newValue) => {
+  if (newValue) {
+    nextTick(() => {
+      activateFocusTrap()
+    })
+  } else {
+    deactivateFocusTrap()
+  }
+})
+
+onUnmounted(() => {
+  deactivateFocusTrap()
+})
+
 const showSimilarAuthors = async () => {
   filterStore.isShowSimilarAuthors = true
   filterStore.selectedArtistForSearchSimilar = artistData.value
-  const similarAuthors = artistData.value?.similar_authors_postgres_ids.map((id: string) => +id)
+  const similarAuthors = artistData.value?.similar_authors_postgres_ids?.map((id: string) => +id)
   filterStore.filterByIds(similarAuthors || [])
   closeModal()
 }
@@ -87,7 +102,7 @@ const onSwiper = (swiper: SwiperType) => {
   bottom 0
   right 0
   background-color #eeeeee
-  z-index 10000000000
+  z-index var(--z-index-modal)
   display flex
   justify-content center
   align-items center

@@ -37,6 +37,7 @@
 <script setup lang="tsx">
 import { useFilterStore } from "~/J/useFilterStore";
 import { useArtistsStore } from "~/J/useArtistsStore";
+import { randomRange } from "~/composables/useUtils";
 
 const config = useRuntimeConfig();
 const filterStore = useFilterStore();
@@ -52,10 +53,6 @@ const handleToggleTableAndBubbles = () => {
 const handleArtistPositionUpdate = ({ id, position }: ArtistPositionUpdate) => {
   artistsStore.updateArtistPosition(id, position)
 }
-
-const randomRange = (min: number, max: number) => {
-  return Math.floor(Math.random() * (max - min + 1) + min);
-};
 
 const hasClearButton = computed(() => filterStore.hasFilters);
 
@@ -96,7 +93,7 @@ onMounted(async () => {
   top 28px
   cursor pointer
   padding 5px
-  z-index: 10000000000
+  z-index: var(--z-index-ui-controls)
   background: none
   border: none
   &:hover
@@ -127,7 +124,7 @@ onMounted(async () => {
   background-color: rgba(0, 0, 0, 0.8);
   color: white;
   border-radius: 4px;
-  z-index: 1000;
+  z-index: var(--z-index-loading);
   font-family: sans-serif;
 
 .error-message
@@ -139,7 +136,7 @@ onMounted(async () => {
   background-color: #ff4444;
   color: white;
   border-radius: 4px;
-  z-index: 1001;
+  z-index: var(--z-index-error);
   font-family: sans-serif;
   display: flex;
   align-items: center;

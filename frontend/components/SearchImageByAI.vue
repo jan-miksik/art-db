@@ -41,10 +41,12 @@ const handleSearchImages = async (event: Event) => {
     const payload = response.data;
     if (!payload?.success) {
       console.error("Search failed:", payload?.error);
+      searchResults.value = [];
+      selectedPicture.value = undefined;
+      filterStore.filterByIds([]);
       return;
     }
     searchResults.value = payload.data ?? [];
-    console.log(searchResults.value)
     const matchingIds = searchResults.value.map((item: any) => item.author.id);
     filterStore.filterByIds(matchingIds)
   } catch (error) {
@@ -58,7 +60,6 @@ const handleClickSelectImage = () => {
 
 const handleRemoveSelectedImage = () => {
   selectedPicture.value = undefined
-  // filterStore.removeFilters()
 }
 
 const selectedImageInUI = computed(() => {
@@ -73,7 +74,6 @@ const selectedImageInUI = computed(() => {
 <style lang="stylus" scoped>
 
 .search-image-by-ai
-  // width: 5.2rem;
   font-weight: 700;
   font-size: 1.5rem;
   cursor: pointer;
