@@ -4,7 +4,7 @@ from django.core.files.uploadedfile import SimpleUploadedFile
 from unittest.mock import patch
 import socket
 from .models import Artwork, Artist
-from .weaviate.weaviate import add_image_to_weaviete, is_safe_url, url_to_base64
+from .weaviate import add_image_to_weaviate, is_safe_url, url_to_base64
 import base64, requests
 
 
@@ -46,7 +46,7 @@ class DummyImage:
 class SSRFProtectionTests(TestCase):
     def test_is_safe_url_returns_pinned_tuple(self):
         # Use a public-looking IP to avoid private/rfc1918 rejection
-        with patch('artists.weaviate.weaviate.socket.getaddrinfo') as mock_gai:
+        with patch('artists.weaviate.service.socket.getaddrinfo') as mock_gai:
             mock_gai.return_value = [
                 (socket.AF_INET, None, None, None, ('93.184.216.34', 443))
             ]
@@ -91,9 +91,9 @@ class SSRFProtectionTests(TestCase):
             def __exit__(self, exc_type, exc_val, exc_tb):
                 return False
 
-        with patch('artists.weaviate.weaviate.is_safe_url', return_value=pinned):
-            with patch('artists.weaviate.weaviate.requests.Session', return_value=DummySession()) as mock_session_cls:
-                with patch('artists.weaviate.weaviate.Image.open') as mock_open:
+        with patch('artists.weaviate.service.is_safe_url', return_value=pinned):
+            with patch('artists.weaviate.service.requests.Session', return_value=DummySession()) as mock_session_cls:
+                with patch('artists.weaviate.service.Image.open') as mock_open:
                     mock_open.return_value.__enter__.return_value.verify.return_value = None
                     result = url_to_base64("https://example.com/resource.png", timeout=5)
 

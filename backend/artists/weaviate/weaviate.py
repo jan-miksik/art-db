@@ -48,8 +48,10 @@ class PinnedDNSAdapter(HTTPAdapter):
         netloc = _format_netloc(self.resolved_ip, port)
         return urlunparse(parsed._replace(netloc=netloc))
 
-    def get_connection(self, url, proxies=None):
-        return super().get_connection(self._pinned_url(url), proxies=proxies)
+    def get_connection_with_tls_context(self, url, proxies=None, stream=False, timeout=None, verify=True, cert=None, **kwargs):
+        return super().get_connection_with_tls_context(
+            self._pinned_url(url), proxies=proxies, stream=stream, timeout=timeout, verify=verify, cert=cert, **kwargs
+        )
 
     def init_poolmanager(self, connections, maxsize, block=False, **pool_kwargs):
         pool_kwargs.setdefault("assert_hostname", self.hostname)
@@ -201,12 +203,14 @@ def url_to_base64(url, timeout=10):
         # Enforce size limit via Content-Length when provided
         content_length = response.headers.get('content-length')
         if content_length:
-            try:
-                if int(content_length) > max_bytes:
-                    raise ValueError("Image exceeds 10MB size limit")
-            except ValueError:
-                # If header is malformed, fall back to streamed enforcement
-                pass
+            if content_length:
+                try:
+                    size = int(content_length)
+                except (ValueError, TypeError):
+                    size = None
+                else:
+                    if size > max_bytes:
+                        raise ValueError("Image exceeds 10MB size limit")
 
         # Stream download and enforce hard cap
         data = BytesIO()
@@ -240,16 +244,6 @@ def url_to_base64(url, timeout=10):
     return resize_image_if_needed(base64_string)
 
 
-# def connect_to_weaviate():
-#     return weaviate.connect_to_custom(
-#         http_host=os.getenv("WEAVIATE_URL"),  # URL only, no http prefix
-#         http_port=8080,
-#         http_secure=True,   # Set to True if https
-#         grpc_host=os.getenv("WEAVIATE_GPC_URL"),
-#         grpc_port=50051,      # Default is 50051, WCD uses 443
-#         grpc_secure=True,   # Edit as needed
-#         auth_credentials=AuthApiKey(os.getenv("WEAVIATE_API_KEY")),
-#     )
 
 
 ############################
@@ -261,7 +255,8 @@ def check_object_exists(artworks, obj_uuid):
     try:
         result = artworks.query.fetch_object_by_id(str(obj_uuid))
         return result is not None
-    except:
+    except (weaviate.exceptions.WeaviateException, Exception) as exc:
+        logger.warning("Failed to check object %s: %s", obj_uuid, exc)
         return False
 
 def remove_if_exists(artworks, obj_uuid):
@@ -269,14 +264,30 @@ def remove_if_exists(artworks, obj_uuid):
     try:
         if check_object_exists(artworks, obj_uuid):
             artworks.data.delete_by_id(str(obj_uuid))
-            print(f"Removing already existing object with UUID: {obj_uuid}")
+            logger.debug(f"Removing already existing object with UUID: {obj_uuid}")
             time.sleep(0.5)  # Give Weaviate time to process the deletion
     except Exception as e:
-        print(f"Error removing existing object: {str(e)}")
+        logger.error(f"Error removing existing object: {str(e)}")
 
 
-def add_image_to_weaviete(artwork_psql_id, author_psql_id, arweave_image_url):
-    print("[[[[[ add_image_to_weaviete ]]]]]")
+def add_image_to_weaviate(artwork_psql_id, author_psql_id, arweave_image_url):
+    """
+    Add an image to Weaviate with retry logic.
+    
+    Args:
+        artwork_psql_id: PostgreSQL ID of the artwork
+        author_psql_id: PostgreSQL ID of the author/artist
+        arweave_image_url: URL of the image on Arweave
+        
+    Returns:
+        str: UUID of the created Weaviate object, or None if failed
+        
+    Example:
+        >>> from artists.weaviate.weaviate import add_image_to_weaviate
+        >>> uuid = add_image_to_weaviate('25', '1', 'https://arweave.net/0zYEjsrKFVa-qt9k9pO7W7j1M-Xyzj_y4MeEq5NY1Hk')
+        >>> print(uuid)
+    """
+    logger.debug("Adding image to Weaviate")
     max_retries = 3
     current_try = 0
 
@@ -289,7 +300,7 @@ def add_image_to_weaviete(artwork_psql_id, author_psql_id, arweave_image_url):
                 try:
                     base64_string = url_to_base64(arweave_image_url)
                 except Exception as e:
-                    print(f"Error converting image to base64: {str(e)}")
+                    logger.error(f"Error converting image to base64: {str(e)}")
                     return None
 
                 data_properties = {
@@ -300,7 +311,7 @@ def add_image_to_weaviete(artwork_psql_id, author_psql_id, arweave_image_url):
 
                 # Generate a deterministic ID, it will generate the same ID for the same data
                 obj_uuid = generate_uuid5(data_properties)
-                print(f"Adding image to Weaviate with UUID: {obj_uuid}")
+                logger.debug(f"Adding image to Weaviate with UUID: {obj_uuid}")
 
                 remove_if_exists(artworks, obj_uuid)
 
@@ -310,22 +321,20 @@ def add_image_to_weaviete(artwork_psql_id, author_psql_id, arweave_image_url):
                 )
 
                 if check_object_exists(artworks, uuid_str):
-                    print(f"Artwork {artwork_psql_id} successfully added to Weaviate with ID {uuid_str}")
+                    logger.info(f"Artwork {artwork_psql_id} successfully added to Weaviate with ID {uuid_str}")
                     return uuid_str
 
-                print(f"Failed to verify artwork {artwork_psql_id} in Weaviate")
+                logger.warning(f"Failed to verify artwork {artwork_psql_id} in Weaviate")
                 return None
 
             except Exception as e:
-                print(f"Attempt {current_try + 1} failed: {str(e)}")
+                logger.warning(f"Attempt {current_try + 1} failed: {str(e)}")
                 current_try += 1
                 if current_try < max_retries:
                     time.sleep(2)  # Wait before retrying
 
-    print(f"Failed to add artwork to Weaviate after {max_retries} attempts")
+    logger.error(f"Failed to add artwork to Weaviate after {max_retries} attempts")
     return None
-
-# python -c "from artists.weaviate.weaviate import add_image_to_weaviete; add_image_to_weaviete('25', '1', 'https://arweave.net/0zYEjsrKFVa-qt9k9pO7W7j1M-Xyzj_y4MeEq5NY1Hk')"
 
 
 ############################
@@ -355,56 +364,26 @@ def search_similar_authors_ids_by_image_url(image_url, limit=2):
     return search_similar_authors_ids_by_base64(image_data_base64, limit)
 
 
-# ++++++++++++++++++++ #
-# ++++++++++++++++++++ #
-# ++++++++++++++++++++ #
-
-############################
-# add image to weaviete
-############################
-
-# Should be added?
-# def add_image_to_weaviete_batch(artwork_psql_id, author_psql_id, arweave_image_url):
-#     # _weaviate_client = weaviate.connect_to_local() # Connect with default parameters
-#     # _artworks = weaviate_client.collections.get("Artworks")
-#     base64_string = url_to_base64(arweave_image_url)
-
-#     print("Adding image to Weaviate", base64_string)
-#     data_properties = {
-#         "artwork_psql_id": artwork_psql_id,
-#         "author_psql_id": author_psql_id,
-#         "image": base64_string
-#     }
-#     obj_uuid = generate_uuid5(data_properties)
-#     print("Adding image to Weaviate", obj_uuid)
-#     try:
-#         with artworks.batch.dynamic() as batch:
-#             batch.add_object(properties=data_properties, uuid=obj_uuid)
-#     finally:
-#         print("finally finally finally")
-#         weaviate_client.close()
-#         return obj_uuid
-
-
-# def add_image_vector_to_weaviete(image_file, arweave_link):
-#     # Calculate the image vector using Weaviete
-#     vector = weaviate_client.image.encode(image_file)
-
-#     # Create a data object with the image properties
-#     data = {
-#         "vector": vector,
-#         "artwork_psql_id": arweave_link
-#     }
-
-#     # Add the data object to Weaviete
-#     weaviate_client.data_object.create(data, "Image")
-
-
 ############################
 # Search for similar images
 ############################
 
 def search_similar_artwork_ids_by_image_url(image_url, limit=1):
+    """
+    Search for similar artwork IDs by image URL.
+    
+    Args:
+        image_url: URL of the image to search for
+        limit: Maximum number of results to return (default: 1)
+        
+    Returns:
+        List of similar artwork objects
+        
+    Example:
+        >>> from artists.weaviate.weaviate import search_similar_artwork_ids_by_image_url
+        >>> results = search_similar_artwork_ids_by_image_url('https://arweave.net/dwUZ_GgXgjV86SAE8NH9cPwb4YovEpvqnZ2Xo1LwoGU')
+        >>> print(results)
+    """
     base64_string = url_to_base64(image_url)
     with get_weaviate_client() as weaviate_client:
         artworks = weaviate_client.collections.get("Artworks")
@@ -413,8 +392,6 @@ def search_similar_artwork_ids_by_image_url(image_url, limit=1):
             limit=limit
         )
         return response.objects
-
-# python -c "from artists.weaviate.weaviate import search_similar_artwork_ids_by_image_url; search_similar_artwork_ids_by_image_url('https://arweave.net/dwUZ_GgXgjV86SAE8NH9cPwb4YovEpvqnZ2Xo1LwoGU');"
 
 
 def search_similar_artwork_ids_by_image_data(image_data_bytes, limit=2):
@@ -439,19 +416,28 @@ def search_similar_images_by_weaviate_image_id(weaviate_image_id, limit=2):
         return response.objects
 
 
-# python -c "from artists.weaviate.weaviate import search_similar_authors_by_weaviate_image_id; search_similar_authors_by_weaviate_image_id('9843a5ac-9563-52fc-b38f-8ae9c01da52f');"
-'''
-python -c "
-import os
-import django
-django.setup()
-from artists.weaviate.weaviate import search_similar_authors_by_weaviate_image_id
-search_similar_authors_by_weaviate_image_id('2b265d11-20f9-55ba-9a2a-fbcdf89bdb07')
-"
-'''
-
-
 def search_similar_authors_by_weaviate_image_id(weaviate_image_id, limit=5):
+    """
+    Search for similar authors by Weaviate image ID.
+    
+    Returns unique authors (no duplicates) by iteratively filtering out
+    already found author IDs.
+    
+    Args:
+        weaviate_image_id: UUID of the Weaviate image object
+        limit: Maximum number of unique authors to return (default: 5)
+        
+    Returns:
+        List of artwork objects with unique author_psql_id values
+        
+    Example:
+        >>> import os
+        >>> import django
+        >>> django.setup()
+        >>> from artists.weaviate.weaviate import search_similar_authors_by_weaviate_image_id
+        >>> results = search_similar_authors_by_weaviate_image_id('2b265d11-20f9-55ba-9a2a-fbcdf89bdb07')
+        >>> print(results)
+    """
     with get_weaviate_client() as weaviate_client:
         artworks = weaviate_client.collections.get("Artworks")
         responses = []
@@ -473,37 +459,6 @@ def search_similar_authors_by_weaviate_image_id(weaviate_image_id, limit=5):
 
         return responses
 
-    # Perform query
-    # initialResponse = artworks.query.near_object(
-    #     near_object=weaviate_image_id,
-    #     limit=1,
-    #     # filters=Filter.by_property("author_psql_id").not_equal(author_psql_id),
-    #     return_metadata=MetadataQuery(distance=True)
-    # )
-
-    # print('Initial Response ------', initialResponse.objects[0].properties['author_psql_id'])
-    # # next queries,
-    # nextResponse = artworks.query.near_object(
-    #     near_object=weaviate_image_id,
-    #     limit=1,
-    #     filters=Filter.by_property("author_psql_id").not_equal(initialResponse.objects[0].properties['author_psql_id']),
-    #     return_metadata=MetadataQuery(distance=True)
-    # )
-
-    # nextResponse2 = artworks.query.near_object(
-    #     near_object=weaviate_image_id,
-    #     limit=1,
-    #     filters=Filter.by_property("author_psql_id").not_equal(initialResponse.objects[0].properties['author_psql_id']) &
-    #         (Filter.by_property("author_psql_id").not_equal(nextResponse.objects[0].properties['author_psql_id'])),
-    #     return_metadata=MetadataQuery(distance=True)
-    # )
-
-    # combined_responses = initialResponse.objects + nextResponse.objects + nextResponse2.objects
-
-    # print('rrrrrrrrr', combined_responses)
-    # weaviate_client.close()
-    # return combined_responses
-
 
 def search_similar_images_by_vector(query_vector, limit=2):
     with get_weaviate_client() as weaviate_client:
@@ -516,83 +471,74 @@ def search_similar_images_by_vector(query_vector, limit=2):
         return response.objects
 
 
-# python -c "from artists.weaviate.weaviate import read_all_artworks; read_all_artworks();"
-'''
-python -c "
-import os
-import django
-django.setup()
-from artists.weaviate.weaviate import read_all_artworks
-read_all_artworks()
-"
-'''
-
-
 def read_all_artworks():
+    """
+    Read and log all artworks from Weaviate.
+    
+    This function iterates through all artworks in the Weaviate collection
+    and logs their UUID and properties. Useful for debugging and inspection.
+    
+    Example:
+        >>> import os
+        >>> import django
+        >>> django.setup()
+        >>> from artists.weaviate.weaviate import read_all_artworks
+        >>> read_all_artworks()
+    """
     with get_weaviate_client() as weaviate_client:
         artworks = weaviate_client.collections.get("Artworks")
-        print("Reading all artworks")
+        logger.debug("Reading all artworks")
         for item in artworks.iterator():
-            print(item.uuid, item.properties)
-
-
-# python -c "from artists.weaviate.weaviate import get_image_by_weaviate_id; get_image_by_weaviate_id('021155da-fb99-5201-b240-9c9c46ec7965');"
-'''
-python -c "
-import os
-import django
-django.setup()
-from artists.weaviate.weaviate import get_image_by_weaviate_id
-get_image_by_weaviate_id('498defaf-5b7e-52e4-ac96-ae2b5dcc278b')
-"
-'''
+            logger.debug(f"Artwork UUID: {item.uuid}, Properties: {item.properties}")
 
 
 def get_image_by_weaviate_id(image_id):
+    """
+    Retrieve an image object from Weaviate by its ID.
+    
+    Args:
+        image_id: UUID of the Weaviate image object
+        
+    Returns:
+        The Weaviate data object containing the image and metadata
+        
+    Example:
+        >>> import os
+        >>> import django
+        >>> django.setup()
+        >>> from artists.weaviate.weaviate import get_image_by_weaviate_id
+        >>> image_obj = get_image_by_weaviate_id('498defaf-5b7e-52e4-ac96-ae2b5dcc278b')
+        >>> print(image_obj)
+    """
     with get_weaviate_client() as weaviate_client:
         artworks = weaviate_client.collections.get("Artworks")
-        print("Reading image by ID")
+        logger.debug(f"Reading image by ID: {image_id}")
         data_object = artworks.query.fetch_object_by_id(image_id)
-        print(data_object)
+        logger.debug(f"Retrieved image data: {data_object}")
         return data_object
-
-
-# e3a39360-aacc-5214-829a-4f23b8a8c3eb {'author_psql_id': '1', 'artwork_psql_id': '1'}
-# python -c "from artists.weaviate.weaviate import remove_by_weaviate_id; remove_by_weaviate_id('8f422679-e269-510d-b04e-b87f4128f52c');"
-'''
-python -c "
-import os
-import django
-django.setup()
-from artists.weaviate.weaviate import remove_by_weaviate_id
-remove_by_weaviate_id('e3a39360-aacc-5214-829a-4f23b8a8c3eb')
-"
-'''
 
 
 def remove_by_weaviate_id(weaviate_id):
+    """
+    Remove an image object from Weaviate by its ID.
+    
+    Args:
+        weaviate_id: UUID of the Weaviate object to remove
+        
+    Returns:
+        The result of the deletion operation
+        
+    Example:
+        >>> import os
+        >>> import django
+        >>> django.setup()
+        >>> from artists.weaviate.weaviate import remove_by_weaviate_id
+        >>> result = remove_by_weaviate_id('e3a39360-aacc-5214-829a-4f23b8a8c3eb')
+        >>> print(result)
+    """
     with get_weaviate_client() as weaviate_client:
         artworks = weaviate_client.collections.get("Artworks")
-        print("Removing image by ID")
+        logger.debug(f"Removing image by ID: {weaviate_id}")
         data_object = artworks.data.delete_by_id(weaviate_id)
-        print(data_object)
+        logger.debug(f"Removed image data: {data_object}")
         return data_object
-
-# python -c "from artists.weaviate.weaviate import add_all_artworks_to_weaviate; add_all_artworks_to_weaviate();"
-# def add_all_artworks_to_weaviate():
-#     # weaviate_client = weaviate.connect_to_local() # Connect with default parameters
-#     # artworks_weaviate = weaviate_client.collections.get("Artworks")
-#     artworks_psql = Artwork.objects.all()
-#     for artwork in artworks_psql:
-#         artwork_psql_id = artwork.id
-#         author_psql_id = artwork.artist.id
-#         arweave_image_url = artwork.picture_url
-
-# If the image is stored locally, get the absolute URL
-# if not arweave_image_url and artwork.picture:
-# arweave_image_url = default_storage.url(artwork.picture.name)
-
-# if arweave_image_url:
-#     uuid = add_image_to_weaviete(artwork_psql_id, author_psql_id, arweave_image_url)
-#     artwork.picture_image_weaviate_id = uuid
-#     artwork.save()

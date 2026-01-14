@@ -220,6 +220,10 @@ if wallet_path_env:
     # Path already set by entrypoint.sh (production path)
     wallet_path = Path(wallet_path_env).resolve()
     wallet_dir = wallet_path.parent
+    if not wallet_path.exists():
+        raise ImproperlyConfigured(
+            f"ARWEAVE_WALLET_PATH is set but file does not exist: {wallet_path}"
+        )
 else:
     # Create a secure, isolated temp directory (for local dev without entrypoint.sh)
     # mkdtemp creates a directory with 0700 permissions by default

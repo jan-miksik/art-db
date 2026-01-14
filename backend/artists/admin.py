@@ -3,8 +3,11 @@ from .models import Artist, Artwork
 from django.utils.html import format_html
 from .arweave_storage import upload_to_arweave
 import os
-from .weaviate.weaviate import add_image_to_weaviete
+from .weaviate import add_image_to_weaviate
 from django import forms
+import logging
+
+logger = logging.getLogger(__name__)
 
 class ArtworkInline(admin.TabularInline):  # or admin.StackedInline for a different layout
     model = Artwork
@@ -84,7 +87,7 @@ class ArtistAdmin(admin.ModelAdmin):
         super().save_model(request, obj, form, change)
 
     def save_related(self, request, form, formsets, change):
-        print("save_related artwork to db")
+        logger.debug("Saving related artworks to database")
 
         super().save_related(request, form, formsets, change)
 
@@ -106,17 +109,17 @@ class ArtistAdmin(admin.ModelAdmin):
 
                     if not artwork.picture_image_weaviate_id and artwork.id and artwork.artist.id and arweave_url:
                         # Add the artwork to Weaviate
-                        weaviate_id = add_image_to_weaviete(artwork.id, artwork.artist.id, arweave_url)
-                        print(f"======== weaviate_id: {weaviate_id}")
+                        weaviate_id = add_image_to_weaviate(artwork.id, artwork.artist.id, arweave_url)
+                        logger.debug(f"Weaviate ID for artwork {artwork.id}: {weaviate_id}")
 
                         if weaviate_id is not None:
                             artwork.picture_image_weaviate_id = weaviate_id
                             artwork.save()
                         else:
                             # Handle the case when the artwork could not be added to Weaviate
-                            print(f"Failed to add artwork {artwork.id} to Weaviate")
+                            logger.warning(f"Failed to add artwork {artwork.id} to Weaviate")
                     else:
-                        print(
+                        logger.debug(
                             f"Skipping Weaviate save for artwork {artwork.id}. picture_image_weaviate_id already exists or missing required data.")
 
     def profile_image_preview(self, obj):
@@ -146,7 +149,7 @@ class ArtworkAdmin(admin.ModelAdmin):
     artwork_image_preview_detail.short_description = 'Artwork Preview Detail'
 
     def save_model(self, request, obj, form, change):
-        print(f"Saving artwork to db {obj.id}")
+        logger.debug(f"Saving artwork to database: {obj.id}")
         if 'picture' in form.changed_data:
             obj.save()
             file_path = obj.picture.path
@@ -159,16 +162,16 @@ class ArtworkAdmin(admin.ModelAdmin):
 
         if not obj.picture_image_weaviate_id and obj.id and obj.artist.id and obj.picture_url:
             # Add the artwork to Weaviate
-            weaviate_id = add_image_to_weaviete(obj.id, obj.artist.id, obj.picture_url)
-            print(f"------- weaviate_id: {weaviate_id}")
+            weaviate_id = add_image_to_weaviate(obj.id, obj.artist.id, obj.picture_url)
+            logger.debug(f"Weaviate ID for artwork {obj.id}: {weaviate_id}")
             if weaviate_id is not None:
                 obj.picture_image_weaviate_id = weaviate_id
                 obj.save()
             else:
                 # Handle the case when the artwork could not be added to Weaviate
-                print(f"Failed to add artwork {obj.id} to Weaviate")
+                logger.warning(f"Failed to add artwork {obj.id} to Weaviate")
         else:
-            print(
+            logger.debug(
                 f"Skipping Weaviate save for artwork {obj.id}. picture_image_weaviate_id already exists or missing required data.")
         super().save_model(request, obj, form, change)
 

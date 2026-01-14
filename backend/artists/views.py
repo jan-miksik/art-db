@@ -8,8 +8,12 @@ from rest_framework.permissions import AllowAny, IsAdminUser
 from rest_framework.response import Response
 from artists.arweave_storage import upload_to_arweave
 from django.shortcuts import get_object_or_404
-from .weaviate.weaviate import search_similar_artwork_ids_by_image_url, search_similar_artwork_ids_by_image_data, \
-    search_similar_authors_ids_by_image_data, search_similar_authors_ids_by_image_url
+from .weaviate import (
+    search_similar_artwork_ids_by_image_url,
+    search_similar_artwork_ids_by_image_data,
+    search_similar_authors_ids_by_image_data,
+    search_similar_authors_ids_by_image_url,
+)
 from .models import Artwork, Artist
 from .throttles import SearchAnonThrottle, SearchUserThrottle
 
@@ -202,5 +206,3 @@ def search_artworks_by_image_url(request):
             })
 
     return Response(response_data)
-
-# http://localhost:8000/artists/search-artworks-by-image-url/?image_url=https://arweave.net/dwUZ_GgXgjV86SAE8NH9cPwb4YovEpvqnZ2Xo1LwoGU&limit=1
