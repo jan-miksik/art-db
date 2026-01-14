@@ -10,30 +10,32 @@ For the full list of settings and their values, see
 https://docs.djangoproject.com/en/5.0/ref/settings/
 """
 
-from pathlib import Path
+import base64
 import os
 import stat
 import tempfile
+from pathlib import Path
 
 from dotenv import load_dotenv
 from django.core.exceptions import ImproperlyConfigured
+
+# Build paths inside the project like this: BASE_DIR / 'subdir'.
+BASE_DIR = Path(__file__).resolve().parent.parent
 
 # Load environment variables based on DJANGO_ENV
 # Uses .env.local for development or .env.production for production
 env = os.getenv('DJANGO_ENV', 'local').lower()
 env_file = f'.env.{env}'
+env_path = BASE_DIR / env_file
 
 # Load environment-specific file (required)
-if not os.path.exists(env_file):
+if not env_path.exists():
     raise ImproperlyConfigured(
-        f"Environment file '{env_file}' not found. "
+        f"Environment file '{env_path}' not found. "
         f"Create it from '{env_file}.example' template. "
         f"Current DJANGO_ENV: {env}"
     )
-load_dotenv(env_file)
-
-# Build paths inside the project like this: BASE_DIR / 'subdir'.
-BASE_DIR = Path(__file__).resolve().parent.parent
+load_dotenv(env_path)
 
 
 # Quick-start development settings - unsuitable for production
@@ -211,11 +213,28 @@ if not wallet_b64:
     raise ImproperlyConfigured(
         "ARWEAVE_WALLET_B64 environment variable is required (base64 of arweave_wallet.json)."
     )
-wallet_path = (Path(tempfile.gettempdir()) / 'arweave_wallet.json').resolve()
-wallet_dir = wallet_path.parent
 
-# Ensure the wallet directory exists before startup (for the configured path)
-wallet_dir.mkdir(parents=True, exist_ok=True)
+# Prefer path from entrypoint.sh (secure random dir), otherwise create one
+wallet_path_env = os.getenv('ARWEAVE_WALLET_PATH')
+if wallet_path_env:
+    # Path already set by entrypoint.sh (production path)
+    wallet_path = Path(wallet_path_env).resolve()
+    wallet_dir = wallet_path.parent
+else:
+    # Create a secure, isolated temp directory (for local dev without entrypoint.sh)
+    # mkdtemp creates a directory with 0700 permissions by default
+    wallet_dir = Path(tempfile.mkdtemp(prefix='arweave_wallet.'))
+    wallet_path = wallet_dir / 'wallet.json'
+    
+    # Decode and write the wallet file
+    try:
+        wallet_data = base64.b64decode(wallet_b64)
+        wallet_path.write_bytes(wallet_data)
+        os.chmod(wallet_path, 0o600)
+    except Exception as exc:
+        raise ImproperlyConfigured(
+            f"Failed to decode ARWEAVE_WALLET_B64 and write wallet: {exc}"
+        ) from exc
 
 # Always block MEDIA_ROOT placement to avoid accidental exposure in any environment
 media_root_resolved = Path(MEDIA_ROOT).resolve()
@@ -224,7 +243,18 @@ if media_root_resolved in wallet_path.parents or wallet_path == media_root_resol
         "Arweave wallet cannot live under MEDIA_ROOT."
     )
 
-# If the wallet already exists, enforce 0600 permissions
+# Verify wallet directory permissions (should be 0700 - owner rwx only)
+wallet_dir_mode = stat.S_IMODE(wallet_dir.stat().st_mode)
+if wallet_dir_mode & 0o077:  # Check if group/other have any permissions
+    try:
+        os.chmod(wallet_dir, 0o700)
+    except PermissionError as exc:
+        raise ImproperlyConfigured(
+            f"Wallet directory must be owner-accessible only (chmod 700). "
+            f"Failed to apply permissions to {wallet_dir}"
+        ) from exc
+
+# Verify wallet file permissions (should be 0600 - owner rw only)
 if wallet_path.exists():
     current_mode = stat.S_IMODE(wallet_path.stat().st_mode)
     if current_mode != 0o600:

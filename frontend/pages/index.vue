@@ -16,9 +16,10 @@
     <ArtistsTable v-if="isTable"/>
     <Artist
       v-else
-      v-for="artist in useArtistsStore().artists"
+      v-for="artist in artistsStore.artists"
       :key="artist.id"
       :artist-data="artist"
+      @update-artist-position="handleArtistPositionUpdate"
       class="artist"
       />
 
@@ -28,25 +29,40 @@
 
 <script setup lang="tsx">
 import axios from "axios";
+import { useFilterStore } from "~/J/useFilterStore";
+import { useArtistsStore, type Artist } from "~/J/useArtistsStore";
 
 const config = useRuntimeConfig();
-const filterStore = useFilterStore()
-const isTable = ref(true)
+const filterStore = useFilterStore();
+const artistsStore = useArtistsStore();
+const isTable = ref(true);
+
+type ArtistPositionUpdate = { id: string; position: { x: number; y: number } }
 
 const handleToggleTableAndBubbles = () => {
   isTable.value = !isTable.value
+}
+
+const handleArtistPositionUpdate = ({ id, position }: ArtistPositionUpdate) => {
+  const updateCollection = (collection: Artist[]) => {
+    const artist = collection.find((item) => item.id === id)
+    if (artist) {
+      artist.position = { ...position }
+    }
+  }
+
+  updateCollection(artistsStore.artists)
+  updateCollection(artistsStore.artistsAll)
 }
 
 const randomRange = (min: number, max: number) => {
   return Math.floor(Math.random() * (max - min + 1) + min);
 };
 
-const hasClearButton = computed(() => {
-  return useFilterStore().hasFilters;
-});
+const hasClearButton = computed(() => filterStore.hasFilters);
 
 const handleClear = () => {
-  useFilterStore().removeFilters();
+  filterStore.removeFilters();
 };
 
 onMounted(async () => {
@@ -62,9 +78,9 @@ onMounted(async () => {
   axios
     .get(`${config.public.DJANGO_SERVER_URL}/artists/`)
     .then((response) => {
-      useArtistsStore().artistsAll = response.data;
-      useArtistsStore().artists = response.data;
-      useArtistsStore().artists.forEach((artist: any) => {
+      artistsStore.artistsAll = response.data;
+      artistsStore.artists = response.data;
+      artistsStore.artists.forEach((artist: any) => {
         artist.position = randomizePosition();
       });
       // useArtistsStore().artists = artists.value;

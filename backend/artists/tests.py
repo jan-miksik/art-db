@@ -2,8 +2,9 @@ from django.test import TestCase, Client
 from django.urls import reverse
 from django.core.files.uploadedfile import SimpleUploadedFile
 from unittest.mock import patch
+import socket
 from .models import Artwork, Artist
-from .weaviate.weaviate import add_image_to_weaviete
+from .weaviate.weaviate import add_image_to_weaviete, is_safe_url, url_to_base64
 import base64, requests
 
 
@@ -32,51 +33,6 @@ class SearchArtworksByImageURLTest(TestCase):
             sizeY=203,
             sizeX=244,
         )
-        # add_image_to_weaviete(str(self.artwork.pk), str(self.artist.pk), self.artwork.picture_url)
-
-
-#     def test_search_artworks_by_image_url(self):
-#         response = self.client.get('/artists/search-artworks-by-image-url/', {'image_url': 'https://arweave.net/dwUZ_GgXgjV86SAE8NH9cPwb4YovEpvqnZ2Xo1LwoGU', 'limit': 1})
-
-#         self.assertEqual(response.status_code, 200)
-
-#         # TODO: resolve this assertion
-#         # Check that the response data is correct
-#         # This will depend on the format of your response data
-#         # print(response.json())
-#         # self.assertEqual(response.json(), [
-#           #   {
-#           #   'artist':
-#           #       {
-#           #         'auctions_turnover_2023_h1_USD': '472991.00',
-#           #         'born': 1985,
-#           #         'firstname': 'Doron',
-#           #         'gender': 'M',
-#           #         'id': 1,
-#           #         'notes': 'TBD',
-#           #         'profile_image': 'image_181.png',
-#           #         'profile_image_url': 'https://arweave.net/jrv8kfPn-THBUq5_WKRLym_R5h7BYy4JWMMF-ATwt3I',
-#           #         'surname': 'LANGBERG'
-#           #       },
-#           #   'artwork':
-#           #     {
-#           #       'artist': 1,
-#           #       'id': 25,
-#           #       'picture': 'artworks/Drawing_Mike_diptych_2020_203x244cm.webp',
-#           #       'picture_url': 'https://arweave.net/0zYEjsrKFVa-qt9k9pO7W7j1M-Xyzj_y4MeEq5NY1Hk',
-#           #       'sizeX': 244,
-#           #       'sizeY': 203,
-#           #       'title': 'Drawing Mike (diptych)',
-#           #       'year': 2020
-#           #   }
-#           # }
-#           # ])
-
-# client = Client()
-# image_url = 'https://arweave.net/dwUZ_GgXgjV86SAE8NH9cPwb4YovEpvqnZ2Xo1LwoGU'
-# limit = 1
-# response = client.get(reverse('search_artworks_by_image_url'), {'image_url': image_url, 'limit': limit})
-# print(response.data)
 
 class DummyImage:
     """Mimics the weaviate response object shape"""
@@ -85,6 +41,79 @@ class DummyImage:
             "artwork_psql_id": artwork_id,
             "author_psql_id": author_id,
         }
+
+
+class SSRFProtectionTests(TestCase):
+    def test_is_safe_url_returns_pinned_tuple(self):
+        # Use a public-looking IP to avoid private/rfc1918 rejection
+        with patch('artists.weaviate.weaviate.socket.getaddrinfo') as mock_gai:
+            mock_gai.return_value = [
+                (socket.AF_INET, None, None, None, ('93.184.216.34', 443))
+            ]
+            result = is_safe_url("https://example.com/resource.png")
+        self.assertEqual(result, ('example.com', '93.184.216.34', 443))
+
+    def test_url_to_base64_uses_pinned_ip_and_host_header(self):
+        # Prepare pinned validation result to ensure the same IP is reused
+        pinned = ('example.com', '93.184.216.34', 443)
+
+        # Fake image bytes for the happy path
+        image_bytes = b"\x89PNG\r\n\x1a\n"  # PNG header bytes
+
+        class DummyResponse:
+            status_code = 200
+            headers = {'content-type': 'image/png'}
+
+            def raise_for_status(self):
+                return None
+
+            def iter_content(self, chunk_size=8192):
+                # Return all content in a single chunk
+                yield image_bytes
+
+        class DummySession:
+            def __init__(self):
+                self.mounted = []
+                self.last_get_args = None
+                self.last_get_kwargs = None
+
+            def mount(self, prefix, adapter):
+                self.mounted.append((prefix, adapter))
+
+            def get(self, *args, **kwargs):
+                self.last_get_args = args
+                self.last_get_kwargs = kwargs
+                return DummyResponse()
+
+            def __enter__(self):
+                return self
+
+            def __exit__(self, exc_type, exc_val, exc_tb):
+                return False
+
+        with patch('artists.weaviate.weaviate.is_safe_url', return_value=pinned):
+            with patch('artists.weaviate.weaviate.requests.Session', return_value=DummySession()) as mock_session_cls:
+                with patch('artists.weaviate.weaviate.Image.open') as mock_open:
+                    mock_open.return_value.__enter__.return_value.verify.return_value = None
+                    result = url_to_base64("https://example.com/resource.png", timeout=5)
+
+        # Ensure session was constructed
+        mock_session_cls.assert_called_once()
+
+        # Inspect the session we returned
+        session_instance = mock_session_cls.return_value
+        self.assertTrue(session_instance.mounted)
+        mount_prefix, _ = session_instance.mounted[0]
+        self.assertIn("93.184.216.34", mount_prefix)
+
+        # The request should target the pinned IP in the URL while preserving Host header
+        called_url = session_instance.last_get_args[0]
+        called_headers = session_instance.last_get_kwargs["headers"]
+        self.assertIn("93.184.216.34", called_url)
+        self.assertEqual(called_headers["Host"], "example.com")
+
+        # Base64 result should match the fake payload
+        self.assertEqual(result, base64.b64encode(image_bytes).decode())
 
 
 class SearchArtworksByImageDataTestCase(TestCase):

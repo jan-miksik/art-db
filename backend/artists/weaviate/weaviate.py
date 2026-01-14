@@ -2,7 +2,8 @@ import weaviate
 from weaviate.classes.query import MetadataQuery
 import base64
 import requests
-from urllib.parse import urlparse
+from requests.adapters import HTTPAdapter
+from urllib.parse import urlparse, urlunparse
 import ipaddress
 import socket
 from weaviate.util import generate_uuid5  # Generate a deterministic ID
@@ -18,6 +19,47 @@ from contextlib import contextmanager
 import logging
 
 logger = logging.getLogger(__name__)
+
+
+def _format_netloc(ip_str, port):
+    """Return a netloc string for an IP (handles IPv6 bracket syntax)."""
+    host = f"[{ip_str}]" if ":" in ip_str and not ip_str.startswith("[") else ip_str
+    return f"{host}:{port}" if port else host
+
+
+class PinnedDNSAdapter(HTTPAdapter):
+    """
+    HTTP adapter that pins a prevalidated IP while preserving TLS hostname checks.
+
+    The adapter rewrites the request destination to the resolved IP but keeps
+    SNI/hostname verification against the original hostname to avoid DNS rebinding
+    between validation and request.
+    """
+
+    def __init__(self, resolved_ip, hostname, port=None, **kwargs):
+        self.resolved_ip = resolved_ip
+        self.hostname = hostname
+        self.port = port
+        super().__init__(**kwargs)
+
+    def _pinned_url(self, url):
+        parsed = urlparse(url)
+        port = parsed.port or self.port
+        netloc = _format_netloc(self.resolved_ip, port)
+        return urlunparse(parsed._replace(netloc=netloc))
+
+    def get_connection(self, url, proxies=None):
+        return super().get_connection(self._pinned_url(url), proxies=proxies)
+
+    def init_poolmanager(self, connections, maxsize, block=False, **pool_kwargs):
+        pool_kwargs.setdefault("assert_hostname", self.hostname)
+        pool_kwargs.setdefault("server_hostname", self.hostname)
+        return super().init_poolmanager(connections, maxsize, block=block, **pool_kwargs)
+
+    def proxy_manager_for(self, proxy, **proxy_kwargs):
+        proxy_kwargs.setdefault("assert_hostname", self.hostname)
+        proxy_kwargs.setdefault("server_hostname", self.hostname)
+        return super().proxy_manager_for(proxy, **proxy_kwargs)
 
 @contextmanager
 def get_weaviate_client():
@@ -61,6 +103,8 @@ def is_safe_url(url):
     """
     SECURITY: Validate URL to prevent SSRF attacks.
     Blocks requests to localhost, private networks, and non-HTTP(S) schemes.
+
+    Returns a tuple of (hostname, resolved_ip, port) on success to enable DNS pinning.
     """
     try:
         parsed = urlparse(url)
@@ -68,23 +112,25 @@ def is_safe_url(url):
         # Only allow https to avoid downgrade/MiTM on untrusted sources
         if parsed.scheme != 'https':
             logger.warning(f"SSRF protection: Blocked non-HTTPS scheme: {parsed.scheme}")
-            return False
+            return None
 
         hostname = parsed.hostname
         if not hostname:
-            return False
+            return None
 
         # Block localhost variations
         if hostname in ('localhost', '127.0.0.1', '0.0.0.0', '::1'):
             logger.warning(f"SSRF protection: Blocked localhost access: {hostname}")
-            return False
+            return None
 
         # Resolve hostname to all IPs (IPv4/IPv6) and check each
         try:
             addr_info = socket.getaddrinfo(hostname, parsed.port or 443)
         except (socket.gaierror, ValueError):
             logger.warning(f"SSRF protection: Blocked unresolvable host: {hostname}")
-            return False
+            return None
+
+        resolved_ip = None
 
         for _, _, _, _, sockaddr in addr_info:
             ip_str = sockaddr[0]
@@ -92,16 +138,23 @@ def is_safe_url(url):
                 ip = ipaddress.ip_address(ip_str)
             except ValueError:
                 logger.warning(f"SSRF protection: Invalid IP resolved for {hostname}: {ip_str}")
-                return False
+                return None
 
             if ip.is_private or ip.is_loopback or ip.is_reserved or ip.is_link_local:
                 logger.warning(f"SSRF protection: Blocked private/reserved IP: {ip}")
-                return False
+                return None
 
-        return True
+            # Keep the first validated IP to reuse for the request
+            if resolved_ip is None:
+                resolved_ip = ip_str
+
+        if not resolved_ip:
+            return None
+
+        return hostname, resolved_ip, parsed.port or 443
     except Exception as e:
         logger.error(f"SSRF protection: URL validation error: {e}")
-        return False
+        return None
 
 
 def url_to_base64(url, timeout=10):
@@ -112,58 +165,73 @@ def url_to_base64(url, timeout=10):
     max_bytes = 10 * 1024 * 1024  # 10 MB hard cap
 
     # Validate URL for SSRF protection
-    if not is_safe_url(url):
+    validation = is_safe_url(url)
+    if not validation:
         raise ValueError(f"URL blocked by security policy: {url}")
 
-    # Make request with timeout and verify SSL; disallow redirects to avoid bypass
-    response = requests.get(
-        url,
-        timeout=timeout,
-        verify=True,
-        headers={'User-Agent': 'ArtDB-ImageFetcher/1.0', 'Accept': 'image/*'},
-        allow_redirects=False,
-        stream=True
-    )
+    hostname, resolved_ip, port = validation
+    parsed = urlparse(url)
+    pinned_url = urlunparse(parsed._replace(netloc=_format_netloc(resolved_ip, port)))
 
-    if 300 <= response.status_code < 400:
-        raise ValueError("Redirects are not allowed for image fetches")
+    headers = {
+        'User-Agent': 'ArtDB-ImageFetcher/1.0',
+        'Accept': 'image/*',
+        'Host': hostname,
+    }
 
-    response.raise_for_status()
+    # Make request with timeout and verify SSL using the pinned IP; disallow redirects
+    with requests.Session() as session:
+        adapter = PinnedDNSAdapter(resolved_ip, hostname, port)
+        session.mount(f"{parsed.scheme}://{_format_netloc(resolved_ip, port)}", adapter)
 
-    # Enforce size limit via Content-Length when provided
-    content_length = response.headers.get('content-length')
-    if content_length:
+        response = session.get(
+            pinned_url,
+            timeout=timeout,
+            verify=True,
+            headers=headers,
+            allow_redirects=False,
+            stream=True
+        )
+
+        if 300 <= response.status_code < 400:
+            raise ValueError("Redirects are not allowed for image fetches")
+
+        response.raise_for_status()
+
+        # Enforce size limit via Content-Length when provided
+        content_length = response.headers.get('content-length')
+        if content_length:
+            try:
+                if int(content_length) > max_bytes:
+                    raise ValueError("Image exceeds 10MB size limit")
+            except ValueError:
+                # If header is malformed, fall back to streamed enforcement
+                pass
+
+        # Stream download and enforce hard cap
+        data = BytesIO()
+        downloaded = 0
+        for chunk in response.iter_content(chunk_size=8192):
+            if not chunk:
+                continue
+            downloaded += len(chunk)
+            if downloaded > max_bytes:
+                raise ValueError("Image exceeds 10MB size limit during download")
+            data.write(chunk)
+
+        image_bytes = data.getvalue()
+
+        # Validate content type
+        content_type = response.headers.get('content-type', '')
+        if not content_type.startswith('image/'):
+            raise ValueError(f"URL does not point to an image: {content_type}")
+
+        # Validate the downloaded payload is a real image
         try:
-            if int(content_length) > max_bytes:
-                raise ValueError("Image exceeds 10MB size limit")
-        except ValueError:
-            # If header is malformed, fall back to streamed enforcement
-            pass
-
-    # Stream download and enforce hard cap
-    data = BytesIO()
-    downloaded = 0
-    for chunk in response.iter_content(chunk_size=8192):
-        if not chunk:
-            continue
-        downloaded += len(chunk)
-        if downloaded > max_bytes:
-            raise ValueError("Image exceeds 10MB size limit during download")
-        data.write(chunk)
-
-    image_bytes = data.getvalue()
-
-    # Validate content type
-    content_type = response.headers.get('content-type', '')
-    if not content_type.startswith('image/'):
-        raise ValueError(f"URL does not point to an image: {content_type}")
-
-    # Validate the downloaded payload is a real image
-    try:
-        with Image.open(BytesIO(image_bytes)) as img:
-            img.verify()
-    except Exception:
-        raise ValueError("Downloaded content is not a valid image")
+            with Image.open(BytesIO(image_bytes)) as img:
+                img.verify()
+        except Exception:
+            raise ValueError("Downloaded content is not a valid image")
 
     # Convert to base64
     base64_string = base64.b64encode(image_bytes).decode()
@@ -360,7 +428,7 @@ def search_similar_artwork_ids_by_image_data(image_data_bytes, limit=2):
         return response.objects
 
 
-def search_similar_images_by_weaviate_image_id(weaviate_image_id, author_psql_id, limit=2):
+def search_similar_images_by_weaviate_image_id(weaviate_image_id, limit=2):
     with get_weaviate_client() as weaviate_client:
         artworks = weaviate_client.collections.get("Artworks")
         response = artworks.query.near_object(
@@ -505,7 +573,7 @@ remove_by_weaviate_id('e3a39360-aacc-5214-829a-4f23b8a8c3eb')
 def remove_by_weaviate_id(weaviate_id):
     with get_weaviate_client() as weaviate_client:
         artworks = weaviate_client.collections.get("Artworks")
-        print("Reading image by ID")
+        print("Removing image by ID")
         data_object = artworks.data.delete_by_id(weaviate_id)
         print(data_object)
         return data_object

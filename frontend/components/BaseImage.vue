@@ -34,6 +34,7 @@ const fullImageSrc = ref('')
 const fullImageFileInIDB = ref<ImageIDB>()
 const fullImageRef = ref()
 const isFullImageLoaded = ref(false)
+const blobUrlRef = ref<string | null>(null)
 let observer: IntersectionObserver | null = null
 
 
@@ -76,6 +77,10 @@ const giveFullImageSourcePlease = async () => {
 
   if (!fullImageFileInIDB.value) {
     addImage(imageFileComputed.value)
+    if (blobUrlRef.value) {
+      URL.revokeObjectURL(blobUrlRef.value)
+      blobUrlRef.value = null
+    }
     fullImageSrc.value = imageFileComputed.value.url
     return
   }
@@ -83,10 +88,19 @@ const giveFullImageSourcePlease = async () => {
   if (fullImageFileInIDB.value) {
     if (fullImageFileInIDB.value.lastUpdated !== imageFileComputed.value.lastUpdated) {
       updateImage(imageFileComputed.value)
+      if (blobUrlRef.value) {
+        URL.revokeObjectURL(blobUrlRef.value)
+        blobUrlRef.value = null
+      }
       fullImageSrc.value = imageFileComputed.value.url
       return
     }
-    fullImageSrc.value = URL.createObjectURL(fullImageFileInIDB.value.blob)
+    if (blobUrlRef.value) {
+      URL.revokeObjectURL(blobUrlRef.value)
+      blobUrlRef.value = null
+    }
+    blobUrlRef.value = URL.createObjectURL(fullImageFileInIDB.value.blob)
+    fullImageSrc.value = blobUrlRef.value
   }
 }
 
@@ -130,13 +144,11 @@ onUnmounted(() => {
   // Clean up IntersectionObserver to prevent memory leaks
   observer?.disconnect()
   observer = null
+  if (blobUrlRef.value) {
+    URL.revokeObjectURL(blobUrlRef.value)
+    blobUrlRef.value = null
+  }
 })
-
-// watch(isVisible, (newVal) => {
-//   if (newVal) {
-//     giveFullImageSourcePlease()
-//   }
-// }, { immediate: true })
 
 </script>
 

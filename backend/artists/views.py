@@ -56,7 +56,9 @@ def upload_to_arweave_view(request, pk):
         arweave_url = upload_to_arweave(temp_path)
         return Response({'success': True, 'url': arweave_url})
     except Exception as exc:
-        return Response({'success': False, 'error': f'Upload failed: {exc}'}, status=500)
+        import logging
+        logging.exception("Arweave upload failed")
+        return Response({'success': False, 'error': 'Upload failed'}, status=500)
     finally:
         if temp_path and not hasattr(file, 'temporary_file_path') and os.path.exists(temp_path):
             os.remove(temp_path)
@@ -174,6 +176,8 @@ def search_artworks_by_image_data(request):
 @throttle_classes([SearchAnonThrottle, SearchUserThrottle])
 def search_artworks_by_image_url(request):
     image_url = request.GET.get('image_url')
+    if not image_url:
+        return Response({'error': 'image_url query parameter is required'}, status=400)
     limit = int(request.GET.get('limit', 1))
     similar_images = search_similar_artwork_ids_by_image_url(image_url, limit)
     images_list = list(similar_images)

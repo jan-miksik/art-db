@@ -39,9 +39,7 @@
 </template>
 
 <script setup lang="ts">
-const props = defineProps<{
-  artistData: Artist
-}>()
+import { useFilterStore } from '#imports'
 import interact from 'interactjs'
 import useArtistModal from './useArtistModal'
 const { openArtistModal } = useArtistModal()
@@ -49,6 +47,12 @@ const filterStore = useFilterStore()
 
 import useMouseActionDetector from '~/J/useMouseActionDetector'
 import { type Artist } from '../J/useArtistsStore'
+const props = defineProps<{
+  artistData: Artist
+}>()
+const emit = defineEmits<{
+  (e: 'update-artist-position', payload: { id: string; position: { x: number; y: number } }): void
+}>()
 const {
   isDragging,
   mouseDownHandler,
@@ -83,11 +87,13 @@ onMounted(() => {
         autoScroll: true,
         listeners: {
           move(event: { dx: number; dy: number }) {
-            const xRaw = props.artistData.position.x + event.dx
-            const yRaw = props.artistData.position.y + event.dy
-            const x = xRaw > 0 ? xRaw : 0
-            props.artistData.position.x = x
-            props.artistData.position.y = yRaw
+            const x = Math.max(props.artistData.position.x + event.dx, 0)
+            const y = Math.max(props.artistData.position.y + event.dy, 0)
+
+            emit('update-artist-position', {
+              id: props.artistData.id,
+              position: { x, y }
+            })
           }
         }
       })
