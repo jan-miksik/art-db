@@ -38,9 +38,14 @@ const handleSearchImages = async (event: Event) => {
         'Content-Type': 'multipart/form-data'
       }
     });
-    searchResults.value = response.data
+    const payload = response.data;
+    if (!payload?.success) {
+      console.error("Search failed:", payload?.error);
+      return;
+    }
+    searchResults.value = payload.data ?? [];
     console.log(searchResults.value)
-    const matchingIds = response.data.map((item: any) => item.author.id);
+    const matchingIds = searchResults.value.map((item: any) => item.author.id);
     filterStore.filterByIds(matchingIds)
   } catch (error) {
     console.error(error)

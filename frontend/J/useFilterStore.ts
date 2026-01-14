@@ -168,7 +168,7 @@ export const useFilterStore = defineStore('filter', () => {
       );
     }
 
-    useArtistsStore().artists = filteredResults;
+    useArtistsStore().setArtists(filteredResults);
     await sleep(100);
     reArrangeSortedArtists('firstname');
     isFilteringInProgress.value = false;
@@ -180,14 +180,17 @@ export const useFilterStore = defineStore('filter', () => {
     await applyAllFilters();
   }
 
-  const filterByBornInRange = async (from: number, to: number) => {
-    rangeFrom.value = from.toString();
-    rangeTo.value = to.toString();
+  const filterByBornInRange = async (from: string, to: string) => {
+    rangeFrom.value = from;
+    rangeTo.value = to;
     isFilterByBornInRange.value = !!(from || to);
     await applyAllFilters();
   }
 
-  const filterByMediaType = async (selectedMediaType: SelectionOptionType<MediaTypeOptionEnum>) => {
+  const filterByMediaType = async (selectedMediaType?: SelectionOptionType<MediaTypeOptionEnum>) => {
+    if (!selectedMediaType) {
+      return;
+    }
     if (selectedMediaToShow.value.some((option) => option.enumValue === selectedMediaType.enumValue)) {
       selectedMediaToShow.value = selectedMediaToShow.value.filter(o => o.enumValue !== selectedMediaType.enumValue);
     } else {
@@ -196,7 +199,10 @@ export const useFilterStore = defineStore('filter', () => {
     await applyAllFilters();
   }
 
-  const filterByGender = async (selectedGender: SelectionOptionType<GenderOptionEnum>) => {
+  const filterByGender = async (selectedGender?: SelectionOptionType<GenderOptionEnum>) => {
+    if (!selectedGender) {
+      return;
+    }
     if (selectedGendersToShow.value.some((option) => option.enumValue === selectedGender.enumValue)) {
       selectedGendersToShow.value = selectedGendersToShow.value.filter(o => o.enumValue !== selectedGender.enumValue);
     } else {
@@ -210,7 +216,7 @@ export const useFilterStore = defineStore('filter', () => {
 
     const filteredPeople = ids.map(id => useArtistsStore().artistsAll.find(artist => +artist.id === +id)) as Artist[];
 
-    useArtistsStore().artists = filteredPeople;
+    useArtistsStore().setArtists(filteredPeople);
     await sleep(100)
     reArrangeSortedArtists('firstname');
   }

@@ -44,7 +44,7 @@
 </template>
 
 <script setup lang="tsx">
-import {watch, computed, ref} from 'vue'
+import {computed} from 'vue'
 import {useFilterStore} from '~/J/useFilterStore'
 import {useSortStore} from '~/J/useSortStore'
 import {
@@ -114,9 +114,9 @@ const onBeforeEnter = (el: Element) => {
   element.style.transform = 'translateY(30px)'
 }
 
-const onEnter = (el: HTMLElement, done: () => void) => {
+const onEnter = (el: Element, done: () => void) => {
   const element = el as HTMLElement
-  const delay = el.dataset.index ? parseInt(el.dataset.index) * 0.1 : 0
+  const delay = element.dataset.index ? parseInt(element.dataset.index) * 0.1 : 0
 
   gsap.to(element, {
     opacity: 1,
@@ -144,8 +144,6 @@ const data = computed(() => {
   return [...artistsStore.artists]
 })
 
-console.log('data', data.value)
-
 // Create the table with computed data
 const table = useVueTable({
   get data() {
@@ -154,11 +152,6 @@ const table = useVueTable({
   columns,
   getCoreRowModel: getCoreRowModel(),
 })
-
-// Optional: force table refresh when data changes
-watch(() => data.value, () => {
-  table.getRowModel().rows
-}, {deep: true})
 </script>
 
 <style lang="stylus">

@@ -1,11 +1,18 @@
 <template>
   <div class="sort" ref="menuRef">
     <!-- <div class="sort__toggle" @click="toggleMenu">△▼△▼△</div> -->
-    <div class="sort__toggle" @click="toggleMenu">
+    <button 
+      class="sort__toggle" 
+      @click="toggleMenu"
+      :aria-expanded="isOpenMenu"
+      aria-controls="sort-menu"
+      aria-label="Toggle sort menu"
+      type="button"
+    >
       <!--      <span class="sort__toggel-v">V</span><span class="sort__toggel-reversed-v">V</span> -->
-      <img src="~/assets/sort.svg" width="30">
-    </div>
-    <div v-if="isOpenMenu" class="sort__menu">
+      <img src="~/assets/sort.svg" width="30" alt="Sort">
+    </button>
+    <div v-if="isOpenMenu" id="sort-menu" class="sort__menu" role="menu">
       <SortOption :sortOption="sortStore.SortOption.SURNAME" label="name" class="name-sort" isSortSignBeforeText/>
       <SortOption :sortOption="sortStore.SortOption.BORN" label="born" class="born-sort" isSortSignBeforeText/>
       <!-- <SortOption :sortOption="sortStore.SortOption.GENDER" label="gender"/> -->
@@ -65,6 +72,9 @@ onUnmounted(() => {
   font-weight 700
   display: flex;
   justify-content: center;
+  background: none
+  border: none
+  padding: 0
 
 .sort__toggel-reversed-v
   transform: rotate(180deg);

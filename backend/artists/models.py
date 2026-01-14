@@ -1,5 +1,6 @@
 from django.db import models
 from django.contrib.postgres.fields import ArrayField
+from django.core.validators import MinValueValidator, MaxValueValidator
 
 class Artist(models.Model):
     GENDER_CHOICES = [
@@ -17,9 +18,9 @@ class Artist(models.Model):
     profile_image = models.ImageField(null=True, blank=True)
     firstname = models.CharField(max_length=200, blank=True)
     surname = models.CharField(max_length=200, blank=True)
-    born = models.IntegerField(null=True, blank=True)
+    born = models.IntegerField(null=True, blank=True, validators=[MinValueValidator(1000), MaxValueValidator(2100)])
     gender = models.CharField(max_length=1, choices=GENDER_CHOICES, blank=True)
-    auctions_turnover_2023_h1_USD = models.DecimalField(max_digits=16, decimal_places=2, null=True, blank=True)
+    auctions_turnover_2023_h1_USD = models.DecimalField(max_digits=16, decimal_places=2, null=True, blank=True, validators=[MinValueValidator(0)])
     profile_image_url = models.URLField(blank=True, null=True)  # saved to Arweave
     profile_image_weaviate_id = models.CharField(max_length=200, blank=True)
     similar_authors_postgres_ids = ArrayField(models.CharField(max_length=200), blank=True, default=list)
@@ -45,9 +46,9 @@ class Artwork(models.Model):
     title = models.CharField(max_length=250, default='without name', blank=True)
     picture = models.ImageField(upload_to='artworks/', null=True, blank=True, max_length=255)
     picture_url = models.URLField(blank=True, null=True)  # saved to Arweave
-    year = models.IntegerField(null=True, blank=True)
-    sizeY = models.IntegerField(null=True, blank=True)
-    sizeX = models.IntegerField(null=True, blank=True)
+    year = models.IntegerField(null=True, blank=True, validators=[MinValueValidator(1000), MaxValueValidator(2100)])
+    sizeY = models.IntegerField(null=True, blank=True, validators=[MinValueValidator(0)])
+    sizeX = models.IntegerField(null=True, blank=True, validators=[MinValueValidator(0)])
     picture_image_weaviate_id = models.CharField(max_length=200, blank=True)
 
     def __str__(self):

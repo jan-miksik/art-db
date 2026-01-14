@@ -1,7 +1,9 @@
 <template>
   <div :class="['filter-option', `filter-option--${filterType}`]">
       <div class="filter-option__search" v-if="filterType === FilterType.SEARCH">
-          <img src="~/assets/search.svg" height="20"><input v-model="textToSearch" class="filter-option__search-input" @input="handleSearchInputChange" placeholder=""/>
+          <img src="~/assets/search.svg" height="20" alt="Search icon">
+          <label for="filter-search-input" class="visually-hidden">Search by name</label>
+          <input id="filter-search-input" v-model="textToSearch" class="filter-option__search-input" @input="handleSearchInputChange" placeholder=""/>
       </div>
       <div class="filter-option__range" v-if="filterType === FilterType.RANGE">
           {{ label || filterOption }}
@@ -23,7 +25,8 @@
 </template>
 
 <script setup lang="ts">
-import type { FilterOption, FilterType, SelectionOptionType } from '#imports';
+import type { FilterOption, SelectionOptionType } from '#imports';
+import { FilterType } from '~/J/useFilterStore';
 const filterStore = useFilterStore()
 const { textToSearch, rangeFrom, rangeTo } = storeToRefs(filterStore)
 
@@ -61,6 +64,18 @@ const isOptionSelected = (selectionOption: SelectionOptionType<any>) => {
 </script>
 
 <style lang="stylus" scoped>
+.visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border-width: 0;
+}
+
 input:focus {
     outline: none;
 }
@@ -91,30 +106,6 @@ input[type="number"] {
   text-align: center
   line-height: 1.5rem
   z-index 10000000000
-
-.filter-option--SEARCH
-  //position absolute
-  //top 0
-  //left 0
-
-.filter-option--RANGE
-  //position absolute
-  //top 60px
-  //left 0
-  //background pink
-
-
-.filter-option--SELECTION
-  //margin-right auto
-  //position absolute
-  //top 90px
-  //left 0
-
-.filter-option--SELECTION_TEXT
-  //margin-right auto
-  //position absolute
-  //top 120px
-  //left 0
 
 .filter-option__selection
   display: flex

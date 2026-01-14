@@ -175,7 +175,10 @@ class SearchArtworksByImageDataTestCase(TestCase):
             response = client.post(url, {'image': file, 'limit': 2})
 
         self.assertEqual(response.status_code, 200)
-        data = response.json()
+        body = response.json()
+        self.assertTrue(body['success'])
+        self.assertIsNone(body['error'])
+        data = body['data']
         self.assertEqual(len(data), 1)
         self.assertEqual(data[0]['artwork']['id'], artwork.id)
         self.assertEqual(data[0]['author']['id'], artist.id)
@@ -231,7 +234,10 @@ class N1QueryFixTestCase(TestCase):
                 response = client.post(url, {'image': file, 'limit': 10})
         
         self.assertEqual(response.status_code, 200)
-        data = response.json()
+        body = response.json()
+        self.assertTrue(body['success'])
+        self.assertIsNone(body['error'])
+        data = body['data']
         self.assertEqual(len(data), 10)
 
 

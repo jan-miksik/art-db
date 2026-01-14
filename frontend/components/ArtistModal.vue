@@ -19,8 +19,6 @@
       </div>
       <div class="artist-modal__swiper-container">
         <div @click.stop class="artist-modal__swiper-inner-container">
-        <!-- <div v-if="hasNextSlide" class="artist-modal__swiper-next-slide" @click="handleSwipeNext"/>
-        <div v-if="hasPrevSlide" class="artist-modal__swiper-prev-slide" @click="handleSwipePrev"/> -->
         <swiper
           class="artist-modal__swiper"
           @click.stop
@@ -56,19 +54,16 @@ import useArtistModal from "./useArtistModal";
 const { isOpen, artistData } = useArtistModal();
 import { Swiper, SwiperSlide } from 'swiper/vue'
 import { Navigation, Keyboard, Mousewheel } from 'swiper/modules';
+import type { Swiper as SwiperType } from 'swiper'
 import 'swiper/css';
 import 'swiper/css/navigation';
-import axios from "axios";
 
 const filterStore = useFilterStore()
-const config = useRuntimeConfig();
 
-const swiperRef = ref();
+const swiperRef = ref<SwiperType>();
 const closeModal = () => {
   isOpen.value = false;
 }
-
-const similarAuthorsResult = ref([]);
 
 const showSimilarAuthors = async () => {
   filterStore.isShowSimilarAuthors = true
@@ -76,52 +71,11 @@ const showSimilarAuthors = async () => {
   const similarAuthors = artistData.value?.similar_authors_postgres_ids.map((id: string) => +id)
   filterStore.filterByIds(similarAuthors || [])
   closeModal()
-
-  // In case if will be used live image search
-  // try {
-  //   const queryParams = new URLSearchParams({
-  //     image_url: artistData.value?.artworks[0]?.picture_url ?? '',
-  //     limit: '5',
-  //   });
-  //   const response = await axios.get(`${config.public.DJANGO_SERVER_URL}/artists/search-authors-by-image-url/?${queryParams.toString()}`);
-  //
-  //   similarAuthorsResult.value = response.data
-  //   const matchingIds = response.data.map((item: any) => item.author.id);
-  //   console.log('matchingIds', matchingIds)
-  //   filterStore.filterByIds(matchingIds)
-  //   closeModal()
-  // } catch (error) {
-  //   console.error(error)
-  // }
 }
 
-const onSwiper = (swiper: any) => {
+const onSwiper = (swiper: SwiperType) => {
   swiperRef.value = swiper
 }
-
-// const amountOfSlides = computed(() => {
-//   return artistData.value?.artworks?.length || 0;
-// });
-
-// const hasNextSlide = computed(() => {
-//   return activeIndex.value < amountOfSlides.value - 1;
-// })
-// const hasPrevSlide = computed(() => {
-//   return activeIndex.value > 0 && amountOfSlides.value > 0;
-// })
-// const activeIndex = ref(0);
-
-// const handleOnSlideChange = (swiper: any) => {
-//   activeIndex.value = swiper?.activeIndex;
-// }
-
-// const handleSwipeNext = () => {
-//   swiperRef.value.slideNext();
-// }
-
-// const handleSwipePrev = () => {
-//   swiperRef.value.slidePrev();
-// }
 
 </script>
 
@@ -240,21 +194,5 @@ const onSwiper = (swiper: any) => {
   align-items: center;
   cursor default
 
-// .artist-modal__swiper-prev-slide
-//   z-index: 10000000000;
-//   position: absolute;
-//   left: 0;
-//   width: 150px;
-//   height: inherit;
-//   cursor url('~/assets/arrow-left.svg'), auto
-
-
-// .artist-modal__swiper-next-slide
-//   z-index: 10000000000;
-//   position: absolute;
-//   right: 0;
-//   width: 150px;
-//   height: inherit;
-//   cursor url('~/assets/arrow-right.svg'), auto
 
 </style>

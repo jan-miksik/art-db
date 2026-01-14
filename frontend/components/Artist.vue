@@ -1,15 +1,18 @@
 <template>
-  <div
+  <button
     ref="artistRef"
     :class="['artist', {'artist__sorting-in-progress': !isDragging}]"
     :style="handlePieceStyle"
     @click="openArtistModal(artistData)"
+    @keydown="handleKeyDown"
     @mousedown="handleOnMouseDown"
     @mousemove="mouseMoveHandler"
     @mouseleave="mouseLeaveHandler"
     @mouseup="mouseUpHandler"
     @touchmove="touchmoveHandler"
     @touchend="touchendHandler"
+    :aria-label="`View details for ${artistData.name}`"
+    type="button"
   >
     <BaseImage
       :image-file="{
@@ -35,7 +38,7 @@
         </textPath>
       </text>
     </svg>
-  </div>
+  </button>
 </template>
 
 <script setup lang="ts">
@@ -65,7 +68,7 @@ const {
 } = useMouseActionDetector()
 
 const localZIndex = ref(1)
-const artistRef = ref()
+const artistRef = ref<HTMLElement>()
 const isMouseDown = ref(false)
 
 const randomRange = (min: number, max: number) => {
@@ -77,7 +80,7 @@ const randomizeRotation = () => {
     rotate: `${randomRange(0, 360)}deg`
   }
 }
-const randomizedRotation = computed(() => randomizeRotation())
+const randomizedRotation = ref(randomizeRotation())
 
 onMounted(() => {
   if (artistRef.value) {
@@ -123,6 +126,13 @@ const handleOnMouseDown = () => {
   zIndexOfLastSelectedPiece.value++
 }
 
+const handleKeyDown = (event: KeyboardEvent) => {
+  if (event.key === 'Enter' || event.key === ' ') {
+    event.preventDefault()
+    openArtistModal(props.artistData)
+  }
+}
+
 const handlePieceStyle = computed(() => {
   return {
     left: `${props.artistData?.position?.x || 0}px`,
@@ -135,6 +145,10 @@ const handlePieceStyle = computed(() => {
 <style lang="stylus">
 .artist
   position absolute
+  background: none
+  border: none
+  padding: 0
+  cursor: pointer
 
 .artist__sorting-in-progress
   transition all 1s ease-in-out

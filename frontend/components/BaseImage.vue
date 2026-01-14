@@ -21,7 +21,7 @@ import { type ImageIDB } from '~/services/idb'
 
 const props = defineProps<{
   imageFile: ImageFile
-  externalCssClass?: any
+  externalCssClass?: string | string[] | Record<string, boolean> | Array<string | Record<string, boolean>>
 }>()
 const { externalCssClass } = toRefs(props)
 
