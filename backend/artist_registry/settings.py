@@ -259,16 +259,15 @@ if wallet_dir_mode & 0o077:  # Check if group/other have any permissions
         ) from exc
 
 # Verify wallet file permissions (should be 0600 - owner rw only)
-if wallet_path.exists():
-    current_mode = stat.S_IMODE(wallet_path.stat().st_mode)
-    if current_mode != 0o600:
-        try:
-            os.chmod(wallet_path, 0o600)
-        except PermissionError as exc:
-            raise ImproperlyConfigured(
-                f"ARWEAVE_WALLET_PATH must be owner-readable only (chmod 600). "
-                f"Failed to apply permissions to {wallet_path}"
-            ) from exc
+current_mode = stat.S_IMODE(wallet_path.stat().st_mode)
+if current_mode != 0o600:
+    try:
+        os.chmod(wallet_path, 0o600)
+    except PermissionError as exc:
+        raise ImproperlyConfigured(
+            f"ARWEAVE_WALLET_PATH must be owner-readable only (chmod 600). "
+            f"Failed to apply permissions to {wallet_path}"
+        ) from exc
 
 # Export as a string for downstream consumers
 ARWEAVE_WALLET_PATH = str(wallet_path)

@@ -203,14 +203,12 @@ def url_to_base64(url, timeout=10):
         # Enforce size limit via Content-Length when provided
         content_length = response.headers.get('content-length')
         if content_length:
-            if content_length:
-                try:
-                    size = int(content_length)
-                except (ValueError, TypeError):
-                    size = None
-                else:
-                    if size > max_bytes:
-                        raise ValueError("Image exceeds 10MB size limit")
+            try:
+                size = int(content_length)
+            except (ValueError, TypeError):
+                size = None
+            if size is not None and size > max_bytes:
+                raise ValueError("Image exceeds 10MB size limit")
 
         # Stream download and enforce hard cap
         data = BytesIO()
@@ -247,7 +245,7 @@ def url_to_base64(url, timeout=10):
 
 
 ############################
-# add image to weaviete
+# add image to weaviate
 ############################
 
 def check_object_exists(artworks, obj_uuid):
@@ -255,7 +253,7 @@ def check_object_exists(artworks, obj_uuid):
     try:
         result = artworks.query.fetch_object_by_id(str(obj_uuid))
         return result is not None
-    except (weaviate.exceptions.WeaviateException, Exception) as exc:
+    except Exception as exc:
         logger.warning("Failed to check object %s: %s", obj_uuid, exc)
         return False
 

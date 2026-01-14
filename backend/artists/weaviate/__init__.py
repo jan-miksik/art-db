@@ -12,7 +12,7 @@ from .client import get_weaviate_client, PinnedDNSAdapter
 
 # Business logic / Service layer
 from .service import (
-    add_image_to_weaviete,
+    add_image_to_weaviate,
     url_to_base64,
     is_safe_url,
     resize_image_if_needed,
@@ -41,18 +41,12 @@ from .exceptions import (
     WeaviateSecurityError,
 )
 
-# Backward compatibility: fix typo in function name
-# Note: The function is actually named add_image_to_weaviete (with 'e')
-# but some code imports it as add_image_to_weaviate (without 'e')
-add_image_to_weaviate = add_image_to_weaviete
-
 __all__ = [
     # Client
     'get_weaviate_client',
     'PinnedDNSAdapter',
     # Service
-    'add_image_to_weaviete',
-    'add_image_to_weaviate',  # Alias for backward compatibility
+    'add_image_to_weaviate',
     'url_to_base64',
     'is_safe_url',
     'resize_image_if_needed',

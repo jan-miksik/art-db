@@ -75,6 +75,24 @@ def search_similar_authors_by_weaviate_image_id(weaviate_image_id, limit=5):
     """Search for similar authors by Weaviate image ID, excluding duplicates."""
     with get_weaviate_client() as weaviate_client:
         artworks = weaviate_client.collections.get("Artworks")
+        grouped = GroupBy(
+            prop="author_psql_id",
+            number_of_groups=limit,
+            objects_per_group=1
+        )
+
+        try:
+            grouped_response = artworks.query.near_object(
+                near_object=weaviate_image_id,
+                group_by=grouped,
+                return_metadata=MetadataQuery(distance=True)
+            )
+            if grouped_response.objects:
+                return grouped_response.objects
+        except TypeError:
+            # Fallback for clients without group_by support on near_object
+            pass
+
         responses = []
         filters = None
 
@@ -86,11 +104,17 @@ def search_similar_authors_by_weaviate_image_id(weaviate_image_id, limit=5):
                 return_metadata=MetadataQuery(distance=True)
             )
 
-            if response.objects:
-                responses.append(response.objects[0])
-                author_psql_id = response.objects[0].properties['author_psql_id']
-                new_filter = Filter.by_property("author_psql_id").not_equal(author_psql_id)
-                filters = new_filter if filters is None else filters & new_filter
+            if not response.objects:
+                break
+
+            first_object = response.objects[0]
+            responses.append(first_object)
+            author_psql_id = first_object.properties.get("author_psql_id")
+            if author_psql_id is None:
+                continue
+
+            new_filter = Filter.by_property("author_psql_id").not_equal(author_psql_id)
+            filters = new_filter if filters is None else filters & new_filter
 
         return responses
 

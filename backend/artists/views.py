@@ -1,3 +1,4 @@
+import logging
 import os
 from tempfile import NamedTemporaryFile
 
@@ -60,7 +61,6 @@ def upload_to_arweave_view(request, pk):
         arweave_url = upload_to_arweave(temp_path)
         return Response({'success': True, 'url': arweave_url})
     except Exception as exc:
-        import logging
         logging.exception("Arweave upload failed")
         return Response({'success': False, 'error': 'Upload failed'}, status=500)
     finally:

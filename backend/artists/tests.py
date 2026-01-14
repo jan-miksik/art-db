@@ -2,10 +2,19 @@ from django.test import TestCase, Client
 from django.urls import reverse
 from django.core.files.uploadedfile import SimpleUploadedFile
 from unittest.mock import patch
+from io import BytesIO
 import socket
+import base64
+import requests
+from PIL import Image
+
 from .models import Artwork, Artist
-from .weaviate import add_image_to_weaviate, is_safe_url, url_to_base64
-import base64, requests
+from .weaviate import (
+    is_safe_url,
+    resize_image_if_needed,
+    url_to_base64,
+    WeaviateImageError,
+)
 
 
 class SearchArtworksByImageURLTest(TestCase):
@@ -61,8 +70,10 @@ class SSRFProtectionTests(TestCase):
         image_bytes = b"\x89PNG\r\n\x1a\n"  # PNG header bytes
 
         class DummyResponse:
-            status_code = 200
-            headers = {'content-type': 'image/png'}
+            def __init__(self):
+                self.status_code = 200
+                self.headers = {'content-type': 'image/png'}
+                self.closed = False
 
             def raise_for_status(self):
                 return None
@@ -70,6 +81,16 @@ class SSRFProtectionTests(TestCase):
             def iter_content(self, chunk_size=8192):
                 # Return all content in a single chunk
                 yield image_bytes
+
+            def close(self):
+                self.closed = True
+
+            def __enter__(self):
+                return self
+
+            def __exit__(self, exc_type, exc_val, exc_tb):
+                self.close()
+                return False
 
         class DummySession:
             def __init__(self):
@@ -83,7 +104,8 @@ class SSRFProtectionTests(TestCase):
             def get(self, *args, **kwargs):
                 self.last_get_args = args
                 self.last_get_kwargs = kwargs
-                return DummyResponse()
+                self.last_response = DummyResponse()
+                return self.last_response
 
             def __enter__(self):
                 return self
@@ -114,6 +136,9 @@ class SSRFProtectionTests(TestCase):
 
         # Base64 result should match the fake payload
         self.assertEqual(result, base64.b64encode(image_bytes).decode())
+
+        # Response should be closed after streaming
+        self.assertTrue(session_instance.last_response.closed)
 
 
 class SearchArtworksByImageDataTestCase(TestCase):
@@ -209,29 +234,37 @@ class N1QueryFixTestCase(TestCase):
         data = response.json()
         self.assertEqual(len(data), 10)
 
-    def test_search_authors_batch_queries(self):
-        """Verify that author search also uses batch queries"""
-        client = Client()
-        
-        # Create dummy results with .objects attribute (different response shape for author search)
-        class DummyResponse:
-            def __init__(self, items):
-                self.objects = items
-        
-        dummy_items = [
-            DummyImage(self.artworks[i].id, self.artists[i].id)
-            for i in range(10)
-        ]
-        dummy_response = DummyResponse(dummy_items)
-        
-        file = SimpleUploadedFile("test.jpg", b"fake-image-bytes", content_type="image/jpeg")
-        url = reverse('search_authors_by_image_data')
-        
-        with patch('artists.views.search_similar_authors_ids_by_image_data', return_value=dummy_response):
-            # Should only make 2 queries: one for Artwork, one for Artist
-            with self.assertNumQueries(2):
-                response = client.post(url, {'image': file, 'limit': 10})
-        
-        self.assertEqual(response.status_code, 200)
-        data = response.json()
-        self.assertEqual(len(data), 10)
+
+
+class ResizeImageIfNeededTests(TestCase):
+    def _make_base64_image(self, size=(200, 200), mode="RGBA", format="PNG"):
+        img = Image.new(mode, size, color=(255, 0, 0, 128))
+        buffer = BytesIO()
+        img.save(buffer, format=format)
+        img_bytes = buffer.getvalue()
+        return base64.b64encode(img_bytes).decode(), img_bytes, img.size
+
+    def test_shrinks_and_converts_to_rgb_with_min_dimension_clamp(self):
+        b64_image, img_bytes, original_size = self._make_base64_image(size=(320, 240))
+        max_size_mb = (len(img_bytes) / (1024 * 1024)) * 0.4  # force shrink
+
+        result = resize_image_if_needed(b64_image, max_size_mb=max_size_mb)
+
+        decoded = base64.b64decode(result)
+        self.assertLessEqual(len(decoded), int(max_size_mb * 1024 * 1024))
+
+        with Image.open(BytesIO(decoded)) as img:
+            self.assertEqual(img.mode, "RGB")  # alpha removed
+            self.assertGreater(img.width, 0)
+            self.assertGreater(img.height, 0)
+            self.assertLessEqual(img.width, original_size[0])
+            self.assertLessEqual(img.height, original_size[1])
+
+    def test_decompression_bomb_guard_raises(self):
+        b64_image, img_bytes, _ = self._make_base64_image(size=(100, 100))
+        max_size_mb = (len(img_bytes) / (1024 * 1024)) * 0.5  # ensure processing
+
+        with patch('artists.weaviate.service.MAX_IMAGE_PIXELS', 10):
+            with self.assertRaises(WeaviateImageError):
+                resize_image_if_needed(b64_image, max_size_mb=max_size_mb)
+

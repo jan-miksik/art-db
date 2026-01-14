@@ -55,9 +55,19 @@ class PinnedDNSAdapter(HTTPAdapter):
 def get_weaviate_client():
     """Context manager for handling Weaviate client connections."""
     client = None
+    logger.debug("Connecting to local Weaviate instance")
     try:
         client = weaviate.connect_to_local()
+        logger.info("Connected to local Weaviate instance")
         yield client
+    except Exception:
+        logger.exception("Failed to connect to local Weaviate instance")
+        raise
     finally:
         if client is not None:
-            client.close()
+            try:
+                client.close()
+                logger.debug("Closed local Weaviate client")
+            except Exception:
+                logger.exception("Error while closing local Weaviate client")
+                raise

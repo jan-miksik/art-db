@@ -7,6 +7,7 @@ import time
 import logging
 from urllib.parse import urlparse, urlunparse
 from PIL import Image
+from PIL import UnidentifiedImageError
 from io import BytesIO
 from weaviate.util import generate_uuid5
 
@@ -14,32 +15,72 @@ from .client import get_weaviate_client, PinnedDNSAdapter, _format_netloc
 from .exceptions import WeaviateImageError, WeaviateSecurityError
 
 logger = logging.getLogger(__name__)
+MAX_IMAGE_PIXELS = 200_000_000  # guard against decompression bombs (approx 200MP)
+RESIZE_TARGET_MB = 8  # keep room below download cap so resizing can trigger
 
 
-def resize_image_if_needed(base64_string, max_size_mb=10):
-    """Resize the image if it's too large."""
-    # Decode base64 to binary
-    img_data = base64.b64decode(base64_string)
-    img = Image.open(BytesIO(img_data))
+def _ensure_not_decompression_bomb(img):
+    pixels = img.width * img.height
+    if pixels > MAX_IMAGE_PIXELS:
+        raise WeaviateImageError(
+            f"Image too large ({pixels} pixels) — potential decompression bomb"
+        )
 
-    # Calculate current size in MB
-    current_size = len(img_data) / (1024 * 1024)
 
-    if current_size > max_size_mb:
-        # Calculate new dimensions to reduce size while maintaining aspect ratio
-        ratio = (max_size_mb / current_size) ** 0.5
-        new_width = int(img.width * ratio)
-        new_height = int(img.height * ratio)
+def resize_image_if_needed(base64_string, max_size_mb=RESIZE_TARGET_MB):
+    """Resize the image if it's too large.
 
-        # Resize image
-        img = img.resize((new_width, new_height), Image.Resampling.LANCZOS)
+    Adds guards for decompression bombs, ensures RGB output, clamps minimum
+    dimensions, and iteratively shrinks until under the byte cap.
+    """
+    try:
+        img_data = base64.b64decode(base64_string, validate=True)
+    except Exception as exc:
+        raise WeaviateImageError("Invalid base64 image data") from exc
 
-        # Convert back to base64
-        buffered = BytesIO()
-        img.save(buffered, format=img.format or 'JPEG', quality=85)
-        return base64.b64encode(buffered.getvalue()).decode()
+    max_bytes = int(max_size_mb * 1024 * 1024)
 
-    return base64_string
+    try:
+        with Image.open(BytesIO(img_data)) as img:
+            _ensure_not_decompression_bomb(img)
+
+            # Early return if already under limit after validation
+            if len(img_data) <= max_bytes:
+                return base64_string
+
+            # Ensure compatibility with JPEG (no alpha, no palette)
+            if img.mode in ("RGBA", "LA", "P"):
+                img = img.convert("RGB")
+
+            ratio = (max_bytes / max(len(img_data), 1)) ** 0.5
+            new_width = max(1, int(img.width * ratio))
+            new_height = max(1, int(img.height * ratio))
+            img = img.resize((new_width, new_height), Image.Resampling.LANCZOS)
+
+            buffered = BytesIO()
+            img.save(buffered, format="JPEG", quality=85, optimize=True)
+            out = buffered.getvalue()
+    except Image.DecompressionBombError as exc:
+        raise WeaviateImageError("Image rejected: decompression bomb risk") from exc
+    except UnidentifiedImageError as exc:
+        raise WeaviateImageError("Invalid image data") from exc
+
+    attempts = 0
+    while len(out) > max_bytes and attempts < 5:
+        attempts += 1
+        with Image.open(BytesIO(out)) as img2:
+            img2 = img2.resize(
+                (max(1, img2.width * 9 // 10), max(1, img2.height * 9 // 10)),
+                Image.Resampling.LANCZOS,
+            )
+            b2 = BytesIO()
+            img2.save(b2, format="JPEG", quality=80, optimize=True)
+            out = b2.getvalue()
+
+    if len(out) > max_bytes:
+        raise WeaviateImageError("Unable to resize image under size limit")
+
+    return base64.b64encode(out).decode()
 
 
 def is_safe_url(url):
@@ -127,61 +168,64 @@ def url_to_base64(url, timeout=10):
         adapter = PinnedDNSAdapter(resolved_ip, hostname, port)
         session.mount(f"{parsed.scheme}://{_format_netloc(resolved_ip, port)}", adapter)
 
-        response = session.get(
+        with session.get(
             pinned_url,
             timeout=timeout,
             verify=True,
             headers=headers,
             allow_redirects=False,
             stream=True
-        )
+        ) as response:
 
-        if 300 <= response.status_code < 400:
-            raise WeaviateImageError("Redirects are not allowed for image fetches")
+            if 300 <= response.status_code < 400:
+                raise WeaviateImageError("Redirects are not allowed for image fetches")
 
-        response.raise_for_status()
+            response.raise_for_status()
 
-        # Enforce size limit via Content-Length when provided
-        content_length = response.headers.get('content-length')
-        if content_length:
+            # Enforce size limit via Content-Length when provided
+            content_length = response.headers.get('content-length')
+            if content_length:
+                try:
+                    size = int(content_length)
+                except (ValueError, TypeError):
+                    size = None
+                else:
+                    if size > max_bytes:
+                        raise WeaviateImageError("Image exceeds 10MB size limit")
+
+            # Stream download and enforce hard cap
+            data = BytesIO()
+            downloaded = 0
+            for chunk in response.iter_content(chunk_size=8192):
+                if not chunk:
+                    continue
+                downloaded += len(chunk)
+                if downloaded > max_bytes:
+                    raise WeaviateImageError("Image exceeds 10MB size limit during download")
+                data.write(chunk)
+
+            image_bytes = data.getvalue()
+
+            # Validate content type
+            content_type = response.headers.get('content-type', '')
+            if not content_type.startswith('image/'):
+                raise WeaviateImageError(f"URL does not point to an image: {content_type}")
+
+            # Validate the downloaded payload is a real image and guard against bombs
             try:
-                size = int(content_length)
-            except (ValueError, TypeError):
-                size = None
-            else:
-                if size > max_bytes:
-                    raise WeaviateImageError("Image exceeds 10MB size limit")
-
-        # Stream download and enforce hard cap
-        data = BytesIO()
-        downloaded = 0
-        for chunk in response.iter_content(chunk_size=8192):
-            if not chunk:
-                continue
-            downloaded += len(chunk)
-            if downloaded > max_bytes:
-                raise WeaviateImageError("Image exceeds 10MB size limit during download")
-            data.write(chunk)
-
-        image_bytes = data.getvalue()
-
-        # Validate content type
-        content_type = response.headers.get('content-type', '')
-        if not content_type.startswith('image/'):
-            raise WeaviateImageError(f"URL does not point to an image: {content_type}")
-
-        # Validate the downloaded payload is a real image
-        try:
-            with Image.open(BytesIO(image_bytes)) as img:
-                img.verify()
-        except Exception:
-            raise WeaviateImageError("Downloaded content is not a valid image")
+                with Image.open(BytesIO(image_bytes)) as img:
+                    _ensure_not_decompression_bomb(img)
+                    img.verify()
+            except Image.DecompressionBombError as exc:
+                raise WeaviateImageError("Downloaded content rejected: decompression bomb risk") from exc
+            except Exception:
+                raise WeaviateImageError("Downloaded content is not a valid image")
 
     # Convert to base64
     base64_string = base64.b64encode(image_bytes).decode()
 
     # Resize if needed
-    return resize_image_if_needed(base64_string)
+    return resize_image_if_needed(base64_string, max_size_mb=RESIZE_TARGET_MB)
 
 
 def check_object_exists(artworks, obj_uuid):
@@ -206,7 +250,7 @@ def remove_if_exists(artworks, obj_uuid):
         logger.error(f"Error removing existing object: {str(e)}")
 
 
-def add_image_to_weaviete(artwork_psql_id, author_psql_id, arweave_image_url):
+def add_image_to_weaviate(artwork_psql_id, author_psql_id, arweave_image_url):
     """Add an image to Weaviate with retry logic."""
     logger.debug("Adding image to Weaviate")
     max_retries = 3
