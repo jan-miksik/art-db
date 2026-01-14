@@ -42,9 +42,8 @@ The `settings.py` file automatically loads the appropriate environment file base
 - `PGDATABASE`, `PGUSER`, `POSTGRES_PASSWORD`, `PGHOST`, `PGPORT` - Database config
 - `CORS_ALLOWED_ORIGINS` - Comma-separated list of allowed CORS origins
 
-### Optional
-- `ARWEAVE_WALLET_B64` - Base64-encoded contents of `arweave_wallet.json`
-- `ARWEAVE_WALLET_PATH` - Path to Arweave wallet file (defaults to `MEDIA_ROOT/arweave_wallet.json`)
+### Required
+- `ARWEAVE_WALLET_B64` - Base64-encoded contents of `arweave_wallet.json` (mandatory)
 
 ## Arweave wallet in production (Railway)
 
@@ -52,8 +51,8 @@ Set the wallet file as an env var and let the entrypoint write it to disk on boo
 
 1. Base64 the wallet locally (no newlines): `base64 -w 0 arweave_wallet.json` (macOS: `base64 arweave_wallet.json`)
 2. Add the value to Railway as `ARWEAVE_WALLET_B64`
-3. (Optional) Set `ARWEAVE_WALLET_PATH` if you want a non-default location
-4. On start, `entrypoint.sh` will decode to the path and apply `0600` permissions
+3. Wallet file is written to `/tmp/arweave_wallet.json` automatically; ensure runtime has permission and the path isn’t exposed
+4. On start, `entrypoint.sh` will decode to that path and apply `0600` permissions; it will fail if `ARWEAVE_WALLET_B64` is missing or invalid
 
 ## Security Notes
 
@@ -62,6 +61,7 @@ Set the wallet file as an env var and let the entrypoint write it to disk on boo
 - ❌ NEVER commit actual `.env` files with secrets
 - ❌ NEVER use `DEBUG=True` in production
 - ❌ NEVER use weak passwords or default secrets in production
+- 🔒 Arweave wallet file is written to `/tmp/arweave_wallet.json`, outside `MEDIA_ROOT`, and kept `chmod 600`; `ARWEAVE_WALLET_B64` env var is mandatory
 
 ## Generating a Secret Key
 

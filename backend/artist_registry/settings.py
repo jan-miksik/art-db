@@ -12,6 +12,8 @@ https://docs.djangoproject.com/en/5.0/ref/settings/
 
 from pathlib import Path
 import os
+import stat
+import tempfile
 
 from dotenv import load_dotenv
 from django.core.exceptions import ImproperlyConfigured
@@ -67,6 +69,23 @@ INSTALLED_APPS = [
     'artists',
     'storages',
 ]
+
+# Django REST Framework configuration
+REST_FRAMEWORK = {
+    'DEFAULT_AUTHENTICATION_CLASSES': [
+        'rest_framework.authentication.SessionAuthentication',
+    ],
+    'DEFAULT_THROTTLE_CLASSES': [
+        'rest_framework.throttling.AnonRateThrottle',
+        'rest_framework.throttling.UserRateThrottle',
+    ],
+    'DEFAULT_THROTTLE_RATES': {
+        'anon': '100/hour',           # Anonymous users: 100 requests/hour
+        'user': '1000/hour',          # Authenticated users: 1000 requests/hour
+        'search': '30/hour',          # Search endpoints (expensive): 30/hour for anon
+        'search_user': '300/hour',    # Search endpoints: 300/hour for authenticated
+    }
+}
 
 MIDDLEWARE = [
     'corsheaders.middleware.CorsMiddleware',
@@ -186,8 +205,39 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
 MEDIA_URL = '/media/'
 
-# Arweave wallet path - SECURITY: Store outside web root in production
-ARWEAVE_WALLET_PATH = os.getenv('ARWEAVE_WALLET_PATH', os.path.join(MEDIA_ROOT, 'arweave_wallet.json'))
+# Arweave wallet - must be provided via ARWEAVE_WALLET_B64 (no fallback path env)
+wallet_b64 = os.getenv('ARWEAVE_WALLET_B64')
+if not wallet_b64:
+    raise ImproperlyConfigured(
+        "ARWEAVE_WALLET_B64 environment variable is required (base64 of arweave_wallet.json)."
+    )
+wallet_path = (Path(tempfile.gettempdir()) / 'arweave_wallet.json').resolve()
+wallet_dir = wallet_path.parent
+
+# Ensure the wallet directory exists before startup (for the configured path)
+wallet_dir.mkdir(parents=True, exist_ok=True)
+
+# Always block MEDIA_ROOT placement to avoid accidental exposure in any environment
+media_root_resolved = Path(MEDIA_ROOT).resolve()
+if media_root_resolved in wallet_path.parents or wallet_path == media_root_resolved:
+    raise ImproperlyConfigured(
+        "Arweave wallet cannot live under MEDIA_ROOT."
+    )
+
+# If the wallet already exists, enforce 0600 permissions
+if wallet_path.exists():
+    current_mode = stat.S_IMODE(wallet_path.stat().st_mode)
+    if current_mode != 0o600:
+        try:
+            os.chmod(wallet_path, 0o600)
+        except PermissionError as exc:
+            raise ImproperlyConfigured(
+                f"ARWEAVE_WALLET_PATH must be owner-readable only (chmod 600). "
+                f"Failed to apply permissions to {wallet_path}"
+            ) from exc
+
+# Export as a string for downstream consumers
+ARWEAVE_WALLET_PATH = str(wallet_path)
 
 # SECURITY: Production security settings
 if not DEBUG:

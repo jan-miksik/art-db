@@ -65,9 +65,9 @@ def is_safe_url(url):
     try:
         parsed = urlparse(url)
 
-        # Only allow http and https schemes
-        if parsed.scheme not in ('http', 'https'):
-            logger.warning(f"SSRF protection: Blocked non-HTTP scheme: {parsed.scheme}")
+        # Only allow https to avoid downgrade/MiTM on untrusted sources
+        if parsed.scheme != 'https':
+            logger.warning(f"SSRF protection: Blocked non-HTTPS scheme: {parsed.scheme}")
             return False
 
         hostname = parsed.hostname
@@ -79,16 +79,25 @@ def is_safe_url(url):
             logger.warning(f"SSRF protection: Blocked localhost access: {hostname}")
             return False
 
-        # Resolve hostname to IP and check if it's private
+        # Resolve hostname to all IPs (IPv4/IPv6) and check each
         try:
-            ip = ipaddress.ip_address(socket.gethostbyname(hostname))
+            addr_info = socket.getaddrinfo(hostname, parsed.port or 443)
+        except (socket.gaierror, ValueError):
+            logger.warning(f"SSRF protection: Blocked unresolvable host: {hostname}")
+            return False
+
+        for _, _, _, _, sockaddr in addr_info:
+            ip_str = sockaddr[0]
+            try:
+                ip = ipaddress.ip_address(ip_str)
+            except ValueError:
+                logger.warning(f"SSRF protection: Invalid IP resolved for {hostname}: {ip_str}")
+                return False
+
             if ip.is_private or ip.is_loopback or ip.is_reserved or ip.is_link_local:
                 logger.warning(f"SSRF protection: Blocked private/reserved IP: {ip}")
                 return False
-        except (socket.gaierror, ValueError):
-            # If we can't resolve, block it - unresolvable hosts are suspicious
-            logger.warning(f"SSRF protection: Blocked unresolvable host: {hostname}")
-            return False
+
         return True
     except Exception as e:
         logger.error(f"SSRF protection: URL validation error: {e}")
@@ -100,26 +109,64 @@ def url_to_base64(url, timeout=10):
     Convert image URL to base64 with size checking.
     SECURITY: Includes SSRF protection and request timeout.
     """
+    max_bytes = 10 * 1024 * 1024  # 10 MB hard cap
+
     # Validate URL for SSRF protection
     if not is_safe_url(url):
         raise ValueError(f"URL blocked by security policy: {url}")
 
-    # Make request with timeout and verify SSL
+    # Make request with timeout and verify SSL; disallow redirects to avoid bypass
     response = requests.get(
         url,
         timeout=timeout,
         verify=True,
-        headers={'User-Agent': 'ArtDB-ImageFetcher/1.0'}
+        headers={'User-Agent': 'ArtDB-ImageFetcher/1.0', 'Accept': 'image/*'},
+        allow_redirects=False,
+        stream=True
     )
+
+    if 300 <= response.status_code < 400:
+        raise ValueError("Redirects are not allowed for image fetches")
+
     response.raise_for_status()
+
+    # Enforce size limit via Content-Length when provided
+    content_length = response.headers.get('content-length')
+    if content_length:
+        try:
+            if int(content_length) > max_bytes:
+                raise ValueError("Image exceeds 10MB size limit")
+        except ValueError:
+            # If header is malformed, fall back to streamed enforcement
+            pass
+
+    # Stream download and enforce hard cap
+    data = BytesIO()
+    downloaded = 0
+    for chunk in response.iter_content(chunk_size=8192):
+        if not chunk:
+            continue
+        downloaded += len(chunk)
+        if downloaded > max_bytes:
+            raise ValueError("Image exceeds 10MB size limit during download")
+        data.write(chunk)
+
+    image_bytes = data.getvalue()
 
     # Validate content type
     content_type = response.headers.get('content-type', '')
     if not content_type.startswith('image/'):
         raise ValueError(f"URL does not point to an image: {content_type}")
 
+    # Validate the downloaded payload is a real image
+    try:
+        with Image.open(BytesIO(image_bytes)) as img:
+            img.verify()
+    except Exception:
+        raise ValueError("Downloaded content is not a valid image")
+
     # Convert to base64
-    base64_string = base64.b64encode(response.content).decode()
+    base64_string = base64.b64encode(image_bytes).decode()
 
     # Resize if needed
     return resize_image_if_needed(base64_string)
@@ -218,20 +265,16 @@ def add_image_to_weaviete(artwork_psql_id, author_psql_id, arweave_image_url):
 ############################
 
 def search_similar_authors_ids_by_base64(image_data_base64, limit=2):
-    weaviate_client = weaviate.connect_to_local()  # Connect with default parameters
-    artworks = weaviate_client.collections.get("Artworks")
-
-    responses = artworks.query.near_image(
-        near_image=image_data_base64,
-        group_by=GroupBy(
-            prop="author_psql_id",
-            number_of_groups=limit,
-            objects_per_group=1
+    with get_weaviate_client() as weaviate_client:
+        artworks = weaviate_client.collections.get("Artworks")
+        return artworks.query.near_image(
+            near_image=image_data_base64,
+            group_by=GroupBy(
+                prop="author_psql_id",
+                number_of_groups=limit,
+                objects_per_group=1
+            )
         )
-    )
-
-    weaviate_client.close()
-    return responses
 
 
 def search_similar_authors_ids_by_image_data(image_data_bytes, limit=2):
@@ -294,51 +337,38 @@ def search_similar_authors_ids_by_image_url(image_url, limit=2):
 ############################
 
 def search_similar_artwork_ids_by_image_url(image_url, limit=1):
-    weaviate_client = weaviate.connect_to_local()  # Connect with default parameters
-    artworks = weaviate_client.collections.get("Artworks")
     base64_string = url_to_base64(image_url)
-
-    # Perform query
-    response = artworks.query.near_image(
-        near_image=base64_string,
-        # return_properties=["artwork_psql_id"],
-        limit=limit
-    )
-    # print(response.objects[0])
-    weaviate_client.close()
-    return response.objects
+    with get_weaviate_client() as weaviate_client:
+        artworks = weaviate_client.collections.get("Artworks")
+        response = artworks.query.near_image(
+            near_image=base64_string,
+            limit=limit
+        )
+        return response.objects
 
 # python -c "from artists.weaviate.weaviate import search_similar_artwork_ids_by_image_url; search_similar_artwork_ids_by_image_url('https://arweave.net/dwUZ_GgXgjV86SAE8NH9cPwb4YovEpvqnZ2Xo1LwoGU');"
 
 
 def search_similar_artwork_ids_by_image_data(image_data_bytes, limit=2):
-    weaviate_client = weaviate.connect_to_local()  # Connect with default parameters
-    artworks = weaviate_client.collections.get("Artworks")
-    # Assuming image_data is in base64 format
     image_data_base64 = base64.b64encode(image_data_bytes).decode('utf-8')
-
-    response = artworks.query.near_image(
-        near_image=image_data_base64,
-        # return_properties=["artwork_psql_id"],
-        limit=limit
-    )
-    weaviate_client.close()
-    return response.objects
+    with get_weaviate_client() as weaviate_client:
+        artworks = weaviate_client.collections.get("Artworks")
+        response = artworks.query.near_image(
+            near_image=image_data_base64,
+            limit=limit
+        )
+        return response.objects
 
 
 def search_similar_images_by_weaviate_image_id(weaviate_image_id, author_psql_id, limit=2):
-    weaviate_client = weaviate.connect_to_local()  # Connect with default parameters
-    artworks = weaviate_client.collections.get("Artworks")
-    # Perform query
-    response = artworks.query.near_object(
-        near_object=weaviate_image_id,
-        limit=limit,
-        # filters=Filter.by_property("author_psql_id").not_equal(author_psql_id),
-        return_metadata=MetadataQuery(distance=True)
-    )
-    # print(response.objects[0])
-    weaviate_client.close()
-    return response.objects
+    with get_weaviate_client() as weaviate_client:
+        artworks = weaviate_client.collections.get("Artworks")
+        response = artworks.query.near_object(
+            near_object=weaviate_image_id,
+            limit=limit,
+            return_metadata=MetadataQuery(distance=True)
+        )
+        return response.objects
 
 
 # python -c "from artists.weaviate.weaviate import search_similar_authors_by_weaviate_image_id; search_similar_authors_by_weaviate_image_id('9843a5ac-9563-52fc-b38f-8ae9c01da52f');"
@@ -354,31 +384,26 @@ search_similar_authors_by_weaviate_image_id('2b265d11-20f9-55ba-9a2a-fbcdf89bdb0
 
 
 def search_similar_authors_by_weaviate_image_id(weaviate_image_id, limit=5):
-    weaviate_client = weaviate.connect_to_local()  # Connect with default parameters
-    artworks = weaviate_client.collections.get("Artworks")
-    responses = []
-    filters = None
+    with get_weaviate_client() as weaviate_client:
+        artworks = weaviate_client.collections.get("Artworks")
+        responses = []
+        filters = None
 
-    for _ in range(limit):
-        response = artworks.query.near_object(
-            near_object=weaviate_image_id,
-            limit=1,
-            filters=filters,
-            return_metadata=MetadataQuery(distance=True)
-        )
+        for _ in range(limit):
+            response = artworks.query.near_object(
+                near_object=weaviate_image_id,
+                limit=1,
+                filters=filters,
+                return_metadata=MetadataQuery(distance=True)
+            )
 
-        if response.objects:
-            responses.append(response.objects[0])
-            author_psql_id = response.objects[0].properties['author_psql_id']
-            new_filter = Filter.by_property("author_psql_id").not_equal(author_psql_id)
+            if response.objects:
+                responses.append(response.objects[0])
+                author_psql_id = response.objects[0].properties['author_psql_id']
+                new_filter = Filter.by_property("author_psql_id").not_equal(author_psql_id)
+                filters = new_filter if filters is None else filters & new_filter
 
-            if filters is None:
-                filters = new_filter
-            else:
-                filters = filters & new_filter
-
-    weaviate_client.close()
-    return responses
+        return responses
 
     # Perform query
     # initialResponse = artworks.query.near_object(
@@ -413,17 +438,14 @@ def search_similar_authors_by_weaviate_image_id(weaviate_image_id, limit=5):
 
 
 def search_similar_images_by_vector(query_vector, limit=2):
-    weaviate_client = weaviate.connect_to_local()  # Connect with default parameters
-    artworks = weaviate_client.collections.get("Artworks")
-    # Perform query
-    response = artworks.query.near_vector(
-        near_vector=query_vector,  # your query vector goes here
-        limit=limit,
-        return_metadata=MetadataQuery(distance=True)
-    )
-    # print(response.objects[0])
-    weaviate_client.close()
-    return response.objects
+    with get_weaviate_client() as weaviate_client:
+        artworks = weaviate_client.collections.get("Artworks")
+        response = artworks.query.near_vector(
+            near_vector=query_vector,
+            limit=limit,
+            return_metadata=MetadataQuery(distance=True)
+        )
+        return response.objects
 
 
 # python -c "from artists.weaviate.weaviate import read_all_artworks; read_all_artworks();"
@@ -439,16 +461,11 @@ read_all_artworks()
 
 
 def read_all_artworks():
-    weaviate_client = weaviate.connect_to_local()  # Connect with default parameters
-    artworks = weaviate_client.collections.get("Artworks")
-    print("Reading all artworks")
-    artworks = weaviate_client.collections.get("Artworks")
-    try:
+    with get_weaviate_client() as weaviate_client:
+        artworks = weaviate_client.collections.get("Artworks")
+        print("Reading all artworks")
         for item in artworks.iterator():
             print(item.uuid, item.properties)
-        # Your code here
-    finally:
-        weaviate_client.close()
 
 
 # python -c "from artists.weaviate.weaviate import get_image_by_weaviate_id; get_image_by_weaviate_id('021155da-fb99-5201-b240-9c9c46ec7965');"
@@ -464,16 +481,12 @@ get_image_by_weaviate_id('498defaf-5b7e-52e4-ac96-ae2b5dcc278b')
 
 
 def get_image_by_weaviate_id(image_id):
-    weaviate_client = weaviate.connect_to_local()  # Connect with default parameters
-    artworks = weaviate_client.collections.get("Artworks")
-    print("Reading image by ID")
-    artworks = weaviate_client.collections.get("Artworks")
-    try:
+    with get_weaviate_client() as weaviate_client:
+        artworks = weaviate_client.collections.get("Artworks")
+        print("Reading image by ID")
         data_object = artworks.query.fetch_object_by_id(image_id)
         print(data_object)
         return data_object
-    finally:
-        weaviate_client.close()
 
 
 # e3a39360-aacc-5214-829a-4f23b8a8c3eb {'author_psql_id': '1', 'artwork_psql_id': '1'}
@@ -490,16 +503,12 @@ remove_by_weaviate_id('e3a39360-aacc-5214-829a-4f23b8a8c3eb')
 
 
 def remove_by_weaviate_id(weaviate_id):
-    weaviate_client = weaviate.connect_to_local()  # Connect with default parameters
-    artworks = weaviate_client.collections.get("Artworks")
-    print("Reading image by ID")
-    artworks = weaviate_client.collections.get("Artworks")
-    try:
+    with get_weaviate_client() as weaviate_client:
+        artworks = weaviate_client.collections.get("Artworks")
+        print("Reading image by ID")
         data_object = artworks.data.delete_by_id(weaviate_id)
         print(data_object)
         return data_object
-    finally:
-        weaviate_client.close()
 
 # python -c "from artists.weaviate.weaviate import add_all_artworks_to_weaviate; add_all_artworks_to_weaviate();"
 # def add_all_artworks_to_weaviate():

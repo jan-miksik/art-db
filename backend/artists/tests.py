@@ -78,6 +78,15 @@ class SearchArtworksByImageURLTest(TestCase):
 # response = client.get(reverse('search_artworks_by_image_url'), {'image_url': image_url, 'limit': limit})
 # print(response.data)
 
+class DummyImage:
+    """Mimics the weaviate response object shape"""
+    def __init__(self, artwork_id, author_id):
+        self.properties = {
+            "artwork_psql_id": artwork_id,
+            "author_psql_id": author_id,
+        }
+
+
 class SearchArtworksByImageDataTestCase(TestCase):
     def test_search_artworks_by_image_data(self):
         client = Client()
@@ -103,14 +112,6 @@ class SearchArtworksByImageDataTestCase(TestCase):
             sizeX=100,
         )
 
-        # Dummy result object mimicking the weaviate response shape
-        class DummyImage:
-            def __init__(self, artwork_id, author_id):
-                self.properties = {
-                    "artwork_psql_id": artwork_id,
-                    "author_psql_id": author_id,
-                }
-
         dummy_results = [DummyImage(artwork.id, artist.id)]
 
         file = SimpleUploadedFile("test.jpg", b"fake-image-bytes", content_type="image/jpeg")
@@ -124,3 +125,84 @@ class SearchArtworksByImageDataTestCase(TestCase):
         self.assertEqual(len(data), 1)
         self.assertEqual(data[0]['artwork']['id'], artwork.id)
         self.assertEqual(data[0]['author']['id'], artist.id)
+
+
+class N1QueryFixTestCase(TestCase):
+    """Test that the N+1 query fix works correctly - should use only 2 queries regardless of result count"""
+    
+    def setUp(self):
+        # Create multiple artists and artworks
+        self.artists = []
+        self.artworks = []
+        for i in range(10):
+            artist = Artist.objects.create(
+                notes=f"Artist {i}",
+                profile_image=f"image_{i}.png",
+                firstname=f"First{i}",
+                surname=f"Last{i}",
+                born=1980 + i,
+                gender="M",
+                auctions_turnover_2023_h1_USD="100.00",
+                profile_image_url=f"https://example.com/profile{i}.png",
+            )
+            self.artists.append(artist)
+            
+            artwork = Artwork.objects.create(
+                artist=artist,
+                title=f"Artwork {i}",
+                picture=f"artworks/art{i}.webp",
+                picture_url=f"https://example.com/art{i}.png",
+                year=2020,
+                sizeY=100,
+                sizeX=100,
+            )
+            self.artworks.append(artwork)
+
+    def test_search_artworks_batch_queries(self):
+        """Verify that searching 10 results only makes 2 DB queries (not 20)"""
+        client = Client()
+        
+        # Create dummy results for all 10 artworks
+        dummy_results = [
+            DummyImage(self.artworks[i].id, self.artists[i].id)
+            for i in range(10)
+        ]
+        
+        file = SimpleUploadedFile("test.jpg", b"fake-image-bytes", content_type="image/jpeg")
+        url = reverse('search_artworks_by_image_data')
+        
+        with patch('artists.views.search_similar_artwork_ids_by_image_data', return_value=dummy_results):
+            # Should only make 2 queries: one for Artwork, one for Artist
+            with self.assertNumQueries(2):
+                response = client.post(url, {'image': file, 'limit': 10})
+        
+        self.assertEqual(response.status_code, 200)
+        data = response.json()
+        self.assertEqual(len(data), 10)
+
+    def test_search_authors_batch_queries(self):
+        """Verify that author search also uses batch queries"""
+        client = Client()
+        
+        # Create dummy results with .objects attribute (different response shape for author search)
+        class DummyResponse:
+            def __init__(self, items):
+                self.objects = items
+        
+        dummy_items = [
+            DummyImage(self.artworks[i].id, self.artists[i].id)
+            for i in range(10)
+        ]
+        dummy_response = DummyResponse(dummy_items)
+        
+        file = SimpleUploadedFile("test.jpg", b"fake-image-bytes", content_type="image/jpeg")
+        url = reverse('search_authors_by_image_data')
+        
+        with patch('artists.views.search_similar_authors_ids_by_image_data', return_value=dummy_response):
+            # Should only make 2 queries: one for Artwork, one for Artist
+            with self.assertNumQueries(2):
+                response = client.post(url, {'image': file, 'limit': 10})
+        
+        self.assertEqual(response.status_code, 200)
+        data = response.json()
+        self.assertEqual(len(data), 10)
