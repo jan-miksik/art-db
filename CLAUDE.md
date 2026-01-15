@@ -29,7 +29,7 @@ python3 -m venv venv
 poetry install
 ```
 
-### Frontend (Nuxt 3)
+### Frontend (Nuxt 4)
 
 ```bash
 # From /frontend
@@ -54,7 +54,7 @@ cat <dump_file>.tar | docker exec -i backend-db-1 pg_restore -U postgres -d art_
 
 ### Tech Stack
 - **Backend**: Django 3.2 + Django REST Framework, PostgreSQL, Weaviate (vector DB)
-- **Frontend**: Nuxt 3, Vue 3, Pinia, Stylus
+- **Frontend**: Nuxt 4, Vue 3, Pinia 3, Stylus
 - **Storage**: Arweave (decentralized), IndexedDB (client-side caching)
 
 ### Key Directories
@@ -71,7 +71,9 @@ backend/
 frontend/
 ├── pages/index.vue       # Main application page
 ├── components/           # Vue components (Artist.vue, ArtistModal.vue, Filter.vue, etc.)
+├── composables/          # Vue composables (useFocusTrap, useArtistArrangement, etc.)
 ├── J/                    # Pinia stores (useArtistsStore, useFilterStore, useSortStore)
+├── models/               # TypeScript types (IImageFile, etc.)
 └── services/idb.ts       # IndexedDB caching via Dexie
 ```
 
