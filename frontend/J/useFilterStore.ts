@@ -61,7 +61,6 @@ export const useFilterStore = defineStore('filter', () => {
       textToSearch.value ||
       isFilterByGender.value ||
       isShowSimilarAuthors.value ||
-      isFilterByMediaType.value ||
       isFilterByMediaType.value
   )
 

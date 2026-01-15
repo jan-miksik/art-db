@@ -31,8 +31,8 @@ const toggleMenu = () => {
 
 const sortStore = useSortStore()
 
-const handleClickOutside = (event: any) => {
-  if (menuRef.value && !menuRef.value.contains(event.target)) {
+const handleClickOutside = (event: MouseEvent | TouchEvent) => {
+  if (menuRef.value && !menuRef.value.contains(event.target as Node)) {
     isOpenMenu.value = false
   }
 }
@@ -57,7 +57,7 @@ onUnmounted(() => {
   flex-direction: column;
   align-items: center;
   gap 0.5rem
-  z-index 10000000000
+  z-index var(--z-index-ui-controls)
   background-color white
 
 
@@ -65,7 +65,7 @@ onUnmounted(() => {
   top: 1rem;
   cursor pointer
   width: 8.1rem;
-  z-index 10000000000
+  z-index var(--z-index-ui-controls)
   text-align center
   font-family 'Roboto', sans-serif
   font-size 1.4rem

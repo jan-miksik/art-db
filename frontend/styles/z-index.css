@@ -6,4 +6,5 @@
   --z-index-ui-controls: 100;
   --z-index-dropdown: 50;
   --z-index-base: 1;
+  --z-index-image-overlay: 10;
 }

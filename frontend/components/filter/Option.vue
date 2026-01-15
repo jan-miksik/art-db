@@ -127,7 +127,7 @@ input[type="number"] {
 .filter-option
   text-align: center
   line-height: 1.5rem
-  z-index 10000000000
+  z-index var(--z-index-ui-controls)
 
 .filter-option__selection
   display: flex
@@ -135,7 +135,7 @@ input[type="number"] {
   font-size: 1.2rem
 
 .filter-option__selection-option-text-container
-  opacity: 0.35
+  opacity: 0.6
   cursor: pointer
   padding: 2px;
 

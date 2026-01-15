@@ -28,7 +28,7 @@
           @swiper="onSwiper"
           >
           <!-- @slideChange="handleOnSlideChange" -->
-          <swiper-slide @click.stop class="artist-modal__slide" v-for="(piece, index) in artistData.artworks">
+          <swiper-slide @click.stop class="artist-modal__slide" v-for="(piece, index) in artistData.artworks" :key="piece.title || index">
             <BaseImage
               :image-file="{
                 url: piece.picture_url,
@@ -66,29 +66,16 @@ const closeModal = () => {
   isOpen.value = false;
 }
 
-watch([isOpen, () => artistData.value], ([newIsOpen]) => {
-  if (newIsOpen) {
-    if (artistData.value && modalRef.value) {
-      nextTick(() => {
-        if (modalRef.value) {
-          activateFocusTrap()
-        }
-      })
-    }
-  } else {
-    // Deactivate when closing
-    deactivateFocusTrap()
-  }
-})
-
-// Watch for modalRef to become available after teleport renders
-watch(modalRef, (newRef) => {
-  if (newRef && isOpen.value && artistData.value) {
+watch([isOpen, () => artistData.value, modalRef], ([newIsOpen, , newRef]) => {
+  if (newIsOpen && artistData.value && newRef) {
     nextTick(() => {
       if (modalRef.value) {
         activateFocusTrap()
       }
     })
+  } else {
+    // Deactivate when closing
+    deactivateFocusTrap()
   }
 })
 

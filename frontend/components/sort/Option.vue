@@ -35,7 +35,7 @@ const sortStore = useSortStore()
   width: 100%
   text-align: center
   line-height: 1.5rem
-  z-index 10000000000
+  z-index var(--z-index-ui-controls)
   &:hover
     background-color: black
     color: white

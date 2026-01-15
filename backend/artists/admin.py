@@ -82,7 +82,10 @@ class ArtistAdmin(admin.ModelAdmin):
                 obj.profile_image_url = arweave_url
                 # Delete the file from the media folder
                 if os.path.isfile(file_path):
-                    os.remove(file_path)
+                    try:
+                        os.remove(file_path)
+                    except OSError as e:
+                        logger.warning(f"Failed to remove file {file_path}: {e}")
 
         super().save_model(request, obj, form, change)
 
@@ -105,7 +108,10 @@ class ArtistAdmin(admin.ModelAdmin):
                         artwork.save()
                         # Delete the file from the media folder
                         if os.path.isfile(file_path):
-                            os.remove(file_path)
+                            try:
+                                os.remove(file_path)
+                            except OSError as e:
+                                logger.warning(f"Failed to remove file {file_path}: {e}")
 
                     if not artwork.picture_image_weaviate_id and artwork.id and artwork.artist.id and arweave_url:
                         # Add the artwork to Weaviate
@@ -158,7 +164,10 @@ class ArtworkAdmin(admin.ModelAdmin):
                 obj.picture_url = arweave_url
                 # Delete the file from the media folder
                 if os.path.isfile(file_path):
-                    os.remove(file_path)
+                    try:
+                        os.remove(file_path)
+                    except OSError as e:
+                        logger.warning(f"Failed to remove file {file_path}: {e}")
 
         if not obj.picture_image_weaviate_id and obj.id and obj.artist.id and obj.picture_url:
             # Add the artwork to Weaviate

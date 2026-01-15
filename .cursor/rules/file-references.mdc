@@ -1,0 +1,17 @@
+---
+description: "Key file references for common patterns and examples"
+alwaysApply: false
+---
+
+# File References
+
+Key files to reference for patterns:
+
+- `@frontend/J/useArtistsStore.ts` - Type definitions and store patterns
+- `@frontend/components/ArtistModal.vue` - Component structure and focus trap
+- `@frontend/components/SearchImageByAI.vue` - Memory management with watchEffect
+- `@frontend/styles/z-index.css` - Z-index scale
+- `@backend/artists/views.py` - API endpoint patterns and validation
+- `@backend/artists/weaviate/queries.py` - Error handling patterns
+- `@backend/artists/response.py` - Custom response envelope
+- `@backend/artists/weaviate/exceptions.py` - Custom exception classes

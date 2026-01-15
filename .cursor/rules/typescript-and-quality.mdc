@@ -1,0 +1,32 @@
+---
+description: "TypeScript type safety, linting checks, and code quality standards for the a-db project"
+alwaysApply: true
+---
+
+# TypeScript & Code Quality
+
+## Always verify types before completing work
+
+- Use `read_lints` tool after making edits to check for TypeScript errors
+- Never commit code with TypeScript errors - fix type mismatches immediately
+- Prefer proper TypeScript types over `any` or `unknown` when possible
+
+## Type conversion patterns
+
+When converting between string/number types, use explicit conversions:
+- `Number(id)` or `parseInt(id, 10)` for string to number
+- `String(value)` for number to string
+- Verify type compatibility when passing data between components/stores
+
+## API response types
+
+- Ensure API response types match store/component types
+- Convert string IDs to numbers when needed (see `@frontend/components/SearchImageByAI.vue:50` for example)
+- Reference `@frontend/J/useArtistsStore.ts` for Artist type definition
+
+## Before claiming work is complete
+
+1. Run `read_lints` on modified files
+2. Fix all TypeScript compilation errors
+3. Verify type compatibility in function parameters and return values
+4. Check for type mismatches when passing data between components/stores

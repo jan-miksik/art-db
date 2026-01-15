@@ -20,7 +20,7 @@ export type Artist = {
   gender: "W" | "M" | "N"
   auctions_turnover_2023_h1_USD: number
   similar_authors_postgres_ids: string[]
-  media_types: 'nft' | 'digital' | 'painting' | 'sculpture'
+  media_types: ('nft' | 'digital' | 'painting' | 'sculpture')[]
 }
 
 export const useArtistsStore = defineStore('artists', () => {
@@ -45,15 +45,18 @@ export const useArtistsStore = defineStore('artists', () => {
       const fetchedArtists = response.data ?? []
       setArtistsAll(fetchedArtists)
       setArtists(fetchedArtists)
-    } catch (err: any) {
-      if (err.name === 'AbortError' || err.code === 'ECONNABORTED') {
+    } catch (err: unknown) {
+      if (err instanceof Error && (err.name === 'AbortError' || (err as any).code === 'ECONNABORTED')) {
         error.value = "Request timed out. Please try again."
-      } else if (err.status || err.statusCode) {
-        const status = err.status || err.statusCode
-        const dataMessage = err.data ? `: ${typeof err.data === 'string' ? err.data : JSON.stringify(err.data)}` : ''
+      } else if (err && typeof err === 'object' && ('status' in err || 'statusCode' in err)) {
+        const status = (err as { status?: number; statusCode?: number }).status || (err as { status?: number; statusCode?: number }).statusCode
+        const errData = (err as { data?: unknown }).data
+        const dataMessage = errData ? `: ${typeof errData === 'string' ? errData : JSON.stringify(errData)}` : ''
         error.value = `Server error: ${status}${dataMessage}`
+      } else if (err instanceof Error) {
+        error.value = err.message
       } else {
-        error.value = err instanceof Error ? err.message : "Network error. Please check your connection."
+        error.value = "An unknown error occurred. Please try again."
       }
       console.error("Error fetching artists:", err)
     } finally {

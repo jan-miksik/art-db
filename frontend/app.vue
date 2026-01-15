@@ -7,5 +7,5 @@
 <script setup lang="ts"></script>
 
 <style>
-@import '~/assets/css/z-index.css';
+@import '~/styles/z-index.css';
 </style>

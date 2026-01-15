@@ -53,7 +53,6 @@ const fullImageFetchpriority = computed(() => {
 
 
 const fullImageSrcComputed = computed(() => {
-  // return imageFileComputed.value.url
   return fullImageSrc.value
 })
 
@@ -166,7 +165,7 @@ onUnmounted(() => {
 
 
 .image__low
-  z-index 10000000000
+  z-index var(--z-index-image-overlay)
 
 @keyframes background-color-palette
   0%

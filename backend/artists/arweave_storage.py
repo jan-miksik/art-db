@@ -8,7 +8,7 @@ from django.conf import settings
 
 def upload_to_arweave(file_path):
     mimetypes.init()
-    mimetypes.types_map['.webp'] = 'image/webp'
+    mimetypes.add_type('image/webp', '.webp')
     mime_type, _ = mimetypes.guess_type(file_path)
 
     # SECURITY: Wallet path from settings (configurable via ARWEAVE_WALLET_PATH env var)

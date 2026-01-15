@@ -45,7 +45,6 @@
 
 <script setup lang="tsx">
 import {computed} from 'vue'
-import {useFilterStore} from '~/J/useFilterStore'
 import {useSortStore} from '~/J/useSortStore'
 import {
   FlexRender,
@@ -56,10 +55,11 @@ import {
 import BaseImage from "~/components/BaseImage.vue";
 import useArtistModal from "./../useArtistModal";
 import gsap from 'gsap'
+import type { Artist } from '~/J/useArtistsStore'
 
 const {openArtistModal} = useArtistModal()
 
-const openModal = (artistData: any) => {
+const openModal = (artistData: Artist) => {
   openArtistModal(artistData)
 }
 
@@ -144,7 +144,6 @@ const data = computed(() => {
   return [...artistsStore.artists]
 })
 
-// Create the table with computed data
 const table = useVueTable({
   get data() {
     return data.value

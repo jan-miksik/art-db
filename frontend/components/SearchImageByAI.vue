@@ -17,7 +17,6 @@
 import axios from "axios";
 const config = useRuntimeConfig();
 
-const menuRef = ref<HTMLElement>()
 const selectedPicture = ref<File | null>()
 const searchResults = ref([])
 const file = ref();
@@ -47,7 +46,8 @@ const handleSearchImages = async (event: Event) => {
       return;
     }
     searchResults.value = payload.data ?? [];
-    const matchingIds = searchResults.value.map((item: any) => item.author.id);
+    type SearchResult = { artwork: unknown; author: { id: string } };
+    const matchingIds = (searchResults.value as SearchResult[]).map((item) => Number(item.author.id));
     filterStore.filterByIds(matchingIds)
   } catch (error) {
     console.error(error)
@@ -62,11 +62,16 @@ const handleRemoveSelectedImage = () => {
   selectedPicture.value = undefined
 }
 
-const selectedImageInUI = computed(() => {
+const selectedImageInUI = ref<string | null>(null)
+
+watchEffect((onCleanup) => {
   if (selectedPicture.value) {
-    return URL.createObjectURL(selectedPicture.value);
+    const url = URL.createObjectURL(selectedPicture.value)
+    selectedImageInUI.value = url
+    onCleanup(() => URL.revokeObjectURL(url))
+  } else {
+    selectedImageInUI.value = null
   }
-  return null
 })
 
 </script>
@@ -77,7 +82,7 @@ const selectedImageInUI = computed(() => {
   font-weight: 700;
   font-size: 1.5rem;
   cursor: pointer;
-  z-index: 10000000000;
+  z-index: var(--z-index-ui-controls);
   font-family: 'Roboto', sans-serif;
   text-align: center;
   background-color: white;

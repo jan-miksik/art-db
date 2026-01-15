@@ -14,9 +14,7 @@
       aria-label="Toggle filter menu"
       type="button"
     >
-      <!-- ϒ-->
       filter
-      <!--      <img src="~/assets/close.svg" width="20" :class="['filter-toggle-img',{'filter-toggle&#45;&#45;open': isOpenMenu}]">-->
     </button>
 
     <div v-if="isOpenMenu" id="filter-menu" class="filter__menu" role="menu">
@@ -40,9 +38,6 @@
         @range="filterStore.filterByBornInRange"
         :filterType="filterStore.FilterType.RANGE"
       />
-
-
-      <!-- <FilterOption :filterOption="filterStore.FilterOption.AUCTIONS_TURNOVER_2023_H1_USD" label="auctions 2023"/> -->
     </div>
   </div>
 </template>
@@ -89,13 +84,13 @@ onUnmounted(() => {
   background: white;
 }
 .filter
-  z-index 10000000000
+  z-index var(--z-index-ui-controls)
   position absolute
 
 .filter-toggle
   font-weight 700
   font-size: 1.2rem;
-  z-index 10000000000
+  z-index var(--z-index-ui-controls)
   font-family 'Roboto', sans-serif
   text-align center
   transition all 0.3s
