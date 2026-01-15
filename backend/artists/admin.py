@@ -9,6 +9,16 @@ import logging
 
 logger = logging.getLogger(__name__)
 
+
+def safe_remove_file(file_path: str) -> None:
+    """Safely remove a file, logging warnings on OSError."""
+    if os.path.isfile(file_path):
+        try:
+            os.remove(file_path)
+        except OSError as e:
+            logger.warning(f"Failed to remove file {file_path}: {e}")
+
+
 class ArtworkInline(admin.TabularInline):  # or admin.StackedInline for a different layout
     model = Artwork
     extra = 1  # number of extra forms to display
@@ -81,11 +91,7 @@ class ArtistAdmin(admin.ModelAdmin):
             if arweave_url is not None:
                 obj.profile_image_url = arweave_url
                 # Delete the file from the media folder
-                if os.path.isfile(file_path):
-                    try:
-                        os.remove(file_path)
-                    except OSError as e:
-                        logger.warning(f"Failed to remove file {file_path}: {e}")
+                safe_remove_file(file_path)
 
         super().save_model(request, obj, form, change)
 
@@ -107,11 +113,7 @@ class ArtistAdmin(admin.ModelAdmin):
                         artwork.picture_url = arweave_url
                         artwork.save()
                         # Delete the file from the media folder
-                        if os.path.isfile(file_path):
-                            try:
-                                os.remove(file_path)
-                            except OSError as e:
-                                logger.warning(f"Failed to remove file {file_path}: {e}")
+                        safe_remove_file(file_path)
 
                     if not artwork.picture_image_weaviate_id and artwork.id and artwork.artist.id and arweave_url:
                         # Add the artwork to Weaviate
@@ -163,11 +165,7 @@ class ArtworkAdmin(admin.ModelAdmin):
             if arweave_url is not None:
                 obj.picture_url = arweave_url
                 # Delete the file from the media folder
-                if os.path.isfile(file_path):
-                    try:
-                        os.remove(file_path)
-                    except OSError as e:
-                        logger.warning(f"Failed to remove file {file_path}: {e}")
+                safe_remove_file(file_path)
 
         if not obj.picture_image_weaviate_id and obj.id and obj.artist.id and obj.picture_url:
             # Add the artwork to Weaviate

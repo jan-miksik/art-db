@@ -29,9 +29,3 @@ alwaysApply: false
 - Use `watchEffect` with cleanup for ObjectURLs (see `@frontend/components/SearchImageByAI.vue:67-75`)
 - Always call `URL.revokeObjectURL()` in cleanup functions
 - Consolidate duplicate watchers to prevent memory leaks
-
-## Common Issues to Avoid
-
-- **Type mismatches:** API returns string IDs, but stores expect numbers - always convert explicitly
-- **Memory leaks:** Creating ObjectURLs without cleanup - use `watchEffect` with cleanup
-- **Duplicate watchers:** Multiple watchers calling the same function - consolidate into one

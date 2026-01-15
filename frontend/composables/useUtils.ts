@@ -25,6 +25,6 @@ export const randomRange = (min: number, max: number): number => {
  * @param ms - Number of milliseconds to wait
  * @returns Promise that resolves after the delay
  */
-export const sleep = async (ms: number): Promise<void> => {
+export const sleep = (ms: number): Promise<void> => {
   return new Promise(resolve => setTimeout(resolve, ms))
 }

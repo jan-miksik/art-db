@@ -27,7 +27,3 @@ alwaysApply: false
 
 - Use `mimetypes.add_type()` instead of direct `types_map` mutation (see `@backend/artists/arweave_storage.py`)
 - Add error handling for file operations in admin (see `@backend/artists/admin.py`)
-
-## Common Issues to Avoid
-
-- **Dead code:** Remove deprecated files (e.g., `weaviate.py` was removed, use refactored modules)

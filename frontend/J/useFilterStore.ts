@@ -153,9 +153,12 @@ export const useFilterStore = defineStore('filter', () => {
   }
 
   const filterByBornInRange = async (from: number | null, to: number | null) => {
-    rangeFrom.value = from === null || isNaN(from) ? '' : String(from);
-    rangeTo.value = to === null || isNaN(to) ? '' : String(to);
-    isFilterByBornInRange.value = !!(from !== null || to !== null);
+    const hasFrom = from !== null && !isNaN(from);
+    const hasTo = to !== null && !isNaN(to);
+    
+    rangeFrom.value = hasFrom ? String(from) : '';
+    rangeTo.value = hasTo ? String(to) : '';
+    isFilterByBornInRange.value = hasFrom || hasTo;
     await applyAllFilters();
   }
 
@@ -186,7 +189,9 @@ export const useFilterStore = defineStore('filter', () => {
   const filterByIds = async (ids: number[]) => {
     isFilteringInProgress.value = true;
 
-    const filteredPeople = ids.map(id => useArtistsStore().artistsAll.find(artist => +artist.id === +id)) as Artist[];
+    const filteredPeople = ids
+      .map(id => useArtistsStore().artistsAll.find(artist => +artist.id === +id))
+      .filter((artist): artist is Artist => artist !== undefined);
 
     useArtistsStore().setArtists(filteredPeople);
     await sleep(100)

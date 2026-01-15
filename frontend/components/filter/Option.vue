@@ -14,7 +14,6 @@
       </div>
       <div class="filter-option__selection" v-if="filterType === FilterType.SELECTION">
         <div v-for="(selectionOption) in selectionOptions" @click="() => handleSelectionChange(selectionOption)" :class="['filter-option__selection-option', {'filter-option__selection-option--is-selected': isOptionSelected(selectionOption)}]">
-          <!-- {{ selectionOption.sign }} -->
           <img v-if="selectionOption.sign" :src="selectionOption.sign" height="16"/>
         </div>
       </div>
@@ -50,7 +49,9 @@ const emit = defineEmits<{
 const rangeFromNumber = computed({
   get: () => {
     const val = rangeFrom.value
-    return val === '' ? null : Number(val) || null
+    if (val === '') return null
+    const parsed = Number(val)
+    return Number.isNaN(parsed) ? null : parsed
   },
   set: (val: number | null) => {
     rangeFrom.value = val === null || isNaN(val) ? '' : String(val)
@@ -60,7 +61,9 @@ const rangeFromNumber = computed({
 const rangeToNumber = computed({
   get: () => {
     const val = rangeTo.value
-    return val === '' ? null : Number(val) || null
+    if (val === '') return null
+    const parsed = Number(val)
+    return Number.isNaN(parsed) ? null : parsed
   },
   set: (val: number | null) => {
     rangeTo.value = val === null || isNaN(val) ? '' : String(val)

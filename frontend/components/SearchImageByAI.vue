@@ -6,10 +6,7 @@
     <img v-if="selectedImageInUI" :src="selectedImageInUI" height="250" class="search-image-by-ai__image"/>
     <input type="file" id="file" ref="file" @change="handleSearchImages" style="display: none" accept="image/*" />
     <div v-if="selectedImageInUI" @click="handleRemoveSelectedImage" class="search-image-by-ai__remove-image">X</div>
-    <!-- <div v-if="isOpenMenu" class="search-image-by-ai__menu">
-      TODO ADD input for image
-      <span @click="handleClickSelectImage" class="search-image-by-ai__select-picture">select picture</span>
-    </div> -->
+
   </div>
 </template>
 
@@ -42,6 +39,9 @@ const handleSearchImages = async (event: Event) => {
       console.error("Search failed:", payload?.error);
       searchResults.value = [];
       selectedPicture.value = undefined;
+      if (file.value) {
+        file.value.value = '';
+      }
       filterStore.filterByIds([]);
       return;
     }
@@ -60,6 +60,9 @@ const handleClickSelectImage = () => {
 
 const handleRemoveSelectedImage = () => {
   selectedPicture.value = undefined
+  if (file.value) {
+    file.value.value = '';
+  }
 }
 
 const selectedImageInUI = ref<string | null>(null)

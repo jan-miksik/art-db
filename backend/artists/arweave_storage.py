@@ -10,8 +10,7 @@ def upload_to_arweave(file_path):
     mimetypes.init()
     mimetypes.add_type('image/webp', '.webp')
     mime_type, _ = mimetypes.guess_type(file_path)
-
-    # SECURITY: Wallet path from settings (configurable via ARWEAVE_WALLET_PATH env var)
+    mime_type = mime_type or 'application/octet-stream'
     wallet_path = settings.ARWEAVE_WALLET_PATH
     wallet = arweave.Wallet(wallet_path)
 

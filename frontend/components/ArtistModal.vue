@@ -69,7 +69,8 @@ const closeModal = () => {
 watch([isOpen, () => artistData.value, modalRef], ([newIsOpen, , newRef]) => {
   if (newIsOpen && artistData.value && newRef) {
     nextTick(() => {
-      if (modalRef.value) {
+      // Re-check state after nextTick to avoid race conditions
+      if (isOpen.value && modalRef.value) {
         activateFocusTrap()
       }
     })

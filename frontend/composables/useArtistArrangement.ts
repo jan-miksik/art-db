@@ -41,7 +41,7 @@ export const useArtistArrangement = () => {
       // Artists with different field values: ensure proper spacing
       const artistBottom = artist.position.y + ARTIST_SPACING
       const isArtistTooHigh = artistBottom < topPosition
-      const isArtistOverlapping = artist.position.y + OVERLAP_THRESHOLD > topPosition
+      const isArtistOverlapping = artist.position.y < topPosition + OVERLAP_THRESHOLD
 
       if (isArtistTooHigh || isArtistOverlapping) {
         // Reposition artist below the previous group

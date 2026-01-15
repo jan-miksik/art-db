@@ -44,8 +44,14 @@ def _build_image_search_response(images_list):
 
     response_data = []
     for image in images_list:
-        artwork = artworks.get(image.properties['artwork_psql_id'])
-        author = authors.get(image.properties['author_psql_id'])
+        artwork_id = image.properties.get('artwork_psql_id')
+        author_id = image.properties.get('author_psql_id')
+        
+        if artwork_id is None or author_id is None:
+            continue
+            
+        artwork = artworks.get(artwork_id)
+        author = authors.get(author_id)
 
         if artwork and author:
             response_data.append({
