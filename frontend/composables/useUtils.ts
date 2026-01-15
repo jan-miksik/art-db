@@ -9,7 +9,15 @@
  * @returns Random integer between min and max
  */
 export const randomRange = (min: number, max: number): number => {
-  return Math.floor(Math.random() * (max - min + 1) + min)
+  if (!Number.isFinite(min) || !Number.isFinite(max)) {
+    throw new TypeError('min and max must be finite numbers')
+  }
+  const lo = Math.ceil(Math.min(min, max))
+  const hi = Math.floor(Math.max(min, max))
+  if (lo > hi) {
+    throw new RangeError('No integers exist in the given range')
+  }
+  return Math.floor(Math.random() * (hi - lo + 1)) + lo
 }
 
 /**

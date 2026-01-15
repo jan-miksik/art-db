@@ -66,13 +66,29 @@ const closeModal = () => {
   isOpen.value = false;
 }
 
-watch(isOpen, (newValue) => {
-  if (newValue) {
-    nextTick(() => {
-      activateFocusTrap()
-    })
+watch([isOpen, () => artistData.value], ([newIsOpen]) => {
+  if (newIsOpen) {
+    if (artistData.value && modalRef.value) {
+      nextTick(() => {
+        if (modalRef.value) {
+          activateFocusTrap()
+        }
+      })
+    }
   } else {
+    // Deactivate when closing
     deactivateFocusTrap()
+  }
+})
+
+// Watch for modalRef to become available after teleport renders
+watch(modalRef, (newRef) => {
+  if (newRef && isOpen.value && artistData.value) {
+    nextTick(() => {
+      if (modalRef.value) {
+        activateFocusTrap()
+      }
+    })
   }
 })
 

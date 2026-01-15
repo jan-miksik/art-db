@@ -37,8 +37,8 @@ def _build_image_search_response(images_list):
     if not images_list:
         return []
 
-    artwork_ids = [img.properties['artwork_psql_id'] for img in images_list]
-    author_ids = [img.properties['author_psql_id'] for img in images_list]
+    artwork_ids = [img.properties.get('artwork_psql_id') for img in images_list if img.properties.get('artwork_psql_id')]
+    author_ids = [img.properties.get('author_psql_id') for img in images_list if img.properties.get('author_psql_id')]
     artworks = {a.id: a for a in Artwork.objects.filter(id__in=artwork_ids)}
     authors = {a.id: a for a in Artist.objects.filter(id__in=author_ids)}
 
@@ -125,6 +125,8 @@ def search_authors_by_image_data(request):
 @throttle_classes([SearchAnonThrottle, SearchUserThrottle])
 def search_authors_by_image_url(request):
     image_url = request.GET.get('image_url')
+    if not image_url:
+        return failure('image_url query parameter is required', status=400)
     limit = get_validated_limit(request.GET, 'limit', default=1)
     similar_images = search_similar_authors_ids_by_image_url(image_url, limit)
     images_list = list(similar_images.objects)

@@ -153,10 +153,10 @@ export const useFilterStore = defineStore('filter', () => {
     await applyAllFilters();
   }
 
-  const filterByBornInRange = async (from: string, to: string) => {
-    rangeFrom.value = from;
-    rangeTo.value = to;
-    isFilterByBornInRange.value = !!(from || to);
+  const filterByBornInRange = async (from: number | null, to: number | null) => {
+    rangeFrom.value = from === null || isNaN(from) ? '' : String(from);
+    rangeTo.value = to === null || isNaN(to) ? '' : String(to);
+    isFilterByBornInRange.value = !!(from !== null || to !== null);
     await applyAllFilters();
   }
 

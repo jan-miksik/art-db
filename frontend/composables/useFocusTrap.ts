@@ -22,9 +22,11 @@ export const useFocusTrap = (containerRef: Ref<HTMLElement | undefined>) => {
     return Array.from(
       containerRef.value.querySelectorAll<HTMLElement>(focusableSelectors)
     ).filter((el) => {
+      const style = window.getComputedStyle(el)
       return !el.hasAttribute('disabled') && 
-             !el.hasAttribute('aria-hidden') &&
-             window.getComputedStyle(el).visibility !== 'hidden'
+             el.getAttribute('aria-hidden') !== 'true' &&
+             style.visibility !== 'hidden' &&
+             style.display !== 'none'
     })
   }
 
