@@ -8,10 +8,10 @@
       <div class="artist-modal__profile" @click.stop>
         <BaseImage
           :image-file="{
-            url: artistData.profile_image_url,
-            lastUpdated: artistData.artworks[0].year
+            url: artistData.profile_image_url ?? ''
           }"
           :external-css-class="['artist-modal__profile-image']"
+          :alt="`Profile image of ${artistData.name}`"
           @click.stop
         />
       </div>
@@ -26,15 +26,21 @@
           :spaceBetween="50"
           :centeredSlides="true"
           @swiper="onSwiper"
+          :aria-label="`Artwork gallery for ${artistData.name}. Use arrow keys or swipe to navigate through ${artistData.artworks.length} artwork${artistData.artworks.length !== 1 ? 's' : ''}.`"
           >
-          <!-- @slideChange="handleOnSlideChange" -->
-          <swiper-slide @click.stop class="artist-modal__slide" v-for="(piece, index) in artistData.artworks" :key="piece.title || index">
+          <swiper-slide 
+            @click.stop 
+            class="artist-modal__slide" 
+            v-for="(piece, index) in artistData.artworks" 
+            :key="piece.title || index"
+            :aria-label="`Artwork ${index + 1} of ${artistData.artworks.length}: ${piece.title || 'Untitled'}${piece.year ? `, ${piece.year}` : ''}`"
+          >
             <BaseImage
               :image-file="{
-                url: piece.picture_url,
-                lastUpdated: artistData.artworks[0].year
+                url: piece.picture_url ?? ''
               }"
               :external-css-class="['artist-modal__artwork-preview-image', {'artist-modal__artwork-preview-image--swipe-on': artistData.artworks.length > 1}]"
+              :alt="`${piece.title || 'Untitled artwork'}${piece.year ? `, ${piece.year}` : ''} by ${artistData.name}`"
             />
             <div class="artist-modal__artwork-description">
               {{ piece.title }}<span v-if="piece.year !== null">{{', ' + piece.year }}</span>
@@ -49,7 +55,6 @@
 
 <script setup lang="ts">
 import useArtistModal from "./useArtistModal";
-const { isOpen, artistData } = useArtistModal();
 import { Swiper, SwiperSlide } from 'swiper/vue'
 import { Navigation, Keyboard, Mousewheel } from 'swiper/modules';
 import type { Swiper as SwiperType } from 'swiper'
@@ -57,6 +62,7 @@ import 'swiper/css';
 import 'swiper/css/navigation';
 
 const filterStore = useFilterStore()
+const { isOpen, artistData } = useArtistModal();
 
 const modalRef = ref<HTMLElement>()
 const { activate: activateFocusTrap, deactivate: deactivateFocusTrap } = useFocusTrap(modalRef)
@@ -84,7 +90,7 @@ onUnmounted(() => {
   deactivateFocusTrap()
 })
 
-const showSimilarAuthors = async () => {
+const _showSimilarAuthors = async () => {
   filterStore.isShowSimilarAuthors = true
   filterStore.selectedArtistForSearchSimilar = artistData.value
   const similarAuthors = artistData.value?.similar_authors_postgres_ids?.map((id: string) => +id)

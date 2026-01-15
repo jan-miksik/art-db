@@ -15,15 +15,17 @@
   >
     <BaseImage
       :image-file="{
-        url: artistData.artworks[0].picture_url,
-        lastUpdated: artistData.artworks[0].year
+        url: artistData.artworks?.[0]?.picture_url ?? ''
       }"
       :external-css-class="['artist__artwork-preview-image', { 'artist--is-selected-artist-for-search-similar': artistData?.id === useFilterStore().selectedArtistForSearchSimilar?.id}]"
+      :alt="`Artwork preview for ${artistData.name}`"
     />
     <svg
       class="artist__name-svg-circle"
       viewBox="0 0 400 400"
       :style="randomizedRotation"
+      :aria-label="`Artist name: ${artistData.name}`"
+      role="img"
     >
       <defs>
         <path

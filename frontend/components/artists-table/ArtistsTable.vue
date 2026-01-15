@@ -45,7 +45,6 @@
 
 <script setup lang="tsx">
 import {computed} from 'vue'
-import {useSortStore} from '~/J/useSortStore'
 import {
   FlexRender,
   getCoreRowModel,
@@ -71,8 +70,7 @@ const columns = [
     cell: props => {
       return h(BaseImage, {
         imageFile: {
-          url: props.row.original.profile_image_url,
-          lastUpdated: props.row.original.artworks[0].year
+          url: props.row.original.profile_image_url ?? ''
         },
         externalCssClass: ['artist-table__profile-image'],
         key: props.row.original.id
@@ -88,7 +86,7 @@ const columns = [
     cell: props => {
       return (
           <div class="artist-table__artworks-preview" key={`${props.row.original.id}-artworks`}>
-            {props.row.original.artworks.map((artwork, index) => (
+            {props.row.original.artworks.map((artwork) => (
                 <BaseImage
                     key={`${props.row.original.id}-artwork`}
                     imageFile={{
@@ -105,7 +103,6 @@ const columns = [
 ]
 
 const artistsStore = useArtistsStore()
-const sortStore = useSortStore()
 
 // Animation functions
 const onBeforeEnter = (el: Element) => {

@@ -6,6 +6,7 @@
     :loading="fullImageLoading"
     :fetchpriority="fullImageFetchpriority"
     :src="fullImageSrcComputed"
+    :alt="alt"
   />
   <div 
     v-else 
@@ -16,12 +17,13 @@
 
 <script setup lang="ts">
 import { updateImage, addImage, getImage } from '~/services/idb'
-import ImageFile from '~/models/ImageFile'
+import { type IImageFile } from '~/models/ImageFile'
 import { type ImageIDB } from '~/services/idb'
 
 const props = defineProps<{
-  imageFile: ImageFile
+  imageFile: IImageFile
   externalCssClass?: string | string[] | Record<string, boolean> | Array<string | Record<string, boolean>>
+  alt?: string
 }>()
 const { externalCssClass } = toRefs(props)
 
@@ -120,7 +122,7 @@ onMounted(async () => {
 
   observer = new IntersectionObserver((entries) => {
     // The callback will be called when the image enters or leaves the viewport
-    if (entries[0].isIntersecting) {
+    if (entries[0]?.isIntersecting) {
       // The image has entered the viewport
       isVisible.value = true
       // We don't need the observer anymore, so we disconnect it

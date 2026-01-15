@@ -11,11 +11,17 @@
 </template>
 
 <script setup lang="ts">
-import axios from "axios";
 const config = useRuntimeConfig();
 
+type SearchResult = { artwork: unknown; author: { id: string } };
+type SearchResponse = {
+  success: boolean;
+  error?: string;
+  data?: SearchResult[];
+};
+
 const selectedPicture = ref<File | null>()
-const searchResults = ref([])
+const searchResults = ref<SearchResult[]>([])
 const file = ref();
 const filterStore = useFilterStore()
 
@@ -29,12 +35,10 @@ const handleSearchImages = async (event: Event) => {
     const formData = new FormData();
     formData.append('image', selectedPicture.value);
     formData.append('limit', "5");
-    const response = await axios.post(`${config.public.DJANGO_SERVER_URL}/artists/search-authors-by-image-data/`, formData, {
-      headers: {
-        'Content-Type': 'multipart/form-data'
-      }
+    const payload = await $fetch<SearchResponse>(`${config.public.DJANGO_SERVER_URL}/artists/search-authors-by-image-data/`, {
+      method: 'POST',
+      body: formData
     });
-    const payload = response.data;
     if (!payload?.success) {
       console.error("Search failed:", payload?.error);
       searchResults.value = [];
@@ -46,8 +50,7 @@ const handleSearchImages = async (event: Event) => {
       return;
     }
     searchResults.value = payload.data ?? [];
-    type SearchResult = { artwork: unknown; author: { id: string } };
-    const matchingIds = (searchResults.value as SearchResult[]).map((item) => Number(item.author.id));
+    const matchingIds = searchResults.value.map((item) => Number(item.author.id));
     filterStore.filterByIds(matchingIds)
   } catch (error) {
     console.error(error)

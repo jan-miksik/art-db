@@ -40,8 +40,8 @@ export const useFocusTrap = (containerRef: Ref<HTMLElement | undefined>) => {
     if (focusableElements.length === 0) return
 
     // Always get fresh references to reflect current DOM
-    firstFocusableElement = focusableElements[0]
-    lastFocusableElement = focusableElements[focusableElements.length - 1]
+    firstFocusableElement = focusableElements[0] ?? null
+    lastFocusableElement = focusableElements[focusableElements.length - 1] ?? null
 
     if (e.shiftKey) {
       // Shift + Tab
@@ -67,9 +67,9 @@ export const useFocusTrap = (containerRef: Ref<HTMLElement | undefined>) => {
 
     const focusableElements = getFocusableElements()
     if (focusableElements.length > 0) {
-      firstFocusableElement = focusableElements[0]
-      lastFocusableElement = focusableElements[focusableElements.length - 1]
-      firstFocusableElement.focus()
+      firstFocusableElement = focusableElements[0] ?? null
+      lastFocusableElement = focusableElements[focusableElements.length - 1] ?? null
+      firstFocusableElement?.focus()
     }
 
     activatedElement.addEventListener('keydown', trapFocus)

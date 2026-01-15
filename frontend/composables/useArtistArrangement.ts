@@ -29,6 +29,7 @@ export const useArtistArrangement = () => {
       }
 
       const previousArtist = artistsStore.artists[index - 1]
+      if (!previousArtist) return
       const hasSameFieldValue = previousArtist[fieldName] === artist[fieldName]
 
       if (hasSameFieldValue) {

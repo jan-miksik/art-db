@@ -60,7 +60,7 @@ if DEBUG:
 
 INSTALLED_APPS = [
     'django.contrib.admin',
-    # 'artists.apps.ArtistsConfig',
+    'artists.apps.ArtistsConfig',
     'django.contrib.auth',
     'django.contrib.contenttypes',
     'django.contrib.sessions',
@@ -68,7 +68,6 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',
     'corsheaders',
     'rest_framework',
-    'artists',
     'storages',
 ]
 

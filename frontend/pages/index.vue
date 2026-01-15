@@ -9,9 +9,7 @@
       Loading artists...
     </div>
     <div class="menu">
-<!--      <SearchImageByAI/>-->
       <Sort />
-<!--      <img src="~/assets/clear.svg" alt="clear" />-->
       <button v-if="hasClearButton" class="clear-button" @click="handleClear" aria-label="Clear filters">
         <img src="~/assets/close.svg" width="16" :class="['filter-toggle-img']">
       </button>
@@ -38,6 +36,22 @@
 import { useFilterStore } from "~/J/useFilterStore";
 import { useArtistsStore } from "~/J/useArtistsStore";
 import { randomRange } from "~/composables/useUtils";
+
+// SEO constants (matching nuxt.config.ts)
+const SEO_TITLE = 'Art-db - Contemporary Artists & Artworks Database'
+const SEO_DESCRIPTION = 'Browse contemporary artists and artworks. Explore an interactive database with decentralized image storage, and filtering'
+
+// SEO
+useSeoMeta({
+  title: SEO_TITLE,
+  description: SEO_DESCRIPTION,
+  ogTitle: SEO_TITLE,
+  ogDescription: SEO_DESCRIPTION,
+  ogType: 'website',
+  twitterCard: 'summary_large_image',
+  twitterTitle: SEO_TITLE,
+  twitterDescription: SEO_DESCRIPTION,
+})
 
 const config = useRuntimeConfig();
 const filterStore = useFilterStore();
