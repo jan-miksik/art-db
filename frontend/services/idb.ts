@@ -1,4 +1,4 @@
-import ImageFile from '~/models/ImageFile'
+import { type IImageFile } from '~/models/ImageFile'
 import Dexie, { type Table } from 'dexie'
 
 export interface ImageIDB {
@@ -26,8 +26,8 @@ const getBlobFromUrl = async (imageUrl: string): Promise<Blob> => {
   return await res.blob()
 }
 
-export const addImage = async (image: ImageFile) => {
-  const { url, lastUpdated, } = image
+export const addImage = async (image: IImageFile) => {
+  const { url, lastUpdated = Date.now() } = image
   const blob = await getBlobFromUrl(url)
 
   try {
@@ -41,8 +41,8 @@ export const addImage = async (image: ImageFile) => {
   }
 }
 
-export const updateImage = async (image: ImageFile) => {
-  const { url, lastUpdated } = image
+export const updateImage = async (image: IImageFile) => {
+  const { url, lastUpdated = Date.now() } = image
 
   const blob = await getBlobFromUrl(url)
 

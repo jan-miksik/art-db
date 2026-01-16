@@ -1,7 +1,7 @@
 import weaviate
 from artists.models import Artwork, Artist
 from django.core.files.storage import default_storage
-from artists.weaviate.weaviate import add_image_to_weaviete, search_similar_authors_ids_by_image_url
+from artists.weaviate import add_image_to_weaviate, search_similar_authors_ids_by_image_url
 
 # python -c "from artists.weaviate.data_helpers import add_all_artworks_to_weaviate; add_all_artworks_to_weaviate();"
 '''
@@ -14,8 +14,7 @@ add_all_artworks_to_weaviate()
 "
 '''
 def add_all_artworks_to_weaviate():
-    # weaviete_client = weaviate.connect_to_local() # Connect with default parameters
-    # artworks_weaviate = weaviete_client.collections.get("Artworks")
+
     print("Adding all artworks to Weaviate")
     artworks_psql = Artwork.objects.all()
     for artwork in artworks_psql:
@@ -31,7 +30,7 @@ def add_all_artworks_to_weaviate():
             # arweave_image_url = default_storage.url(artwork.picture.name)
 
             if arweave_image_url:
-                uuid = add_image_to_weaviete(str(artwork_psql_id), str(author_psql_id), arweave_image_url)
+                uuid = add_image_to_weaviate(str(artwork_psql_id), str(author_psql_id), arweave_image_url)
                 artwork.picture_image_weaviate_id = uuid
                 artwork.save()
 

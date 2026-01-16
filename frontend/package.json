@@ -1,5 +1,6 @@
 {
   "name": "nuxt-app",
+  "license": "MIT",
   "private": true,
   "type": "module",
   "scripts": {
@@ -20,14 +21,15 @@
     "dexie": "^4.0.8",
     "gsap": "^3.12.5",
     "interactjs": "^1.10.26",
-    "nuxt": "^3.13.2",
+    "nuxt": "^4.2.2",
     "swiper": "^11.0.7",
     "vue": "^3.5.11",
     "vue-router": "^4.4.5"
   },
   "devDependencies": {
-    "@pinia/nuxt": "^0.5.1",
-    "nuxt-swiper": "^1.2.2",
+    "@pinia/nuxt": "^0.11.3",
+    "nuxt-swiper": "^2.0.1",
+    "pinia": "^3.0.4",
     "stylus": "^0.62.0"
   },
   "packageManager": "yarn@4.1.0"

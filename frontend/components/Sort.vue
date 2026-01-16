@@ -1,14 +1,18 @@
 <template>
   <div class="sort" ref="menuRef">
-    <!-- <div class="sort__toggle" @click="toggleMenu">△▼△▼△</div> -->
-    <div class="sort__toggle" @click="toggleMenu">
-      <!--      <span class="sort__toggel-v">V</span><span class="sort__toggel-reversed-v">V</span> -->
-      <img src="~/assets/sort.svg" width="30">
-    </div>
-    <div v-if="isOpenMenu" class="sort__menu">
+    <button 
+      class="sort__toggle" 
+      @click="toggleMenu"
+      :aria-expanded="isOpenMenu"
+      aria-controls="sort-menu"
+      aria-label="Toggle sort menu"
+      type="button"
+    >
+      <img src="~/assets/sort.svg" width="30" alt="Sort">
+    </button>
+    <div v-if="isOpenMenu" id="sort-menu" class="sort__menu" role="menu">
       <SortOption :sortOption="sortStore.SortOption.SURNAME" label="name" class="name-sort" isSortSignBeforeText/>
       <SortOption :sortOption="sortStore.SortOption.BORN" label="born" class="born-sort" isSortSignBeforeText/>
-      <!-- <SortOption :sortOption="sortStore.SortOption.GENDER" label="gender"/> -->
       <SortOption :sortOption="sortStore.SortOption.AUCTIONS_TURNOVER_2023_H1_USD" label="auctions 2023" class="auctions-sort" :isSortSignBeforeText="false"/>
     </div>
   </div>
@@ -24,8 +28,8 @@ const toggleMenu = () => {
 
 const sortStore = useSortStore()
 
-const handleClickOutside = (event: any) => {
-  if (menuRef.value && !menuRef.value.contains(event.target)) {
+const handleClickOutside = (event: MouseEvent | TouchEvent) => {
+  if (menuRef.value && !menuRef.value.contains(event.target as Node)) {
     isOpenMenu.value = false
   }
 }
@@ -50,7 +54,7 @@ onUnmounted(() => {
   flex-direction: column;
   align-items: center;
   gap 0.5rem
-  z-index 10000000000
+  z-index var(--z-index-ui-controls)
   background-color white
 
 
@@ -58,13 +62,16 @@ onUnmounted(() => {
   top: 1rem;
   cursor pointer
   width: 8.1rem;
-  z-index 10000000000
+  z-index var(--z-index-ui-controls)
   text-align center
   font-family 'Roboto', sans-serif
   font-size 1.4rem
   font-weight 700
   display: flex;
   justify-content: center;
+  background: none
+  border: none
+  padding: 0
 
 .sort__toggel-reversed-v
   transform: rotate(180deg);

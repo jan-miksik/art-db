@@ -1,27 +1,31 @@
 <template>
-  <div
+  <button
     ref="artistRef"
     :class="['artist', {'artist__sorting-in-progress': !isDragging}]"
     :style="handlePieceStyle"
     @click="openArtistModal(artistData)"
     @mousedown="handleOnMouseDown"
-    @mousemove="mouseMoveHandler"
+    @mousemove="(e) => mouseMoveHandler(e)"
     @mouseleave="mouseLeaveHandler"
     @mouseup="mouseUpHandler"
     @touchmove="touchmoveHandler"
     @touchend="touchendHandler"
+    :aria-label="`View details for ${artistData.name}`"
+    type="button"
   >
     <BaseImage
       :image-file="{
-        url: artistData.artworks[0].picture_url,
-        lastUpdated: artistData.artworks[0].year
+        url: artistData.artworks?.[0]?.picture_url ?? ''
       }"
       :external-css-class="['artist__artwork-preview-image', { 'artist--is-selected-artist-for-search-similar': artistData?.id === useFilterStore().selectedArtistForSearchSimilar?.id}]"
+      :alt="`Artwork preview for ${artistData.name}`"
     />
     <svg
       class="artist__name-svg-circle"
       viewBox="0 0 400 400"
       :style="randomizedRotation"
+      :aria-label="`Artist name: ${artistData.name}`"
+      role="img"
     >
       <defs>
         <path
@@ -35,20 +39,24 @@
         </textPath>
       </text>
     </svg>
-  </div>
+  </button>
 </template>
 
 <script setup lang="ts">
+import { useFilterStore } from '#imports'
+import interact from 'interactjs'
+import useArtistModal from './useArtistModal'
+import useMouseActionDetector from '~/J/useMouseActionDetector'
+import { type Artist } from '../J/useArtistsStore'
+import { randomRange } from '~/composables/useUtils'
+
+const { openArtistModal } = useArtistModal()
 const props = defineProps<{
   artistData: Artist
 }>()
-import interact from 'interactjs'
-import useArtistModal from './useArtistModal'
-const { openArtistModal } = useArtistModal()
-const filterStore = useFilterStore()
-
-import useMouseActionDetector from '~/J/useMouseActionDetector'
-import { type Artist } from '../J/useArtistsStore'
+const emit = defineEmits<{
+  (e: 'update-artist-position', payload: { id: string; position: { x: number; y: number } }): void
+}>()
 const {
   isDragging,
   mouseDownHandler,
@@ -61,49 +69,55 @@ const {
 } = useMouseActionDetector()
 
 const localZIndex = ref(1)
-const artistRef = ref()
-const isMouseDown = ref(false)
-
-const randomRange = (min: number, max: number) => {
-  return Math.floor(Math.random() * (max - min + 1) + min)
-}
+const artistRef = ref<HTMLButtonElement | null>(null)
 
 const randomizeRotation = () => {
   return {
     rotate: `${randomRange(0, 360)}deg`
   }
 }
-const randomizedRotation = computed(() => randomizeRotation())
+const randomizedRotation = ref(randomizeRotation())
 
 onMounted(() => {
-  interact(artistRef.value as any)
-    .draggable({
-      inertia: false,
-      autoScroll: true,
-      listeners: {
-        move(event: any) {
-          const xRaw = props.artistData.position.x + event.dx
-          const yRaw = props.artistData.position.y + event.dy
-          const x = xRaw > 0 ? xRaw : 0
-          props.artistData.position.x = x
-          props.artistData.position.y = yRaw
+  if (artistRef.value) {
+    interact(artistRef.value)
+      .draggable({
+        inertia: false,
+        autoScroll: true,
+        listeners: {
+          move(event: { dx: number; dy: number }) {
+            const x = Math.max(props.artistData.position.x + event.dx, 0)
+            const y = Math.max(props.artistData.position.y + event.dy, 0)
+
+            emit('update-artist-position', {
+              id: props.artistData.id,
+              position: { x, y }
+            })
+          }
         }
-      }
-    })
-    .resizable({
-      // resize from edges and corners
-      edges: { left: false, right: true, bottom: false, top: false },
-      modifiers: [
-        interact.modifiers.restrictSize({
-          min: { width: 10, height: 10 }
-        })
-      ],
-      inertia: false
-    })
+      })
+      .resizable({
+        // resize from edges and corners
+        edges: { left: false, right: true, bottom: false, top: false },
+        modifiers: [
+          interact.modifiers.restrictSize({
+            min: { width: 10, height: 10 }
+          })
+        ],
+        inertia: false
+      })
+  }
 })
 
-const handleOnMouseDown = () => {
-  mouseDownHandler()
+onUnmounted(() => {
+  // Clean up interact.js to prevent memory leaks
+  if (artistRef.value) {
+    interact(artistRef.value).unset()
+  }
+})
+
+const handleOnMouseDown = (event: MouseEvent) => {
+  mouseDownHandler(event)
   localZIndex.value = zIndexOfLastSelectedPiece.value
   zIndexOfLastSelectedPiece.value++
 }
@@ -120,6 +134,10 @@ const handlePieceStyle = computed(() => {
 <style lang="stylus">
 .artist
   position absolute
+  background: none
+  border: none
+  padding: 0
+  cursor: pointer
 
 .artist__sorting-in-progress
   transition all 1s ease-in-out

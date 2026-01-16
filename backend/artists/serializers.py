@@ -34,3 +34,23 @@ class ArtistSerializer(serializers.ModelSerializer):
             'similar_authors_postgres_ids',
             'media_types',
         ]
+
+
+class SearchArtistSerializer(serializers.ModelSerializer):
+    """Lightweight serializer for search results - excludes nested artworks to avoid N+1 queries"""
+    
+    class Meta:
+        model = Artist
+        fields = [
+            'id',
+            'firstname',
+            'surname',
+            'name',
+            'notes',
+            'profile_image_url',
+            'born',
+            'gender',
+            'auctions_turnover_2023_h1_USD',
+            'similar_authors_postgres_ids',
+            'media_types',
+        ]

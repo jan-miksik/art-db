@@ -1,0 +1,10 @@
+:root {
+  /* Z-index scale for consistent layering */
+  --z-index-modal: 1000;
+  --z-index-error: 999;
+  --z-index-loading: 998;
+  --z-index-ui-controls: 100;
+  --z-index-dropdown: 50;
+  --z-index-image-overlay: 10;
+  --z-index-base: 1;
+}

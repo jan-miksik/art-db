@@ -1,8 +1,46 @@
+# Environment variables
+# Ignore actual env files, but allow .example files to be committed
+.env.local
+.env.production
+.env.*.local
+!.env*.example
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+venv/
+env/
+ENV/
 .venv
-venv
-__pycache__
-media
-.env
+
+# Django
+*.log
+*.pot
+*.pyc
+local_settings.py
+db.sqlite3
+db.sqlite3-journal
+backend/media
+/staticfiles
+
+# IDEs
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
 .DS_Store
-frontend/.yarn/install-stage.gz
-.idea
+Thumbs.db
+
+# Build
+dist/
+build/
+*.egg-info/
+
+# Docker
+*.tar

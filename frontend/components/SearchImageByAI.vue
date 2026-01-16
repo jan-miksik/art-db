@@ -6,20 +6,22 @@
     <img v-if="selectedImageInUI" :src="selectedImageInUI" height="250" class="search-image-by-ai__image"/>
     <input type="file" id="file" ref="file" @change="handleSearchImages" style="display: none" accept="image/*" />
     <div v-if="selectedImageInUI" @click="handleRemoveSelectedImage" class="search-image-by-ai__remove-image">X</div>
-    <!-- <div v-if="isOpenMenu" class="search-image-by-ai__menu">
-      TODO ADD input for image
-      <span @click="handleClickSelectImage" class="search-image-by-ai__select-picture">select picture</span>
-    </div> -->
+
   </div>
 </template>
 
 <script setup lang="ts">
-import axios from "axios";
 const config = useRuntimeConfig();
 
-const menuRef = ref<HTMLElement>()
+type SearchResult = { artwork: unknown; author: { id: string } };
+type SearchResponse = {
+  success: boolean;
+  error?: string;
+  data?: SearchResult[];
+};
+
 const selectedPicture = ref<File | null>()
-const searchResults = ref([])
+const searchResults = ref<SearchResult[]>([])
 const file = ref();
 const filterStore = useFilterStore()
 
@@ -33,14 +35,22 @@ const handleSearchImages = async (event: Event) => {
     const formData = new FormData();
     formData.append('image', selectedPicture.value);
     formData.append('limit', "5");
-    const response = await axios.post(`${config.public.DJANGO_SERVER_URL}/artists/search-authors-by-image-data/`, formData, {
-      headers: {
-        'Content-Type': 'multipart/form-data'
-      }
+    const payload = await $fetch<SearchResponse>(`${config.public.DJANGO_SERVER_URL}/artists/search-authors-by-image-data/`, {
+      method: 'POST',
+      body: formData
     });
-    searchResults.value = response.data
-    console.log(searchResults.value)
-    const matchingIds = response.data.map((item: any) => item.author.id);
+    if (!payload?.success) {
+      console.error("Search failed:", payload?.error);
+      searchResults.value = [];
+      selectedPicture.value = undefined;
+      if (file.value) {
+        file.value.value = '';
+      }
+      filterStore.filterByIds([]);
+      return;
+    }
+    searchResults.value = payload.data ?? [];
+    const matchingIds = searchResults.value.map((item) => Number(item.author.id));
     filterStore.filterByIds(matchingIds)
   } catch (error) {
     console.error(error)
@@ -53,14 +63,21 @@ const handleClickSelectImage = () => {
 
 const handleRemoveSelectedImage = () => {
   selectedPicture.value = undefined
-  // filterStore.removeFilters()
+  if (file.value) {
+    file.value.value = '';
+  }
 }
 
-const selectedImageInUI = computed(() => {
+const selectedImageInUI = ref<string | null>(null)
+
+watchEffect((onCleanup) => {
   if (selectedPicture.value) {
-    return URL.createObjectURL(selectedPicture.value);
+    const url = URL.createObjectURL(selectedPicture.value)
+    selectedImageInUI.value = url
+    onCleanup(() => URL.revokeObjectURL(url))
+  } else {
+    selectedImageInUI.value = null
   }
-  return null
 })
 
 </script>
@@ -68,11 +85,10 @@ const selectedImageInUI = computed(() => {
 <style lang="stylus" scoped>
 
 .search-image-by-ai
-  // width: 5.2rem;
   font-weight: 700;
   font-size: 1.5rem;
   cursor: pointer;
-  z-index: 10000000000;
+  z-index: var(--z-index-ui-controls);
   font-family: 'Roboto', sans-serif;
   text-align: center;
   background-color: white;

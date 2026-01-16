@@ -1,4 +1,6 @@
 import { useArtistsStore } from './useArtistsStore'
+import { sleep } from '~/composables/useUtils'
+import { useArtistArrangement } from '~/composables/useArtistArrangement'
 
 export enum FilterOption {
   'NAME',
@@ -39,6 +41,7 @@ import FemalePng from '~/assets/female.png'
 import MalePng from '~/assets/male.png'
 
 export const useFilterStore = defineStore('filter', () => {
+  const { reArrangeSortedArtists } = useArtistArrangement()
 
   const selectedGendersToShow = ref<SelectionOptionType<GenderOptionEnum>[]>([])
   const selectedMediaToShow = ref<SelectionOptionType<MediaTypeOptionEnum>[]>([])
@@ -58,7 +61,6 @@ export const useFilterStore = defineStore('filter', () => {
       textToSearch.value ||
       isFilterByGender.value ||
       isShowSimilarAuthors.value ||
-      isFilterByMediaType.value ||
       isFilterByMediaType.value
   )
 
@@ -91,36 +93,6 @@ export const useFilterStore = defineStore('filter', () => {
       enumValue: MediaTypeOptionEnum.SCULPTURE
     },
   ]
-
-  const reArrangeSortedArtists = (fieldName: 'firstname') => {
-    let topPosition = 200
-    useArtistsStore().artists.forEach((artist, index) => {
-      if (index === 0) {
-        artist.position.y = topPosition
-      }
-
-      if (index > 0 && useArtistsStore().artists[index - 1][fieldName] === artist[fieldName]) {
-        artist.position.y = topPosition
-        return
-      }
-
-      if (index > 0) {
-        if (artist.position.y + 120 < topPosition) {
-          artist.position.y = topPosition + 120
-          topPosition = topPosition + 120
-        } else if (artist.position.y + 350 > topPosition) {
-          artist.position.y = topPosition + 120
-          topPosition = topPosition + 120
-        } else {
-          topPosition = artist.position.y
-        }
-      }
-    })
-  }
-
-  const sleep = async (ms: number) => {
-    return new Promise(resolve => setTimeout(resolve, ms));
-  }
 
   const applyAllFilters = async () => {
     isFilteringInProgress.value = true;
@@ -168,7 +140,7 @@ export const useFilterStore = defineStore('filter', () => {
       );
     }
 
-    useArtistsStore().artists = filteredResults;
+    useArtistsStore().setArtists(filteredResults);
     await sleep(100);
     reArrangeSortedArtists('firstname');
     isFilteringInProgress.value = false;
@@ -180,14 +152,20 @@ export const useFilterStore = defineStore('filter', () => {
     await applyAllFilters();
   }
 
-  const filterByBornInRange = async (from: number, to: number) => {
-    rangeFrom.value = from.toString();
-    rangeTo.value = to.toString();
-    isFilterByBornInRange.value = !!(from || to);
+  const filterByBornInRange = async (from: number | null, to: number | null) => {
+    const hasFrom = from !== null && !isNaN(from);
+    const hasTo = to !== null && !isNaN(to);
+    
+    rangeFrom.value = hasFrom ? String(from) : '';
+    rangeTo.value = hasTo ? String(to) : '';
+    isFilterByBornInRange.value = hasFrom || hasTo;
     await applyAllFilters();
   }
 
-  const filterByMediaType = async (selectedMediaType: SelectionOptionType<MediaTypeOptionEnum>) => {
+  const filterByMediaType = async (selectedMediaType?: SelectionOptionType<MediaTypeOptionEnum>) => {
+    if (!selectedMediaType) {
+      return;
+    }
     if (selectedMediaToShow.value.some((option) => option.enumValue === selectedMediaType.enumValue)) {
       selectedMediaToShow.value = selectedMediaToShow.value.filter(o => o.enumValue !== selectedMediaType.enumValue);
     } else {
@@ -196,7 +174,10 @@ export const useFilterStore = defineStore('filter', () => {
     await applyAllFilters();
   }
 
-  const filterByGender = async (selectedGender: SelectionOptionType<GenderOptionEnum>) => {
+  const filterByGender = async (selectedGender?: SelectionOptionType<GenderOptionEnum>) => {
+    if (!selectedGender) {
+      return;
+    }
     if (selectedGendersToShow.value.some((option) => option.enumValue === selectedGender.enumValue)) {
       selectedGendersToShow.value = selectedGendersToShow.value.filter(o => o.enumValue !== selectedGender.enumValue);
     } else {
@@ -208,9 +189,11 @@ export const useFilterStore = defineStore('filter', () => {
   const filterByIds = async (ids: number[]) => {
     isFilteringInProgress.value = true;
 
-    const filteredPeople = ids.map(id => useArtistsStore().artistsAll.find(artist => +artist.id === +id)) as Artist[];
+    const filteredPeople = ids
+      .map(id => useArtistsStore().artistsAll.find(artist => +artist.id === +id))
+      .filter((artist): artist is Artist => artist !== undefined);
 
-    useArtistsStore().artists = filteredPeople;
+    useArtistsStore().setArtists(filteredPeople);
     await sleep(100)
     reArrangeSortedArtists('firstname');
   }

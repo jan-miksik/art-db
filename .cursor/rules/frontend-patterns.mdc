@@ -1,0 +1,31 @@
+---
+description: "Frontend patterns for Nuxt 4, Vue 3 Composition API, and Pinia stores"
+globs:
+  - "frontend/**/*.{vue,ts,js}"
+alwaysApply: false
+---
+
+# Frontend Patterns
+
+## Tech Stack
+
+- **Frontend:** Nuxt 4, Vue 3 Composition API with `<script setup>`, TypeScript, Pinia
+- **Styling:** Stylus (scoped styles in components)
+
+## Vue 3 Composition API
+
+- Use `<script setup>` syntax (see `@frontend/components/ArtistModal.vue`)
+- Use composables for reusable logic (see `@frontend/composables/`)
+- Use Pinia stores for state management (see `@frontend/J/useArtistsStore.ts`)
+
+## Styling
+
+- Use CSS variables for z-index values (see `@frontend/styles/z-index.css`)
+- Use scoped styles in components
+- Reference z-index scale: `var(--z-index-modal)`, `var(--z-index-ui-controls)`, etc.
+
+## Memory management
+
+- Use `watchEffect` with cleanup for ObjectURLs (see `@frontend/components/SearchImageByAI.vue:67-75`)
+- Always call `URL.revokeObjectURL()` in cleanup functions
+- Consolidate duplicate watchers to prevent memory leaks

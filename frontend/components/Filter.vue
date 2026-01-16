@@ -6,18 +6,23 @@
         @search="filterStore.searchAndFilterByName"
         :filterType="filterStore.FilterType.SEARCH"
       />
-    <div :class="['filter-toggle']" @click="toggleMenu">
-      <!-- ϒ-->
+    <button 
+      :class="['filter-toggle']" 
+      @click="toggleMenu"
+      :aria-expanded="isOpenMenu"
+      aria-controls="filter-menu"
+      aria-label="Toggle filter menu"
+      type="button"
+    >
       filter
-      <!--      <img src="~/assets/close.svg" width="20" :class="['filter-toggle-img',{'filter-toggle&#45;&#45;open': isOpenMenu}]">-->
-    </div>
+    </button>
 
-    <div v-if="isOpenMenu" class="filter__menu">
+    <div v-if="isOpenMenu" id="filter-menu" class="filter__menu" role="menu">
       <FilterOption
         :filterOption="filterStore.FilterOption.MEDIA_TYPE"
         :selectionOptions="filterStore.mediaTypeOptions"
         :selectedOptions="filterStore.selectedMediaToShow"
-        @selection="filterStore.filterByMediaType"
+        @selection="handleMediaTypeSelection"
         :filterType="filterStore.FilterType.SELECTION_TEXT"
       />
       <FilterOption
@@ -33,14 +38,12 @@
         @range="filterStore.filterByBornInRange"
         :filterType="filterStore.FilterType.RANGE"
       />
-
-
-      <!-- <FilterOption :filterOption="filterStore.FilterOption.AUCTIONS_TURNOVER_2023_H1_USD" label="auctions 2023"/> -->
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
+import type { MediaTypeOptionEnum, SelectionOptionType } from '~/J/useFilterStore'
 const menuRef = ref<HTMLElement>()
 const isOpenMenu = ref(false)
 
@@ -48,24 +51,30 @@ const toggleMenu = () => {
   isOpenMenu.value = !isOpenMenu.value
 }
 
-// const handleSearchName = (text: string) => {
-// }
-
 const filterStore = useFilterStore()
 
-const handleClickOutside = (event: any) => {
-  if (menuRef.value && !menuRef.value.contains(event.target)) {
+const handleMediaTypeSelection = (selectionOption?: SelectionOptionType<any>) => {
+  if (!selectionOption) {
+    return
+  }
+
+  filterStore.filterByMediaType(selectionOption as SelectionOptionType<MediaTypeOptionEnum>)
+}
+
+const handleClickOutside = (event: MouseEvent) => {
+  const target = event.target as Node | null
+  if (menuRef.value && target && !menuRef.value.contains(target)) {
     isOpenMenu.value = false
   }
 }
 
-// onMounted(() => {
-//   document.addEventListener('click', handleClickOutside)
-// })
+onMounted(() => {
+  document.addEventListener('click', handleClickOutside)
+})
 
-// onUnmounted(() => {
-//   document.removeEventListener('click', handleClickOutside)
-// })
+onUnmounted(() => {
+  document.removeEventListener('click', handleClickOutside)
+})
 </script>
 
 <style lang="stylus" scoped>
@@ -75,13 +84,13 @@ const handleClickOutside = (event: any) => {
   background: white;
 }
 .filter
-  z-index 10000000000
+  z-index var(--z-index-ui-controls)
   position absolute
 
 .filter-toggle
   font-weight 700
   font-size: 1.2rem;
-  z-index 10000000000
+  z-index var(--z-index-ui-controls)
   font-family 'Roboto', sans-serif
   text-align center
   transition all 0.3s
@@ -89,6 +98,9 @@ const handleClickOutside = (event: any) => {
   top: 30px;
   left: 0;
   cursor url('~/assets/filter.svg'), pointer
+  background: none
+  border: none
+  padding: 0
 
 .filter-toggle-img
   transition all 0.2s

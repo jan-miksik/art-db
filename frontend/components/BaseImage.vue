@@ -6,6 +6,7 @@
     :loading="fullImageLoading"
     :fetchpriority="fullImageFetchpriority"
     :src="fullImageSrcComputed"
+    :alt="alt"
   />
   <div 
     v-else 
@@ -16,12 +17,13 @@
 
 <script setup lang="ts">
 import { updateImage, addImage, getImage } from '~/services/idb'
-import ImageFile from '~/models/ImageFile'
+import { type IImageFile } from '~/models/ImageFile'
 import { type ImageIDB } from '~/services/idb'
 
 const props = defineProps<{
-  imageFile: ImageFile
-  externalCssClass?: any
+  imageFile: IImageFile
+  externalCssClass?: string | string[] | Record<string, boolean> | Array<string | Record<string, boolean>>
+  alt?: string
 }>()
 const { externalCssClass } = toRefs(props)
 
@@ -34,6 +36,8 @@ const fullImageSrc = ref('')
 const fullImageFileInIDB = ref<ImageIDB>()
 const fullImageRef = ref()
 const isFullImageLoaded = ref(false)
+const blobUrlRef = ref<string | null>(null)
+let observer: IntersectionObserver | null = null
 
 
 const fullImageLoading = computed(() => {
@@ -51,7 +55,6 @@ const fullImageFetchpriority = computed(() => {
 
 
 const fullImageSrcComputed = computed(() => {
-  // return imageFileComputed.value.url
   return fullImageSrc.value
 })
 
@@ -63,29 +66,61 @@ const handleSetupMissingImage = () => {
 }
 
 
-const giveFullImageSourcePlease = async () => {
+const currentImageUrl = ref<string>('')
 
-  if (fullImageSrc.value || fullImageFileInIDB.value) return
-  if (!props.imageFile.url) {
+const giveFullImageSourcePlease = async () => {
+  const imageUrl = imageFileComputed.value.url
+  
+  // If URL hasn't changed and we already have the image, don't reload
+  if (currentImageUrl.value === imageUrl && (fullImageSrc.value || fullImageFileInIDB.value)) {
+    return
+  }
+  
+  // URL changed, reset state
+  if (currentImageUrl.value !== imageUrl) {
+    if (blobUrlRef.value) {
+      URL.revokeObjectURL(blobUrlRef.value)
+      blobUrlRef.value = null
+    }
+    fullImageSrc.value = ''
+    fullImageFileInIDB.value = undefined
+    isFullImageLoaded.value = false
+    currentImageUrl.value = imageUrl
+  }
+  
+  if (!imageUrl) {
     handleSetupMissingImage()
     return
   }
   
-  fullImageFileInIDB.value = await getImage(imageFileComputed.value.url)
+  fullImageFileInIDB.value = await getImage(imageUrl)
 
   if (!fullImageFileInIDB.value) {
     addImage(imageFileComputed.value)
-    fullImageSrc.value = imageFileComputed.value.url
+    if (blobUrlRef.value) {
+      URL.revokeObjectURL(blobUrlRef.value)
+      blobUrlRef.value = null
+    }
+    fullImageSrc.value = imageUrl
     return
   }
 
   if (fullImageFileInIDB.value) {
     if (fullImageFileInIDB.value.lastUpdated !== imageFileComputed.value.lastUpdated) {
       updateImage(imageFileComputed.value)
-      fullImageSrc.value = imageFileComputed.value.url
+      if (blobUrlRef.value) {
+        URL.revokeObjectURL(blobUrlRef.value)
+        blobUrlRef.value = null
+      }
+      fullImageSrc.value = imageUrl
       return
     }
-    fullImageSrc.value = URL.createObjectURL(fullImageFileInIDB.value.blob)
+    if (blobUrlRef.value) {
+      URL.revokeObjectURL(blobUrlRef.value)
+      blobUrlRef.value = null
+    }
+    blobUrlRef.value = URL.createObjectURL(fullImageFileInIDB.value.blob)
+    fullImageSrc.value = blobUrlRef.value
   }
 }
 
@@ -100,37 +135,48 @@ watch(isVisible, (newVal) => {
   }
 })
 
+// Watch for changes to imageFile.url and reload
+watch(() => imageFileComputed.value.url, async (newUrl, oldUrl) => {
+  if (newUrl !== oldUrl && isVisible.value) {
+    // URL changed and component is visible, reload immediately
+    await giveFullImageSourcePlease()
+  }
+})
+
 onMounted(async () => {
-
   fullImageRef.value?.classList.add('anim-bg')
-  fullImageRef.value.addEventListener('load', loadedFullImage)
+  fullImageRef.value?.addEventListener('load', loadedFullImage)
 
-  const observer = new IntersectionObserver((entries) => {
+  observer = new IntersectionObserver((entries) => {
     // The callback will be called when the image enters or leaves the viewport
-    if (entries[0].isIntersecting) {
+    if (entries[0]?.isIntersecting) {
       // The image has entered the viewport
       isVisible.value = true
       // We don't need the observer anymore, so we disconnect it
-      observer.disconnect()
+      observer?.disconnect()
     }
   }, {
     threshold: 0
   })
 
   // Start observing the image
-  observer.observe(fullImageRef.value)
+  if (fullImageRef.value) {
+    observer.observe(fullImageRef.value)
+  }
 })
 
 
 onUnmounted(() => {
+  // Clean up event listener
   fullImageRef.value?.removeEventListener('load', loadedFullImage)
+  // Clean up IntersectionObserver to prevent memory leaks
+  observer?.disconnect()
+  observer = null
+  if (blobUrlRef.value) {
+    URL.revokeObjectURL(blobUrlRef.value)
+    blobUrlRef.value = null
+  }
 })
-
-// watch(isVisible, (newVal) => {
-//   if (newVal) {
-//     giveFullImageSourcePlease()
-//   }
-// }, { immediate: true })
 
 </script>
 
@@ -148,7 +194,7 @@ onUnmounted(() => {
 
 
 .image__low
-  z-index 10000000000
+  z-index var(--z-index-image-overlay)
 
 @keyframes background-color-palette
   0%

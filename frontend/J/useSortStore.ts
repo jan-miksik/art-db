@@ -1,4 +1,6 @@
 import { useArtistsStore } from './useArtistsStore'
+import { sleep } from '~/composables/useUtils'
+import { useArtistArrangement } from '~/composables/useArtistArrangement'
 
 export enum SortOption {
   'FIRSTNAME',
@@ -15,6 +17,8 @@ export enum SortDirection {
 }
 
 export const useSortStore = defineStore('sort', () => {
+  const { reArrangeSortedArtists } = useArtistArrangement()
+
   const activeSort = ref<{
     field: SortOption | null
     direction: SortDirection | null
@@ -24,36 +28,6 @@ export const useSortStore = defineStore('sort', () => {
   })
 
   const isSortingInProgress = ref(false)
-
-  const sleep = async (ms: number) => {
-    return new Promise(resolve => setTimeout(resolve, ms));
-  }
-
-  const reArrangeSortedArtists = (fieldName: 'firstname' | 'surname' | 'born' | 'gender' | 'auctions_turnover_2023_h1_USD') => {
-    let topPosition = 200
-    useArtistsStore().artists.forEach((artist, index) => {
-      if (index === 0) {
-        artist.position.y = topPosition
-      }
-
-      if (index > 0 && useArtistsStore().artists[index - 1][fieldName] === artist[fieldName]) {
-        artist.position.y = topPosition
-        return
-      }
-
-      if (index > 0) {
-        if (artist.position.y + 120 < topPosition) {
-          artist.position.y = topPosition + 120
-          topPosition = topPosition + 120
-        } else if (artist.position.y + 350 > topPosition) {
-          artist.position.y = topPosition + 120
-          topPosition = topPosition + 120
-        } else {
-          topPosition = artist.position.y
-        }
-      }
-    })
-  }
 
   const alphabetSort = async (fieldName: 'firstname' | 'surname' | 'gender') => {
     isSortingInProgress.value = true

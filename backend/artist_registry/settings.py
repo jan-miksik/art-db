@@ -10,35 +10,57 @@ For the full list of settings and their values, see
 https://docs.djangoproject.com/en/5.0/ref/settings/
 """
 
-from pathlib import Path
+import base64
 import os
+import stat
+import tempfile
+from pathlib import Path
 
 from dotenv import load_dotenv
-
-# Load environment variables from .env file
-load_dotenv()
+from django.core.exceptions import ImproperlyConfigured
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
+
+# Load environment variables based on DJANGO_ENV
+# Uses .env.local for development or .env.production for production
+env = os.getenv('DJANGO_ENV', 'local').lower()
+env_file = f'.env.{env}'
+env_path = BASE_DIR / env_file
+
+# Load environment-specific file (required)
+if not env_path.exists():
+    raise ImproperlyConfigured(
+        f"Environment file '{env_path}' not found. "
+        f"Create it from '{env_file}.example' template. "
+        f"Current DJANGO_ENV: {env}"
+    )
+load_dotenv(env_path)
 
 
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/5.0/howto/deployment/checklist/
 
-# SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = 'django-insecure-bxp#bec1r2p-=mos4@c1(m2=9tvp&#6a6dm=4c^$cs@$c+z&yv'
+# SECURITY: Secret key from environment variable
+SECRET_KEY = os.getenv('DJANGO_SECRET_KEY')
+if not SECRET_KEY:
+    raise ImproperlyConfigured(
+        "DJANGO_SECRET_KEY environment variable is required. "
+        "Generate one with: python -c \"from django.core.management.utils import get_random_secret_key; print(get_random_secret_key())\""
+    )
 
-# SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
+# SECURITY: Debug mode from environment variable (default: False)
+DEBUG = os.getenv('DEBUG', 'False').lower() == 'true'
 
-ALLOWED_HOSTS = ['localhost', '127.0.0.1', "0.0.0.0", "django-server-production-9daf.up.railway.app"]
-# ALLOWED_HOST = ['*']
+ALLOWED_HOSTS = os.getenv('ALLOWED_HOSTS', 'localhost,127.0.0.1').split(',')
+if DEBUG:
+    ALLOWED_HOSTS.extend(['localhost', '127.0.0.1', '0.0.0.0'])
 
 # Application definition
 
 INSTALLED_APPS = [
     'django.contrib.admin',
-    # 'artists.apps.ArtistsConfig',
+    'artists.apps.ArtistsConfig',
     'django.contrib.auth',
     'django.contrib.contenttypes',
     'django.contrib.sessions',
@@ -46,9 +68,25 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',
     'corsheaders',
     'rest_framework',
-    'artists',
     'storages',
 ]
+
+# Django REST Framework configuration
+REST_FRAMEWORK = {
+    'DEFAULT_AUTHENTICATION_CLASSES': [
+        'rest_framework.authentication.SessionAuthentication',
+    ],
+    'DEFAULT_THROTTLE_CLASSES': [
+        'rest_framework.throttling.AnonRateThrottle',
+        'rest_framework.throttling.UserRateThrottle',
+    ],
+    'DEFAULT_THROTTLE_RATES': {
+        'anon': '100/hour',           # Anonymous users: 100 requests/hour
+        'user': '1000/hour',          # Authenticated users: 1000 requests/hour
+        'search': '30/hour',          # Search endpoints (expensive): 30/hour for anon
+        'search_user': '300/hour',    # Search endpoints: 300/hour for authenticated
+    }
+}
 
 MIDDLEWARE = [
     'corsheaders.middleware.CorsMiddleware',
@@ -62,12 +100,24 @@ MIDDLEWARE = [
 ]
 
 
-CORS_ALLOW_ALL_ORIGINS = True
+# SECURITY: CORS configuration from environment
+# Set CORS_ALLOWED_ORIGINS as comma-separated list in .env for production
+# Example: CORS_ALLOWED_ORIGINS=http://localhost:3000,https://yourdomain.com
+CORS_ALLOW_ALL_ORIGINS = DEBUG  # Only allow all origins in debug mode
+# Parse and clean CORS allowed origins (strip whitespace, filter empty strings)
+cors_origins_raw = os.getenv('CORS_ALLOWED_ORIGINS', 'http://localhost:3000')
 CORS_ALLOWED_ORIGINS = [
-    "http://localhost:3000",
-    "http://0.0.0.0",
-    'http://*'
+    origin.strip() 
+    for origin in cors_origins_raw.split(',') 
+    if origin.strip() and not origin.strip().endswith('*')  # Reject wildcards
 ]
+# Ensure at least one origin is set in production
+if not DEBUG and not CORS_ALLOWED_ORIGINS:
+    raise ImproperlyConfigured(
+        "CORS_ALLOWED_ORIGINS must be set in production. "
+        "Set it as a comma-separated list in your .env file."
+    )
+CORS_ALLOW_CREDENTIALS = True
 
 ROOT_URLCONF = 'artist_registry.urls'
 
@@ -135,6 +185,9 @@ USE_I18N = True
 
 USE_TZ = True
 
+# Transitional: opt into https default scheme for URLField ahead of Django 6
+FORMS_URLFIELD_ASSUME_HTTPS = True
+
 
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/5.0/howto/static-files/
@@ -153,15 +206,89 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
 MEDIA_URL = '/media/'
 
-# AWS_ACCESS_KEY_ID = 'AKIA4N7WU65Z4YIBEIJ2'
-# AWS_SECRET_ACCESS_KEY = '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'
+# Arweave wallet - must be provided via ARWEAVE_WALLET_B64 (no fallback path env)
+wallet_b64 = os.getenv('ARWEAVE_WALLET_B64')
+if not wallet_b64:
+    raise ImproperlyConfigured(
+        "ARWEAVE_WALLET_B64 environment variable is required (base64 of arweave_wallet.json)."
+    )
 
-# AWS_STORAGE_BUCKET_NAME = 'art-db-django'
-# AWS_S3_CUSTOM_DOMAIN = '%s.s3.amazonaws.com' % AWS_STORAGE_BUCKET_NAME
-# AWS_S3_FILE_OVERWRITE = False
+# Prefer path from entrypoint.sh (secure random dir), otherwise create one
+wallet_path_env = os.getenv('ARWEAVE_WALLET_PATH')
+if wallet_path_env:
+    # Path already set by entrypoint.sh (production path)
+    wallet_path = Path(wallet_path_env).resolve()
+    wallet_dir = wallet_path.parent
+    if not wallet_path.exists():
+        raise ImproperlyConfigured(
+            f"ARWEAVE_WALLET_PATH is set but file does not exist: {wallet_path}"
+        )
+else:
+    # Create a secure, isolated temp directory (for local dev without entrypoint.sh)
+    # mkdtemp creates a directory with 0700 permissions by default
+    wallet_dir = Path(tempfile.mkdtemp(prefix='arweave_wallet.'))
+    wallet_path = wallet_dir / 'wallet.json'
+    
+    # Decode and write the wallet file
+    try:
+        wallet_data = base64.b64decode(wallet_b64)
+        wallet_path.write_bytes(wallet_data)
+        os.chmod(wallet_path, 0o600)
+    except Exception as exc:
+        raise ImproperlyConfigured(
+            f"Failed to decode ARWEAVE_WALLET_B64 and write wallet: {exc}"
+        ) from exc
 
-# DEFAULT_FILE_STORAGE = 'storages.backends.s3boto3.S3Boto3Storage'
+# Always block MEDIA_ROOT placement to avoid accidental exposure in any environment
+media_root_resolved = Path(MEDIA_ROOT).resolve()
+if media_root_resolved in wallet_path.parents or wallet_path == media_root_resolved:
+    raise ImproperlyConfigured(
+        "Arweave wallet cannot live under MEDIA_ROOT."
+    )
 
-# STATICFILES_STORAGE = 'artists.arweave_storage.ArweaveStorage'
+# Verify wallet directory permissions (should be 0700 - owner rwx only)
+wallet_dir_mode = stat.S_IMODE(wallet_dir.stat().st_mode)
+if wallet_dir_mode & 0o077:  # Check if group/other have any permissions
+    try:
+        os.chmod(wallet_dir, 0o700)
+    except PermissionError as exc:
+        raise ImproperlyConfigured(
+            f"Wallet directory must be owner-accessible only (chmod 700). "
+            f"Failed to apply permissions to {wallet_dir}"
+        ) from exc
 
-# DEFAULT_FILE_STORAGE = 'artists.arweave_storage.ArweaveStorage'
+# Verify wallet file permissions (should be 0600 - owner rw only)
+current_mode = stat.S_IMODE(wallet_path.stat().st_mode)
+if current_mode != 0o600:
+    try:
+        os.chmod(wallet_path, 0o600)
+    except PermissionError as exc:
+        raise ImproperlyConfigured(
+            f"ARWEAVE_WALLET_PATH must be owner-readable only (chmod 600). "
+            f"Failed to apply permissions to {wallet_path}"
+        ) from exc
+
+# Export as a string for downstream consumers
+ARWEAVE_WALLET_PATH = str(wallet_path)
+
+# SECURITY: Production security settings
+if not DEBUG:
+    # HTTPS settings
+    SECURE_SSL_REDIRECT = True
+    SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
+
+    # HSTS settings
+    SECURE_HSTS_SECONDS = 31536000  # 1 year
+    SECURE_HSTS_INCLUDE_SUBDOMAINS = True
+    SECURE_HSTS_PRELOAD = True
+
+    # Cookie security
+    SESSION_COOKIE_SECURE = True
+    CSRF_COOKIE_SECURE = True
+    CSRF_COOKIE_HTTPONLY = True
+    SESSION_COOKIE_HTTPONLY = True
+
+    # Other security settings
+    X_FRAME_OPTIONS = 'DENY'
+    SECURE_CONTENT_TYPE_NOSNIFF = True
+    SECURE_BROWSER_XSS_FILTER = True

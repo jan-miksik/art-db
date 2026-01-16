@@ -1,16 +1,19 @@
 <template>
   <div :class="['filter-option', `filter-option--${filterType}`]">
       <div class="filter-option__search" v-if="filterType === FilterType.SEARCH">
-          <img src="~/assets/search.svg" height="20"><input v-model="textToSearch" class="filter-option__search-input" @input="handleSearchInputChange" placeholder=""/>
+          <img src="~/assets/search.svg" height="20" alt="Search icon">
+          <label :for="`filter-search-input-${filterOption}`" class="visually-hidden">Search by name</label>
+          <input :id="`filter-search-input-${filterOption}`" v-model="textToSearch" class="filter-option__search-input" @input="handleSearchInputChange" placeholder=""/>
       </div>
       <div class="filter-option__range" v-if="filterType === FilterType.RANGE">
           {{ label || filterOption }}
-          <input class="filter-option__range-from" placeholder="min" type="number" v-model="rangeFrom" @input="handleRangeChange"/> -
-          <input class="filter-option__range-to" placeholder="max" type="number" v-model="rangeTo" @input="handleRangeChange"/>
+          <label :for="`filter-range-from-input-${filterOption}`" class="visually-hidden">Minimum value</label>
+          <input :id="`filter-range-from-input-${filterOption}`" class="filter-option__range-from" placeholder="min" type="number" v-model.number="rangeFromNumber" @input="handleRangeChange"/> -
+          <label :for="`filter-range-to-input-${filterOption}`" class="visually-hidden">Maximum value</label>
+          <input :id="`filter-range-to-input-${filterOption}`" class="filter-option__range-to" placeholder="max" type="number" v-model.number="rangeToNumber" @input="handleRangeChange"/>
       </div>
       <div class="filter-option__selection" v-if="filterType === FilterType.SELECTION">
         <div v-for="(selectionOption) in selectionOptions" @click="() => handleSelectionChange(selectionOption)" :class="['filter-option__selection-option', {'filter-option__selection-option--is-selected': isOptionSelected(selectionOption)}]">
-          <!-- {{ selectionOption.sign }} -->
           <img v-if="selectionOption.sign" :src="selectionOption.sign" height="16"/>
         </div>
       </div>
@@ -23,7 +26,8 @@
 </template>
 
 <script setup lang="ts">
-import type { FilterOption, FilterType, SelectionOptionType } from '#imports';
+import type { FilterOption, SelectionOptionType } from '#imports';
+import { FilterType } from '~/J/useFilterStore';
 const filterStore = useFilterStore()
 const { textToSearch, rangeFrom, rangeTo } = storeToRefs(filterStore)
 
@@ -37,17 +41,41 @@ const props = defineProps<{
 
 const emit = defineEmits<{
   (e: 'search', text: string): void
-  (e: 'range', rangeFrom: string, rangeTo: string): void
+  (e: 'range', rangeFrom: number | null, rangeTo: number | null): void
   (e: 'selection', selectedOption?: SelectionOptionType<any>): void
 }>()
 
+// Convert string refs to number refs for v-model.number
+const rangeFromNumber = computed({
+  get: () => {
+    const val = rangeFrom.value
+    if (val === '') return null
+    const parsed = Number(val)
+    return Number.isNaN(parsed) ? null : parsed
+  },
+  set: (val: number | null) => {
+    rangeFrom.value = val === null || isNaN(val) ? '' : String(val)
+  }
+})
+
+const rangeToNumber = computed({
+  get: () => {
+    const val = rangeTo.value
+    if (val === '') return null
+    const parsed = Number(val)
+    return Number.isNaN(parsed) ? null : parsed
+  },
+  set: (val: number | null) => {
+    rangeTo.value = val === null || isNaN(val) ? '' : String(val)
+  }
+})
 
 const handleSearchInputChange = () => {
   emit('search', textToSearch.value)
 }
 
 const handleRangeChange = () => {
-  emit('range', rangeFrom.value, rangeTo.value)
+  emit('range', rangeFromNumber.value, rangeToNumber.value)
 }
 
 const handleSelectionChange = (selectionOption: SelectionOptionType<any>) => {
@@ -61,6 +89,18 @@ const isOptionSelected = (selectionOption: SelectionOptionType<any>) => {
 </script>
 
 <style lang="stylus" scoped>
+.visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border-width: 0;
+}
+
 input:focus {
     outline: none;
 }
@@ -90,31 +130,7 @@ input[type="number"] {
 .filter-option
   text-align: center
   line-height: 1.5rem
-  z-index 10000000000
-
-.filter-option--SEARCH
-  //position absolute
-  //top 0
-  //left 0
-
-.filter-option--RANGE
-  //position absolute
-  //top 60px
-  //left 0
-  //background pink
-
-
-.filter-option--SELECTION
-  //margin-right auto
-  //position absolute
-  //top 90px
-  //left 0
-
-.filter-option--SELECTION_TEXT
-  //margin-right auto
-  //position absolute
-  //top 120px
-  //left 0
+  z-index var(--z-index-ui-controls)
 
 .filter-option__selection
   display: flex
@@ -122,7 +138,7 @@ input[type="number"] {
   font-size: 1.2rem
 
 .filter-option__selection-option-text-container
-  opacity: 0.35
+  opacity: 0.6
   cursor: pointer
   padding: 2px;
 

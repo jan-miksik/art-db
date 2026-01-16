@@ -1,0 +1,29 @@
+---
+description: "Backend patterns for Django REST Framework, Weaviate integration, and error handling"
+globs:
+  - "backend/**/*.py"
+alwaysApply: false
+---
+
+# Backend Patterns
+
+## Tech Stack
+
+- **Backend:** Django REST Framework, PostgreSQL, Weaviate
+
+## Django REST Framework
+
+- Use custom response envelope: `success()` and `failure()` from `@backend/artists/response.py`
+- Validate input parameters (see `get_validated_limit` in `@backend/artists/views.py`)
+- Use proper error handling in Weaviate queries (see `@backend/artists/weaviate/queries.py`)
+
+## Error handling
+
+- Wrap Weaviate operations in try/except blocks
+- Use custom exceptions from `@backend/artists/weaviate/exceptions.py`
+- Log errors with `logger.error()` including `exc_info=True`
+
+## Thread safety
+
+- Use `mimetypes.add_type()` instead of direct `types_map` mutation (see `@backend/artists/arweave_storage.py`)
+- Add error handling for file operations in admin (see `@backend/artists/admin.py`)
