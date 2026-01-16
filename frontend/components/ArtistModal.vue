@@ -324,7 +324,6 @@ noise-texture()
   position: fixed
   top: 1.5rem
   left: 1.5rem
-  z-index: 100
   display: flex
   align-items: center
   gap: 1rem
@@ -430,7 +429,7 @@ noise-texture()
   left: 0
   right: 0
   padding: 1.5rem 1rem 1rem
-  background: linear-gradient(to top, rgba(0,0,0,0.7) 0%, transparent 100%)
+  background: black
   display: flex
   flex-direction: column
   gap: 0.25rem
