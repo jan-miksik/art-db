@@ -53,7 +53,7 @@ cat <dump_file>.tar | docker exec -i backend-db-1 pg_restore -U postgres -d art_
 ## Architecture
 
 ### Tech Stack
-- **Backend**: Django 3.2 + Django REST Framework, PostgreSQL, Weaviate (vector DB)
+- **Backend**: Django 5.2 + Django REST Framework, PostgreSQL, Weaviate (vector DB)
 - **Frontend**: Nuxt 4, Vue 3, Pinia 3, Stylus
 - **Storage**: Arweave (decentralized), IndexedDB (client-side caching)
 
