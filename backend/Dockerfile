@@ -19,6 +19,12 @@ RUN pip install --no-cache-dir -r requirements.txt
 # Copy application code
 COPY . .
 
+# Collect static files at build time (Django admin CSS/JS)
+# Uses dummy values for required env vars since we only need staticfiles
+RUN DJANGO_SECRET_KEY=build-only-dummy-key \
+    ARWEAVE_WALLET_B64=$(echo '{}' | base64) \
+    python manage.py collectstatic --noinput
+
 # Make entrypoint executable
 RUN chmod +x entrypoint.sh
 
