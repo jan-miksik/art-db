@@ -221,17 +221,30 @@ curl -X POST \
 - `useSortStore`: Sorting by name, birth year, auction turnover
 - All filtering/sorting happens client-side on the full dataset
 
+
 ## Deployment
 
-The application is deployed on **Railway**. 
+### Backend
 
-## Branch Strategy
+Deployed on Railway. See [`backend/DEPLOYMENT.md`](backend/DEPLOYMENT.md) for instructions.
 
-- `main` - Development branch
-- `be-prod` - Backend production branch
-- `fe-prod` - Frontend production branch
+**Quick deploy:**
+```bash
+railway login
+railway link
+railway up
+```
 
-A push to the production backend or frontend branch triggers deployment of the corresponding part of the app.
+### Frontend
+
+Deployed on Railway. See [`frontend/DEPLOYMENT.md`](frontend/DEPLOYMENT.md) for instructions.
+
+**Quick deploy:**
+```bash
+railway login
+railway link
+railway up
+```
 
 ## In Development
 

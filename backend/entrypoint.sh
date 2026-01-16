@@ -31,4 +31,11 @@ else
 fi
 
 python3 manage.py migrate
+
+# Create staticfiles directory and collect static files
+mkdir -p staticfiles
+echo "Collecting static files..."
+python3 manage.py collectstatic --noinput --clear
+echo "Static files collected successfully"
+
 exec "$@"
