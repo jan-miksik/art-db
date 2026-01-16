@@ -30,8 +30,6 @@ class RateLimitingTests(TestCase):
         from django.core.cache import cache
         
         url = reverse('search_artworks_by_image_data')
-        file = SimpleUploadedFile("test.jpg", b"fake-image-bytes", content_type="image/jpeg")
-        
         # Mock the search function to avoid actual Weaviate calls
         with patch('artists.views.search_similar_artwork_ids_by_image_data', return_value=[]):
             # Clear cache to start fresh
@@ -42,6 +40,7 @@ class RateLimitingTests(TestCase):
             # In practice, rate limiting depends on cache state and time windows
             responses = []
             for i in range(31):  # One more than the limit
+                file = SimpleUploadedFile("test.jpg", b"fake-image-bytes", content_type="image/jpeg")
                 with suppress_logger('django.request', level=logging.ERROR):
                     response = self.anon_client.post(url, {'image': file})
                 responses.append(response.status_code)
@@ -57,8 +56,6 @@ class RateLimitingTests(TestCase):
         from django.core.cache import cache
         
         url = reverse('search_artworks_by_image_data')
-        file = SimpleUploadedFile("test.jpg", b"fake-image-bytes", content_type="image/jpeg")
-        
         # Clear cache
         cache.clear()
         
@@ -66,11 +63,13 @@ class RateLimitingTests(TestCase):
         with patch('artists.views.search_similar_artwork_ids_by_image_data', return_value=[]):
             # Authenticated users should be able to make requests
             # Verify the endpoint works for authenticated users
+            file = SimpleUploadedFile("test.jpg", b"fake-image-bytes", content_type="image/jpeg")
             response = self.user_client.post(url, {'image': file})
             self.assertEqual(response.status_code, 200)
             
             # Make a few more requests to verify they're not immediately throttled
             for i in range(5):
+                file = SimpleUploadedFile("test.jpg", b"fake-image-bytes", content_type="image/jpeg")
                 with suppress_logger('django.request', level=logging.ERROR):
                     response = self.user_client.post(url, {'image': file})
                 # Should succeed (not throttled immediately)
@@ -81,14 +80,13 @@ class RateLimitingTests(TestCase):
         from django.core.cache import cache
         
         url = reverse('search_artworks_by_image_data')
-        file = SimpleUploadedFile("test.jpg", b"fake-image-bytes", content_type="image/jpeg")
-        
         # Clear cache
         cache.clear()
         
         # Mock the search function
         with patch('artists.views.search_similar_artwork_ids_by_image_data', return_value=[]):
             # Verify endpoint works (rate limiting is configured but may not trigger immediately)
+            file = SimpleUploadedFile("test.jpg", b"fake-image-bytes", content_type="image/jpeg")
             with suppress_logger('django.request', level=logging.ERROR):
                 response = self.anon_client.post(url, {'image': file})
             # Should either succeed or be throttled (both indicate rate limiting is active)
@@ -100,4 +98,5 @@ class RateLimitingTests(TestCase):
                 self.assertTrue(body['success'])
             elif response.status_code == 429:
                 # Throttled response should have appropriate message
-                self.assertIn('throttled', response.content.decode().lower() or 'rate limit')
+                body = response.content.decode().lower()
+                self.assertTrue('throttled' in body or 'rate limit' in body)

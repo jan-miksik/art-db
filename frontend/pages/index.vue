@@ -37,22 +37,6 @@ import { useFilterStore } from "~/J/useFilterStore";
 import { useArtistsStore } from "~/J/useArtistsStore";
 import { randomRange } from "~/composables/useUtils";
 
-// SEO constants (matching nuxt.config.ts)
-const SEO_TITLE = 'Art-db - Contemporary Artists & Artworks Database'
-const SEO_DESCRIPTION = 'Browse contemporary artists and artworks. Explore an interactive database with decentralized image storage, and filtering'
-
-// SEO
-useSeoMeta({
-  title: SEO_TITLE,
-  description: SEO_DESCRIPTION,
-  ogTitle: SEO_TITLE,
-  ogDescription: SEO_DESCRIPTION,
-  ogType: 'website',
-  twitterCard: 'summary_large_image',
-  twitterTitle: SEO_TITLE,
-  twitterDescription: SEO_DESCRIPTION,
-})
-
 const config = useRuntimeConfig();
 const filterStore = useFilterStore();
 const artistsStore = useArtistsStore();

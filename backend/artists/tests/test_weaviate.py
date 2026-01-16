@@ -42,16 +42,10 @@ class WeaviateConnectionFailureTests(TestCase):
         # The view doesn't catch exceptions, so it will return a 500 error
         with patch('artists.views.search_similar_artwork_ids_by_image_data') as mock_search:
             mock_search.side_effect = Exception("Weaviate connection failed")
-            # The view will raise an unhandled exception, resulting in a 500 error
-            # We need to catch it or check that it raises
-            try:
-                with suppress_logger('django.request'):
-                    response = self.client.post(url, {'image': file})
-                # If it doesn't raise, it should be a 500 error
-                self.assertEqual(response.status_code, 500)
-            except Exception:
-                # If it raises, that's also acceptable - the view doesn't handle it
-                pass
+            # The view will raise an unhandled exception with the default test client
+            with suppress_logger('django.request'):
+                with self.assertRaises(Exception):
+                    self.client.post(url, {'image': file})
     
     def test_weaviate_client_context_manager_handles_exception(self):
         """Test that get_weaviate_client context manager properly handles exceptions."""

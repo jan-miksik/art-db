@@ -66,15 +66,34 @@ const handleSetupMissingImage = () => {
 }
 
 
-const giveFullImageSourcePlease = async () => {
+const currentImageUrl = ref<string>('')
 
-  if (fullImageSrc.value || fullImageFileInIDB.value) return
-  if (!props.imageFile.url) {
+const giveFullImageSourcePlease = async () => {
+  const imageUrl = imageFileComputed.value.url
+  
+  // If URL hasn't changed and we already have the image, don't reload
+  if (currentImageUrl.value === imageUrl && (fullImageSrc.value || fullImageFileInIDB.value)) {
+    return
+  }
+  
+  // URL changed, reset state
+  if (currentImageUrl.value !== imageUrl) {
+    if (blobUrlRef.value) {
+      URL.revokeObjectURL(blobUrlRef.value)
+      blobUrlRef.value = null
+    }
+    fullImageSrc.value = ''
+    fullImageFileInIDB.value = undefined
+    isFullImageLoaded.value = false
+    currentImageUrl.value = imageUrl
+  }
+  
+  if (!imageUrl) {
     handleSetupMissingImage()
     return
   }
   
-  fullImageFileInIDB.value = await getImage(imageFileComputed.value.url)
+  fullImageFileInIDB.value = await getImage(imageUrl)
 
   if (!fullImageFileInIDB.value) {
     addImage(imageFileComputed.value)
@@ -82,7 +101,7 @@ const giveFullImageSourcePlease = async () => {
       URL.revokeObjectURL(blobUrlRef.value)
       blobUrlRef.value = null
     }
-    fullImageSrc.value = imageFileComputed.value.url
+    fullImageSrc.value = imageUrl
     return
   }
 
@@ -93,7 +112,7 @@ const giveFullImageSourcePlease = async () => {
         URL.revokeObjectURL(blobUrlRef.value)
         blobUrlRef.value = null
       }
-      fullImageSrc.value = imageFileComputed.value.url
+      fullImageSrc.value = imageUrl
       return
     }
     if (blobUrlRef.value) {
@@ -113,6 +132,14 @@ const loadedFullImage = () => {
 watch(isVisible, (newVal) => {
   if (newVal) {
     giveFullImageSourcePlease()
+  }
+})
+
+// Watch for changes to imageFile.url and reload
+watch(() => imageFileComputed.value.url, async (newUrl, oldUrl) => {
+  if (newUrl !== oldUrl && isVisible.value) {
+    // URL changed and component is visible, reload immediately
+    await giveFullImageSourcePlease()
   }
 })
 

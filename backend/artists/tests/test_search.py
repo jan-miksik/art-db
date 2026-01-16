@@ -34,6 +34,25 @@ class SearchArtworksByImageURLTest(TestCase):
             sizeX=244,
         )
 
+    def test_search_by_image_url(self):
+        url = reverse('search_artworks_by_image_url')
+        dummy_results = [DummyImage(self.artwork.id, self.artist.id)]
+
+        with patch('artists.views.search_similar_artwork_ids_by_image_url', return_value=dummy_results):
+            response = self.client.get(
+                url,
+                {'image_url': 'https://example.com/test-image.jpg', 'limit': 1}
+            )
+
+        self.assertEqual(response.status_code, 200)
+        body = response.json()
+        self.assertTrue(body['success'])
+        self.assertIsNone(body['error'])
+        data = body['data']
+        self.assertEqual(len(data), 1)
+        self.assertEqual(data[0]['artwork']['id'], self.artwork.id)
+        self.assertEqual(data[0]['author']['id'], self.artist.id)
+
 
 class SearchArtworksByImageDataTestCase(TestCase):
     def test_search_artworks_by_image_data(self):

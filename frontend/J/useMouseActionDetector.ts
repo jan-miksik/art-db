@@ -1,5 +1,4 @@
 import { ref } from "vue";
-// import useAdminPage from "./useAdminPage";
 
 const isDragging = ref(false);
 const isOverPieceOrSetup = ref(false);
@@ -9,7 +8,6 @@ const mouseDownPosition = ref<{ x: number; y: number } | null>(null);
 const DRAG_THRESHOLD = 5; // pixels of movement to consider it a drag
 
 export default function useMouseActionDetector() {
-  // const { isOnAdminPage, isSetupForMobile } = useAdminPage();
 
   const mouseDownHandler = (event?: MouseEvent) => {
     isDragging.value = false;
@@ -50,7 +48,6 @@ export default function useMouseActionDetector() {
   };
 
   const touchmoveHandler = () => {
-    // if (!isOnAdminPage.value) return;
     isOverPieceOrSetup.value = true;
   };
 

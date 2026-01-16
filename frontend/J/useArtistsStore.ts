@@ -7,6 +7,7 @@ export type Artist = {
   notes: string
   born: number
   artworks: {
+    id?: number
     picture_url: string
     title: string
     year: number

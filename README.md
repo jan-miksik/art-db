@@ -2,7 +2,7 @@
 
 A full-stack art database application for browsing contemporary artists and artworks.
 
-**Live Application**: [Deployed on Railway](https://railway.app) *(link to be added)*
+**Live Application**: [Deployed on Railway](https://a-db-production.up.railway.app/)
 
 ## Features
 
@@ -16,21 +16,18 @@ A full-stack art database application for browsing contemporary artists and artw
 
 ### Frontend
 
-- **Framework**: Nuxt 3 (Vue 3 with Composition API)
+- **Framework**: Nuxt 4 (Vue 3 with Composition API)
 - **State Management**: Pinia
 - **Styling**: Stylus
 - **UI Libraries**: 
   - TanStack Table (table view)
   - Interact.js (draggable bubble view)
   - GSAP (animations)
-  - Swiper (image carousels)
-- **Storage**: Dexie (IndexedDB wrapper)
-- **Web3**: Akord Arweave SDK
-- **HTTP Client**: Axios
+- **Storage for caching**: Dexie (IndexedDB wrapper)
 
 ### Backend
 
-- **Framework**: Django 3.2 + Django REST Framework
+- **Framework**: Django 5.2 LTS + Django REST Framework (Python 3.11+ compatible; LTS/security status verified)
 - **Database**: PostgreSQL 16
 - **Vector Database**: Weaviate 1.24.7 (with img2vec-neural ResNet50)
 - **Storage**: 
@@ -234,6 +231,8 @@ The application is deployed on **Railway**.
 - `be-prod` - Backend production branch
 - `fe-prod` - Frontend production branch
 
+A push to the production backend or frontend branch triggers deployment of the corresponding part of the app.
+
 ## In Development
 
 ### AI-Powered Image Search
@@ -249,4 +248,4 @@ Search for similar artworks and artists using Weaviate vector database with ResN
 
 ## License
 
-[Add your license here]
+MIT License - see LICENSE file
