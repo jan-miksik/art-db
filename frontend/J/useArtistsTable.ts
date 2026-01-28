@@ -12,7 +12,7 @@ import {
   type FilterFn,
 } from '@tanstack/vue-table'
 import { useArtistsStore, type Artist } from '~/J/useArtistsStore'
-import { useArtistArrangement } from '~/composables/useArtistArrangement'
+import { useArtistArrangement } from '~/J/useArtistArrangement'
 import BaseImage from '~/components/BaseImage.vue'
 import {
   type BornRangeFilter,
@@ -21,7 +21,7 @@ import {
   matchesGenderFilter,
   matchesMediaTypeFilter,
   toggleSort,
-} from '~/composables/artistsTableUtils'
+} from '~/J/artistsTableUtils'
 import {
   FilterOption,
   FilterType,
@@ -201,13 +201,13 @@ const columns = [
         key: props.row.original.id,
       }),
     enableSorting: false,
-    size: 50,
+    size: 70,
   }),
   columnHelper.accessor('name', {
     header: () => '',
     cell: (info) => info.getValue(),
     enableGlobalFilter: true,
-    size: 150,
+    size: 180,
   }),
   columnHelper.accessor('artworks', {
     header: () => '',
@@ -227,7 +227,7 @@ const columns = [
         )
       ),
     enableSorting: false,
-    size: 250,
+    size: 350,
   }),
   columnHelper.accessor('firstname', {
     header: 'First Name',
@@ -689,3 +689,4 @@ export const useArtistsTable = () => {
     MediaTypeOptionEnum,
   }
 }
+

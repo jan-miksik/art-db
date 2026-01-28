@@ -48,7 +48,7 @@ import interact from 'interactjs'
 import useArtistModal from './useArtistModal'
 import useMouseActionDetector from '~/J/useMouseActionDetector'
 import { type Artist } from '../J/useArtistsStore'
-import { randomRange } from '~/composables/useUtils'
+import { randomRange } from '~/J/useUtils'
 
 const { openArtistModal } = useArtistModal()
 const props = defineProps<{

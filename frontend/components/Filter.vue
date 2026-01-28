@@ -54,7 +54,7 @@
 <script setup lang="ts">
 import { onMounted, onUnmounted, ref } from 'vue'
 import type { MediaTypeOptionEnum, SelectionOptionType } from '~/J/useFilterStore'
-import { useArtistsTable } from '~/composables/useArtistsTable'
+import { useArtistsTable } from '~/J/useArtistsTable'
 import FilterOptionComponent from '~/components/filter/Option.vue'
 
 const menuRef = ref<HTMLElement>()
@@ -110,8 +110,9 @@ onUnmounted(() => {
   background: white;
 }
 .filter
-  z-index var(--z-index-ui-controls)
-  position absolute
+  // Keep filter above the main menu so its toggle and menu stay clickable
+  z-index calc(var(--z-index-ui-controls) + 1)
+  position fixed
 
 .filter-toggle
   font-weight 700
@@ -155,6 +156,7 @@ onUnmounted(() => {
   width: fit-content;
   gap: 0.5rem;
   background-color: white;
+  padding: 0 1rem 1rem 0;
 
 .filter__triangel-1
   position: absolute;

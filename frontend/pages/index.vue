@@ -31,7 +31,7 @@
 
 <script setup lang="tsx">
 import { useArtistsStore } from "~/J/useArtistsStore";
-import { randomRange } from "~/composables/useUtils";
+import { randomRange } from "~/J/useUtils";
 
 const config = useRuntimeConfig();
 const artistsStore = useArtistsStore();
@@ -68,7 +68,7 @@ onMounted(async () => {
   position absolute
 
 .menu
-  position absolute
+  position fixed
   display flex
   gap 2rem
   justify-content: center;
@@ -77,18 +77,19 @@ onMounted(async () => {
   top 0
   width 100%
   padding 1rem 0
+  z-index var(--z-index-ui-controls)
 .menu-bg
   position fixed
   top 0
   left 0
   right 0
-  height 8rem
+  height 7rem
   z-index calc(var(--z-index-ui-controls) - 1)
   pointer-events none
   background: linear-gradient(
     to bottom,
     rgba(255, 255, 255, 1) 0%,
-    rgba(255, 255, 255, 1) 70%,
+    rgba(255, 255, 255, 1) 98%,
     rgba(255, 255, 255, 0) 100%
   )
 

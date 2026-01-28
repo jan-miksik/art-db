@@ -7,7 +7,7 @@ import {
   toggleSort,
   GenderOptionEnum,
   MediaTypeOptionEnum,
-} from '../artistsTableUtils'
+} from '~/J/artistsTableUtils'
 
 describe('artistsTableUtils', () => {
   describe('isBornInRange', () => {
@@ -89,3 +89,4 @@ describe('artistsTableUtils', () => {
     })
   })
 })
+

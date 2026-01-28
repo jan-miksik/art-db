@@ -54,3 +54,4 @@ export const useArtistArrangement = () => {
     reArrangeSortedArtists
   }
 }
+

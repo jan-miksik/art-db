@@ -28,7 +28,7 @@
 <script setup lang="ts">
 import type { FilterOption, SelectionOptionType } from '~/J/useFilterStore'
 import { FilterType } from '~/J/useFilterStore'
-import { useArtistsTable } from '~/composables/useArtistsTable'
+import { useArtistsTable } from '~/J/useArtistsTable'
 
 const { textToSearch, rangeFrom, rangeTo } = useArtistsTable()
 

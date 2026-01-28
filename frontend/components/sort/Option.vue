@@ -1,5 +1,5 @@
 <template>
-  <div class="sort-option" @click="setSort(sortOption)">
+  <div class="sort-option" @click="handleClick">
         <span v-if="activeSort.field === sortOption && isSortSignBeforeText">
           <span v-if="activeSort.direction === SortDirection.ASC
             ">
@@ -21,7 +21,7 @@
 <script setup lang="ts">
 import type { SortOption } from '~/J/useSortStore'
 import { SortDirection } from '~/J/useSortStore'
-import { useArtistsTable } from '~/composables/useArtistsTable'
+import { useArtistsTable } from '~/J/useArtistsTable'
 
 const props = defineProps<{
   sortOption: SortOption
@@ -29,6 +29,13 @@ const props = defineProps<{
   isSortSignBeforeText?: boolean
 }>()
 const { activeSort, setSort } = useArtistsTable()
+
+const handleClick = () => {
+  setSort(props.sortOption)
+  if (typeof window !== 'undefined') {
+    window.scrollTo({ top: 0, behavior: 'smooth' })
+  }
+}
 
 </script>
 
