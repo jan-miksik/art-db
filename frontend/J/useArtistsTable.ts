@@ -1,4 +1,4 @@
-import { ref, computed, watch, h } from 'vue'
+import { ref, computed, watch, h, nextTick } from 'vue'
 import {
   useVueTable,
   getCoreRowModel,
@@ -430,7 +430,7 @@ export const useArtistsTable = () => {
 
   watch(
     [filteredArtists, sorting],
-    ([nextArtists]) => {
+    async ([nextArtists]) => {
       // Preserve positions from artistsAll when setting filtered artists
       const artistsWithPositions = nextArtists.map((artist) => {
         const originalArtist = artistsStore.artistsAll.find((a) => a.id === artist.id)
@@ -440,7 +440,11 @@ export const useArtistsTable = () => {
         }
       })
       artistsStore.setArtists(artistsWithPositions)
-      arrangeBubblePositions()
+      // Let DOM apply the list update before moving bubbles
+      await nextTick()
+      requestAnimationFrame(() => {
+        arrangeBubblePositions()
+      })
     },
     { immediate: true }
   )

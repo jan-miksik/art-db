@@ -72,7 +72,7 @@ frontend/
 ### Prerequisites
 
 - Python 3.11+
-- Node.js 18+
+- Node.js 22+
 - Docker & Docker Compose
 - Poetry (Python package manager)
 - Yarn 4.1.0
