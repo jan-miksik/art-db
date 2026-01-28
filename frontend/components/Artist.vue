@@ -1,7 +1,7 @@
 <template>
   <button
     ref="artistRef"
-    :class="['artist', {'artist__sorting-in-progress': !isDragging}]"
+    :class="['artist', 'artist__sorting-in-progress']"
     :style="handlePieceStyle"
     @click="openArtistModal(artistData)"
     @mousedown="handleOnMouseDown"
@@ -48,7 +48,7 @@ import interact from 'interactjs'
 import useArtistModal from './useArtistModal'
 import useMouseActionDetector from '~/J/useMouseActionDetector'
 import { type Artist } from '../J/useArtistsStore'
-import { randomRange } from '~/composables/useUtils'
+import { randomRange } from '~/J/useUtils'
 
 const { openArtistModal } = useArtistModal()
 const props = defineProps<{
@@ -58,7 +58,6 @@ const emit = defineEmits<{
   (e: 'update-artist-position', payload: { id: string; position: { x: number; y: number } }): void
 }>()
 const {
-  isDragging,
   mouseDownHandler,
   mouseMoveHandler,
   mouseUpHandler,
@@ -85,6 +84,10 @@ onMounted(() => {
         inertia: false,
         autoScroll: true,
         listeners: {
+          start() {
+            // Disable transition during drag for this bubble only
+            artistRef.value?.classList.remove('artist__sorting-in-progress')
+          },
           move(event: { dx: number; dy: number }) {
             const x = Math.max(props.artistData.position.x + event.dx, 0)
             const y = Math.max(props.artistData.position.y + event.dy, 0)
@@ -93,6 +96,10 @@ onMounted(() => {
               id: props.artistData.id,
               position: { x, y }
             })
+          },
+          end() {
+            // Re-enable smooth transitions after drag ends
+            artistRef.value?.classList.add('artist__sorting-in-progress')
           }
         }
       })
@@ -123,9 +130,11 @@ const handleOnMouseDown = (event: MouseEvent) => {
 }
 
 const handlePieceStyle = computed(() => {
+  const x = props.artistData?.position?.x || 0
+  const y = props.artistData?.position?.y || 0
+
   return {
-    left: `${props.artistData?.position?.x || 0}px`,
-    top: `${props.artistData?.position?.y || 0}px`,
+    transform: `translate3d(${x}px, ${y}px, 0)`,
     zIndex: `${localZIndex.value}`
   }
 })
@@ -134,13 +143,16 @@ const handlePieceStyle = computed(() => {
 <style lang="stylus">
 .artist
   position absolute
+  top: 0
+  left: 0
   background: none
   border: none
   padding: 0
   cursor: pointer
+  will-change: transform
 
 .artist__sorting-in-progress
-  transition all 1s ease-in-out
+  transition transform 1s ease-in-out
 
 .artist__artwork-preview-image
   width: 120px;

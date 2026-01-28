@@ -20,6 +20,38 @@ import { updateImage, addImage, getImage } from '~/services/idb'
 import { type IImageFile } from '~/models/ImageFile'
 import { type ImageIDB } from '~/services/idb'
 
+type CachedImageEntry = {
+  src: string
+  lastUpdated?: number
+  isBlob: boolean
+}
+
+const imageSrcCache = new Map<string, CachedImageEntry>()
+const DEBUG_IMAGE_CACHE =
+  import.meta.env?.DEV === true ||
+  (typeof window !== 'undefined' && window.localStorage?.getItem('debug-images') === '1')
+
+const getCachedImage = (url: string, lastUpdated?: number): CachedImageEntry | null => {
+  const cached = imageSrcCache.get(url)
+  if (!cached) return null
+  if (cached.lastUpdated && lastUpdated && cached.lastUpdated !== lastUpdated) {
+    if (cached.isBlob) {
+      URL.revokeObjectURL(cached.src)
+    }
+    imageSrcCache.delete(url)
+    return null
+  }
+  return cached
+}
+
+const setCachedImage = (url: string, entry: CachedImageEntry) => {
+  const existing = imageSrcCache.get(url)
+  if (existing?.isBlob && existing.src !== entry.src) {
+    URL.revokeObjectURL(existing.src)
+  }
+  imageSrcCache.set(url, entry)
+}
+
 const props = defineProps<{
   imageFile: IImageFile
   externalCssClass?: string | string[] | Record<string, boolean> | Array<string | Record<string, boolean>>
@@ -70,6 +102,7 @@ const currentImageUrl = ref<string>('')
 
 const giveFullImageSourcePlease = async () => {
   const imageUrl = imageFileComputed.value.url
+  const lastUpdated = imageFileComputed.value.lastUpdated
   
   // If URL hasn't changed and we already have the image, don't reload
   if (currentImageUrl.value === imageUrl && (fullImageSrc.value || fullImageFileInIDB.value)) {
@@ -79,7 +112,12 @@ const giveFullImageSourcePlease = async () => {
   // URL changed, reset state
   if (currentImageUrl.value !== imageUrl) {
     if (blobUrlRef.value) {
-      URL.revokeObjectURL(blobUrlRef.value)
+      const cached = currentImageUrl.value
+        ? imageSrcCache.get(currentImageUrl.value)
+        : null
+      if (!cached || cached.src !== blobUrlRef.value) {
+        URL.revokeObjectURL(blobUrlRef.value)
+      }
       blobUrlRef.value = null
     }
     fullImageSrc.value = ''
@@ -92,27 +130,71 @@ const giveFullImageSourcePlease = async () => {
     handleSetupMissingImage()
     return
   }
+
+  const cached = getCachedImage(imageUrl, lastUpdated)
+  if (cached) {
+    if (DEBUG_IMAGE_CACHE) {
+      console.debug('[BaseImage] cache hit', {
+        url: imageUrl,
+        lastUpdated,
+        isBlob: cached.isBlob,
+      })
+    }
+    fullImageSrc.value = cached.src
+    fullImageRef.value?.classList.remove('anim-bg')
+    return
+  }
   
   fullImageFileInIDB.value = await getImage(imageUrl)
+  if (DEBUG_IMAGE_CACHE) {
+    console.debug('[BaseImage] idb lookup', {
+      url: imageUrl,
+      hit: Boolean(fullImageFileInIDB.value),
+      lastUpdated,
+    })
+  }
 
   if (!fullImageFileInIDB.value) {
-    addImage(imageFileComputed.value)
+    if (DEBUG_IMAGE_CACHE) {
+      console.debug('[BaseImage] idb miss, fetching', { url: imageUrl, lastUpdated })
+    }
+    void addImage(imageFileComputed.value)
     if (blobUrlRef.value) {
       URL.revokeObjectURL(blobUrlRef.value)
       blobUrlRef.value = null
     }
     fullImageSrc.value = imageUrl
+    setCachedImage(imageUrl, {
+      src: imageUrl,
+      lastUpdated,
+      isBlob: false,
+    })
     return
   }
 
   if (fullImageFileInIDB.value) {
-    if (fullImageFileInIDB.value.lastUpdated !== imageFileComputed.value.lastUpdated) {
-      updateImage(imageFileComputed.value)
+    if (
+      typeof lastUpdated === 'number' &&
+      fullImageFileInIDB.value.lastUpdated !== lastUpdated
+    ) {
+      if (DEBUG_IMAGE_CACHE) {
+        console.debug('[BaseImage] idb stale, updating', {
+          url: imageUrl,
+          lastUpdated,
+          storedLastUpdated: fullImageFileInIDB.value.lastUpdated,
+        })
+      }
+      void updateImage(imageFileComputed.value)
       if (blobUrlRef.value) {
         URL.revokeObjectURL(blobUrlRef.value)
         blobUrlRef.value = null
       }
       fullImageSrc.value = imageUrl
+      setCachedImage(imageUrl, {
+        src: imageUrl,
+        lastUpdated,
+        isBlob: false,
+      })
       return
     }
     if (blobUrlRef.value) {
@@ -121,6 +203,17 @@ const giveFullImageSourcePlease = async () => {
     }
     blobUrlRef.value = URL.createObjectURL(fullImageFileInIDB.value.blob)
     fullImageSrc.value = blobUrlRef.value
+    setCachedImage(imageUrl, {
+      src: blobUrlRef.value,
+      lastUpdated: fullImageFileInIDB.value.lastUpdated,
+      isBlob: true,
+    })
+    if (DEBUG_IMAGE_CACHE) {
+      console.debug('[BaseImage] idb hit, using blob', {
+        url: imageUrl,
+        lastUpdated: fullImageFileInIDB.value.lastUpdated,
+      })
+    }
   }
 }
 
@@ -144,7 +237,15 @@ watch(() => imageFileComputed.value.url, async (newUrl, oldUrl) => {
 })
 
 onMounted(async () => {
-  fullImageRef.value?.classList.add('anim-bg')
+  const imageUrl = imageFileComputed.value.url
+  const cached = imageUrl
+    ? getCachedImage(imageUrl, imageFileComputed.value.lastUpdated)
+    : null
+  if (cached) {
+    fullImageSrc.value = cached.src
+  } else {
+    fullImageRef.value?.classList.add('anim-bg')
+  }
   fullImageRef.value?.addEventListener('load', loadedFullImage)
 
   observer = new IntersectionObserver((entries) => {
@@ -173,7 +274,12 @@ onUnmounted(() => {
   observer?.disconnect()
   observer = null
   if (blobUrlRef.value) {
+    const cached = currentImageUrl.value
+      ? imageSrcCache.get(currentImageUrl.value)
+      : null
+    if (!cached || cached.src !== blobUrlRef.value) {
     URL.revokeObjectURL(blobUrlRef.value)
+    }
     blobUrlRef.value = null
   }
 })

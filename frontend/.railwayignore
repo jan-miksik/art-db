@@ -1,0 +1,42 @@
+# Node modules (installed by Railway)
+node_modules/
+
+# Build outputs (generated during build)
+.output/
+.nuxt/
+dist/
+
+# Development files
+*.md
+!.gitignore
+
+# IDE files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Environment files
+.env
+.env.local
+.env.*.local
+
+# Test files
+coverage/
+.nyc_output/
+
+# Temporary files
+*.tmp
+*.temp
+.cache/

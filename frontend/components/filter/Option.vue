@@ -26,10 +26,11 @@
 </template>
 
 <script setup lang="ts">
-import type { FilterOption, SelectionOptionType } from '#imports';
-import { FilterType } from '~/J/useFilterStore';
-const filterStore = useFilterStore()
-const { textToSearch, rangeFrom, rangeTo } = storeToRefs(filterStore)
+import type { FilterOption, SelectionOptionType } from '~/J/useFilterStore'
+import { FilterType } from '~/J/useFilterStore'
+import { useArtistsTable } from '~/J/useArtistsTable'
+
+const { textToSearch, rangeFrom, rangeTo } = useArtistsTable()
 
 const props = defineProps<{
   filterOption: FilterOption

@@ -24,18 +24,35 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 
 # Load environment variables based on DJANGO_ENV
 # Uses .env.local for development or .env.production for production
+# In cloud deployments (Railway, etc.), environment variables are set directly
+# and the .env file is optional
 env = os.getenv('DJANGO_ENV', 'local').lower()
 env_file = f'.env.{env}'
 env_path = BASE_DIR / env_file
 
-# Load environment-specific file (required)
-if not env_path.exists():
+# Detect if we're in a cloud environment (Railway, Heroku, etc.)
+# Cloud platforms set environment variables directly and don't need .env files
+is_cloud_env = any([
+    os.getenv('RAILWAY_ENVIRONMENT'),  # Railway
+    os.getenv('DYNO'),  # Heroku
+    os.getenv('VERCEL'),  # Vercel
+    os.getenv('FLY_APP_NAME'),  # Fly.io
+    os.getenv('DJANGO_SECRET_KEY'),  # If critical env vars are set, likely cloud
+])
+
+# Load environment-specific file if it exists (optional for cloud deployments)
+# This allows local development to use .env files while production uses env vars directly
+if env_path.exists():
+    load_dotenv(env_path)
+elif env == 'local' and not is_cloud_env:
+    # Only require .env.local for local development (not in cloud)
     raise ImproperlyConfigured(
         f"Environment file '{env_path}' not found. "
         f"Create it from '{env_file}.example' template. "
         f"Current DJANGO_ENV: {env}"
     )
-load_dotenv(env_path)
+# For production/cloud deployments, environment variables should be set directly
+# and the .env file is not required
 
 
 # Quick-start development settings - unsuitable for production
@@ -91,6 +108,7 @@ REST_FRAMEWORK = {
 MIDDLEWARE = [
     'corsheaders.middleware.CorsMiddleware',
     'django.middleware.security.SecurityMiddleware',
+    'whitenoise.middleware.WhiteNoiseMiddleware',  # Serve static files in production
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
@@ -194,8 +212,23 @@ FORMS_URLFIELD_ASSUME_HTTPS = True
 
 STATIC_URL = 'static/'
 
-STATICFILES_DIRS = [os.path.join(BASE_DIR, 'static')]
-STATIC_ROOT =os.path.join(BASE_DIR, 'staticfiles')
+# Only include STATICFILES_DIRS if the directory exists and has files
+_static_dir = os.path.join(BASE_DIR, 'static')
+if os.path.isdir(_static_dir) and os.listdir(_static_dir):
+    STATICFILES_DIRS = [_static_dir]
+
+STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
+
+# WhiteNoise configuration for serving static files in production
+# Using STORAGES (Django 4.2+) instead of deprecated STATICFILES_STORAGE
+STORAGES = {
+    "default": {
+        "BACKEND": "django.core.files.storage.FileSystemStorage",
+    },
+    "staticfiles": {
+        "BACKEND": "whitenoise.storage.CompressedStaticFilesStorage",
+    },
+}
 
 # Default primary key field type
 # https://docs.djangoproject.com/en/5.0/ref/settings/#default-auto-field

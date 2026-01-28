@@ -1,0 +1,65 @@
+# Python virtual environment
+venv/
+env/
+.venv/
+ENV/
+
+# Python cache
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+
+# Media files (should be in cloud storage, not in deployment)
+media/
+*.jpg
+*.jpeg
+*.png
+*.gif
+*.webp
+*.svg
+
+# Database dumps
+*.tar
+*.sql
+*.dump
+
+# Development files
+docker-compose.yml
+*.md
+!README.md
+
+# IDE files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Build artifacts
+dist/
+build/
+*.egg-info/
+staticfiles/
+
+# Logs
+*.log
+
+# Weaviate scripts (development only)
+weaviate scripts/
+
+# Reverse proxy (if not needed in main service)
+reverse-proxy/
+
+# Temporary files
+todo.*
+*.tmp
+
+# Git
+.git/
+.gitignore

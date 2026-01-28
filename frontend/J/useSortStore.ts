@@ -1,6 +1,6 @@
 import { useArtistsStore } from './useArtistsStore'
-import { sleep } from '~/composables/useUtils'
-import { useArtistArrangement } from '~/composables/useArtistArrangement'
+import { sleep } from '~/J/useUtils'
+import { useArtistArrangement } from '~/J/useArtistArrangement'
 
 export enum SortOption {
   'FIRSTNAME',

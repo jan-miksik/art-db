@@ -1,15 +1,15 @@
 <template>
-  <div class="sort-option" @click="sortStore.setSort(sortOption)">
-        <span v-if="sortStore.activeSort.field === sortOption && isSortSignBeforeText">
-          <span v-if="sortStore.activeSort.direction === sortStore.SortDirection.ASC
+  <div class="sort-option" @click="handleClick">
+        <span v-if="activeSort.field === sortOption && isSortSignBeforeText">
+          <span v-if="activeSort.direction === SortDirection.ASC
             ">
             △
           </span>
           <span v-else> ▼ </span>
         </span>
         {{ label || sortOption }}
-        <span v-if="sortStore.activeSort.field === sortOption && !isSortSignBeforeText">
-          <span v-if="sortStore.activeSort.direction === sortStore.SortDirection.ASC
+        <span v-if="activeSort.field === sortOption && !isSortSignBeforeText">
+          <span v-if="activeSort.direction === SortDirection.ASC
             ">
             △
           </span>
@@ -19,14 +19,23 @@
 </template>
 
 <script setup lang="ts">
-import type { SortOption } from '#imports';
+import type { SortOption } from '~/J/useSortStore'
+import { SortDirection } from '~/J/useSortStore'
+import { useArtistsTable } from '~/J/useArtistsTable'
 
 const props = defineProps<{
   sortOption: SortOption
   label?: string
   isSortSignBeforeText?: boolean
 }>()
-const sortStore = useSortStore()
+const { activeSort, setSort } = useArtistsTable()
+
+const handleClick = () => {
+  setSort(props.sortOption)
+  if (typeof window !== 'undefined') {
+    window.scrollTo({ top: 0, behavior: 'smooth' })
+  }
+}
 
 </script>
 

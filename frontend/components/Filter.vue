@@ -1,10 +1,10 @@
 <template>
   <div class="filter" ref="menuRef">
-      <FilterOption
-        :filterOption="filterStore.FilterOption.NAME"
+      <FilterOptionComponent
+        :filterOption="FilterOption.NAME"
         label=""
-        @search="filterStore.searchAndFilterByName"
-        :filterType="filterStore.FilterType.SEARCH"
+        @search="searchAndFilterByName"
+        :filterType="FilterType.SEARCH"
       />
     <button 
       :class="['filter-toggle']" 
@@ -16,34 +16,47 @@
     >
       filter
     </button>
+    <button
+      v-if="hasFilters"
+      class="filter-clear"
+      @click="removeFilters"
+      aria-label="Clear filters"
+      type="button"
+    >
+      <img src="~/assets/close.svg" width="16" class="filter-toggle-img">
+    </button>
 
     <div v-if="isOpenMenu" id="filter-menu" class="filter__menu" role="menu">
-      <FilterOption
-        :filterOption="filterStore.FilterOption.MEDIA_TYPE"
-        :selectionOptions="filterStore.mediaTypeOptions"
-        :selectedOptions="filterStore.selectedMediaToShow"
+      <FilterOptionComponent
+        :filterOption="FilterOption.MEDIA_TYPE"
+        :selectionOptions="mediaTypeOptions"
+        :selectedOptions="selectedMediaToShow"
         @selection="handleMediaTypeSelection"
-        :filterType="filterStore.FilterType.SELECTION_TEXT"
+        :filterType="FilterType.SELECTION_TEXT"
       />
-      <FilterOption
-        :filterOption="filterStore.FilterOption.GENDER"
-        :selectionOptions="filterStore.genderOptions"
-        :selectedOptions="filterStore.selectedGendersToShow"
-        @selection="filterStore.filterByGender"
-        :filterType="filterStore.FilterType.SELECTION"
+      <FilterOptionComponent
+        :filterOption="FilterOption.GENDER"
+        :selectionOptions="genderOptions"
+        :selectedOptions="selectedGendersToShow"
+        @selection="filterByGender"
+        :filterType="FilterType.SELECTION"
       />
-      <FilterOption
-        :filterOption="filterStore.FilterOption.BORN"
+      <FilterOptionComponent
+        :filterOption="FilterOption.BORN"
         label="born"
-        @range="filterStore.filterByBornInRange"
-        :filterType="filterStore.FilterType.RANGE"
+        @range="filterByBornInRange"
+        :filterType="FilterType.RANGE"
       />
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
+import { onMounted, onUnmounted, ref } from 'vue'
 import type { MediaTypeOptionEnum, SelectionOptionType } from '~/J/useFilterStore'
+import { useArtistsTable } from '~/J/useArtistsTable'
+import FilterOptionComponent from '~/components/filter/Option.vue'
+
 const menuRef = ref<HTMLElement>()
 const isOpenMenu = ref(false)
 
@@ -51,14 +64,27 @@ const toggleMenu = () => {
   isOpenMenu.value = !isOpenMenu.value
 }
 
-const filterStore = useFilterStore()
+const {
+  FilterOption,
+  FilterType,
+  mediaTypeOptions,
+  genderOptions,
+  selectedMediaToShow,
+  selectedGendersToShow,
+  searchAndFilterByName,
+  filterByBornInRange,
+  filterByGender,
+  filterByMediaType,
+  hasFilters,
+  removeFilters,
+} = useArtistsTable()
 
 const handleMediaTypeSelection = (selectionOption?: SelectionOptionType<any>) => {
   if (!selectionOption) {
     return
   }
 
-  filterStore.filterByMediaType(selectionOption as SelectionOptionType<MediaTypeOptionEnum>)
+  filterByMediaType(selectionOption as SelectionOptionType<MediaTypeOptionEnum>)
 }
 
 const handleClickOutside = (event: MouseEvent) => {
@@ -84,8 +110,9 @@ onUnmounted(() => {
   background: white;
 }
 .filter
-  z-index var(--z-index-ui-controls)
-  position absolute
+  // Keep filter above the main menu so its toggle and menu stay clickable
+  z-index calc(var(--z-index-ui-controls) + 1)
+  position fixed
 
 .filter-toggle
   font-weight 700
@@ -104,10 +131,22 @@ onUnmounted(() => {
 
 .filter-toggle-img
   transition all 0.2s
-  rotate 45deg
 
 .filter-toggle--open
   rotate 0deg
+
+.filter-clear
+  position absolute
+  left 50px
+  top 28px
+  cursor pointer
+  padding 5px
+  z-index var(--z-index-ui-controls)
+  background: none
+  border: none
+  &:hover
+    color white
+    background-color black
 
 .filter__menu
   display: flex;
@@ -117,6 +156,7 @@ onUnmounted(() => {
   width: fit-content;
   gap: 0.5rem;
   background-color: white;
+  padding: 0 1rem 1rem 0;
 
 .filter__triangel-1
   position: absolute;
