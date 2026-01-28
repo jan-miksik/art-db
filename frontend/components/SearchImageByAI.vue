@@ -23,7 +23,7 @@ type SearchResponse = {
 const selectedPicture = ref<File | null>()
 const searchResults = ref<SearchResult[]>([])
 const file = ref();
-const filterStore = useFilterStore()
+const { filterByIds } = useArtistsTable()
 
 const handleSearchImages = async (event: Event) => {
   const files = (event.target as HTMLInputElement).files
@@ -46,12 +46,12 @@ const handleSearchImages = async (event: Event) => {
       if (file.value) {
         file.value.value = '';
       }
-      filterStore.filterByIds([]);
+      filterByIds([]);
       return;
     }
     searchResults.value = payload.data ?? [];
     const matchingIds = searchResults.value.map((item) => Number(item.author.id));
-    filterStore.filterByIds(matchingIds)
+    filterByIds(matchingIds)
   } catch (error) {
     console.error(error)
   }

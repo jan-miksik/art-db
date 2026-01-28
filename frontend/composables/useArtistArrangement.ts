@@ -21,6 +21,11 @@ export const useArtistArrangement = () => {
     let topPosition = INITIAL_Y_POSITION
     
     artistsStore.artists.forEach((artist, index) => {
+      // Ensure position object exists
+      if (!artist.position) {
+        artist.position = { x: 0, y: 0 }
+      }
+
       if (index === 0) {
         // First artist: set initial position
         artist.position.y = topPosition

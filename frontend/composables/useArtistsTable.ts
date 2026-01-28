@@ -1,4 +1,4 @@
-import { ref, computed } from 'vue'
+import { ref, computed, watch, h } from 'vue'
 import {
   useVueTable,
   getCoreRowModel,
@@ -7,69 +7,41 @@ import {
   createColumnHelper,
   type ColumnFiltersState,
   type SortingState,
+  type VisibilityState,
+  type Table,
   type FilterFn,
 } from '@tanstack/vue-table'
 import { useArtistsStore, type Artist } from '~/J/useArtistsStore'
+import { useArtistArrangement } from '~/composables/useArtistArrangement'
+import BaseImage from '~/components/BaseImage.vue'
+import {
+  type BornRangeFilter,
+  isBornInRange,
+  matchesIdFilter,
+  matchesGenderFilter,
+  matchesMediaTypeFilter,
+  toggleSort,
+} from '~/composables/artistsTableUtils'
+import {
+  FilterOption,
+  FilterType,
+  GenderOptionEnum,
+  MediaTypeOptionEnum,
+  type SelectionOptionType,
+} from '~/J/useFilterStore'
+import {
+  SortOption,
+  SortDirection,
+} from '~/J/useSortStore'
+
+// Re-export for backward compatibility
+// export { GenderOptionEnum, MediaTypeOptionEnum, FilterOption, FilterType, SortOption, SortDirection }
+// export type { SelectionOptionType }
 
 // Icons
 import FluidSvg from '~/assets/fluid.svg'
 import FemalePng from '~/assets/female.png'
 import MalePng from '~/assets/male.png'
-
-// ============================================================================
-// Enums
-// ============================================================================
-
-export enum FilterOption {
-  NAME,
-  BORN,
-  GENDER,
-  AUCTIONS_TURNOVER_2023_H1_USD,
-  MEDIA_TYPE,
-}
-
-export enum FilterType {
-  SEARCH = 'SEARCH',
-  RANGE = 'RANGE',
-  SELECTION = 'SELECTION',
-  SELECTION_TEXT = 'SELECTION_TEXT',
-}
-
-export enum SortOption {
-  FIRSTNAME,
-  SURNAME,
-  BORN,
-  GENDER,
-  AUCTIONS_TURNOVER_2023_H1_USD,
-}
-
-export enum SortDirection {
-  ASC = 'ASC',
-  DESC = 'DESC',
-}
-
-export enum GenderOptionEnum {
-  NON_BINARY = 'NON_BINARY',
-  MAN = 'MAN',
-  WOMAN = 'WOMAN',
-}
-
-export enum MediaTypeOptionEnum {
-  PAINTING = 'PAINTING',
-  NFT = 'NFT',
-  DIGITAL = 'DIGITAL',
-  SCULPTURE = 'SCULPTURE',
-}
-
-// ============================================================================
-// Types
-// ============================================================================
-
-export type SelectionOptionType<T> = {
-  text?: string
-  sign?: string
-  enumValue: T
-}
 
 export type ArtistWithPosition = Artist & {
   calculatedY: number
@@ -92,50 +64,53 @@ export const mediaTypeOptions: SelectionOptionType<MediaTypeOptionEnum>[] = [
 ]
 
 // ============================================================================
+// Shared State (singleton across components)
+// ============================================================================
+
+const columnFilters = ref<ColumnFiltersState>([])
+const globalFilter = ref('')
+const sorting = ref<SortingState>([])
+const columnVisibility = ref<VisibilityState>({
+  id: false,
+  profile_image_url: true,
+  name: true,
+  artworks: true,
+  firstname: false,
+  surname: false,
+  born: false,
+  gender: false,
+  media_types: false,
+  auctions_turnover_2023_h1_USD: false,
+})
+
+const rangeFrom = ref<string>('')
+const rangeTo = ref<string>('')
+const selectedGendersToShow = ref<SelectionOptionType<GenderOptionEnum>[]>([])
+const selectedMediaToShow = ref<SelectionOptionType<MediaTypeOptionEnum>[]>([])
+const textToSearch = ref<string>('')
+const isFilteringInProgress = ref(false)
+const filteredIds = ref<string[]>([])
+
+let tableInstance: Table<Artist> | null = null
+
+// ============================================================================
 // Custom Filter Functions
 // ============================================================================
 
 /**
  * Filter by birth year range (from/to)
  */
-const bornRangeFilter: FilterFn<Artist> = (
-  row,
-  columnId,
-  filterValue: { from: number | null; to: number | null }
-) => {
+const bornRangeFilter: FilterFn<Artist> = (row, columnId, filterValue: BornRangeFilter) => {
   const born = row.getValue<number>(columnId)
-  const { from, to } = filterValue
-
-  if (from !== null && to !== null) {
-    return born >= from && born <= to
-  }
-  if (from !== null) {
-    return born >= from
-  }
-  if (to !== null) {
-    return born <= to
-  }
-  return true
+  return isBornInRange(born, filterValue)
 }
 
 /**
  * Filter by gender enums (maps N->NON_BINARY, W->WOMAN, M->MAN)
  */
-const genderFilter: FilterFn<Artist> = (
-  row,
-  columnId,
-  filterValue: GenderOptionEnum[]
-) => {
-  if (!filterValue || filterValue.length === 0) return true
-
+const genderFilter: FilterFn<Artist> = (row, columnId, filterValue: GenderOptionEnum[]) => {
   const gender = row.getValue<'N' | 'W' | 'M'>(columnId)
-
-  return filterValue.some((option) => {
-    if (option === GenderOptionEnum.NON_BINARY && gender === 'N') return true
-    if (option === GenderOptionEnum.WOMAN && gender === 'W') return true
-    if (option === GenderOptionEnum.MAN && gender === 'M') return true
-    return false
-  })
+  return matchesGenderFilter(gender, filterValue)
 }
 
 /**
@@ -146,14 +121,16 @@ const mediaTypeFilter: FilterFn<Artist> = (
   columnId,
   filterValue: MediaTypeOptionEnum[]
 ) => {
-  if (!filterValue || filterValue.length === 0) return true
-
   const mediaTypes = row.getValue<('nft' | 'digital' | 'painting' | 'sculpture')[]>(columnId)
+  return matchesMediaTypeFilter(mediaTypes, filterValue)
+}
 
-  return filterValue.some((option) => {
-    const mediaTypeLower = option.toLowerCase() as 'nft' | 'digital' | 'painting' | 'sculpture'
-    return mediaTypes.includes(mediaTypeLower)
-  })
+/**
+ * Filter by ID list (used for AI image search results)
+ */
+const idListFilter: FilterFn<Artist> = (row, columnId, filterValue: string[]) => {
+  const id = row.getValue<string>(columnId)
+  return matchesIdFilter(String(id), filterValue)
 }
 
 // ============================================================================
@@ -209,10 +186,48 @@ const calculatePositions = (
 const columnHelper = createColumnHelper<Artist>()
 
 const columns = [
+  columnHelper.accessor('id', {
+    header: 'ID',
+    cell: (info) => info.getValue(),
+    filterFn: idListFilter,
+    size: 60,
+  }),
+  columnHelper.accessor('profile_image_url', {
+    header: () => '',
+    cell: (props) =>
+      h(BaseImage, {
+        imageFile: { url: props.row.original.profile_image_url ?? '' },
+        externalCssClass: ['artist-table__profile-image'],
+        key: props.row.original.id,
+      }),
+    enableSorting: false,
+    size: 50,
+  }),
   columnHelper.accessor('name', {
-    header: 'Name',
+    header: () => '',
     cell: (info) => info.getValue(),
     enableGlobalFilter: true,
+    size: 150,
+  }),
+  columnHelper.accessor('artworks', {
+    header: () => '',
+    cell: (props) =>
+      h(
+        'div',
+        { class: 'artist-table__artworks-preview', key: `${props.row.original.id}-artworks` },
+        props.row.original.artworks.map((artwork) =>
+          h(BaseImage, {
+            key: `${props.row.original.id}-artwork-${artwork.id ?? artwork.title}`,
+            imageFile: {
+              url: artwork.picture_url,
+              lastUpdated: artwork.year,
+            },
+            externalCssClass: ['artist-table__artwork-preview-image'],
+          })
+        )
+      ),
+    enableSorting: false,
+    size: 250,
   }),
   columnHelper.accessor('firstname', {
     header: 'First Name',
@@ -251,16 +266,6 @@ const columns = [
     },
     enableSorting: true,
   }),
-  columnHelper.accessor('profile_image_url', {
-    header: 'Profile Image',
-    cell: (info) => info.getValue(),
-    enableSorting: false,
-  }),
-  columnHelper.accessor('artworks', {
-    header: 'Artworks',
-    cell: (info) => info.getValue()?.length ?? 0,
-    enableSorting: false,
-  }),
 ]
 
 // ============================================================================
@@ -269,66 +274,68 @@ const columns = [
 
 export const useArtistsTable = () => {
   const artistsStore = useArtistsStore()
+  const { reArrangeSortedArtists } = useArtistArrangement()
 
   // -------------------------------------------------------------------------
   // State: TanStack Table
   // -------------------------------------------------------------------------
-  const columnFilters = ref<ColumnFiltersState>([])
-  const globalFilter = ref('')
-  const sorting = ref<SortingState>([])
-
-  // -------------------------------------------------------------------------
-  // State: UI Filter Controls
-  // -------------------------------------------------------------------------
-  const rangeFrom = ref<string>('')
-  const rangeTo = ref<string>('')
-  const selectedGendersToShow = ref<SelectionOptionType<GenderOptionEnum>[]>([])
-  const selectedMediaToShow = ref<SelectionOptionType<MediaTypeOptionEnum>[]>([])
-  const textToSearch = ref<string>('')
-  const isFilteringInProgress = ref(false)
+  // (shared state defined above to keep a single instance across components)
 
   // -------------------------------------------------------------------------
   // TanStack Table Instance
   // -------------------------------------------------------------------------
-  const table = useVueTable({
-    get data() {
-      return artistsStore.artistsAll
-    },
-    columns,
-    state: {
-      get columnFilters() {
-        return columnFilters.value
+  if (!tableInstance) {
+    tableInstance = useVueTable<Artist>({
+      get data() {
+        return artistsStore.artistsAll
       },
-      get globalFilter() {
-        return globalFilter.value
+      columns,
+      state: {
+        get columnFilters() {
+          return columnFilters.value
+        },
+        get globalFilter() {
+          return globalFilter.value
+        },
+        get sorting() {
+          return sorting.value
+        },
+      get columnVisibility() {
+        return columnVisibility.value
       },
-      get sorting() {
-        return sorting.value
       },
-    },
-    onColumnFiltersChange: (updaterOrValue) => {
-      columnFilters.value =
+      onColumnFiltersChange: (updaterOrValue) => {
+        columnFilters.value =
+          typeof updaterOrValue === 'function'
+            ? updaterOrValue(columnFilters.value)
+            : updaterOrValue
+      },
+      onGlobalFilterChange: (updaterOrValue) => {
+        globalFilter.value =
+          typeof updaterOrValue === 'function'
+            ? updaterOrValue(globalFilter.value)
+            : updaterOrValue
+      },
+      onSortingChange: (updaterOrValue) => {
+        sorting.value =
+          typeof updaterOrValue === 'function'
+            ? updaterOrValue(sorting.value)
+            : updaterOrValue
+      },
+    onColumnVisibilityChange: (updaterOrValue) => {
+      columnVisibility.value =
         typeof updaterOrValue === 'function'
-          ? updaterOrValue(columnFilters.value)
+          ? updaterOrValue(columnVisibility.value)
           : updaterOrValue
     },
-    onGlobalFilterChange: (updaterOrValue) => {
-      globalFilter.value =
-        typeof updaterOrValue === 'function'
-          ? updaterOrValue(globalFilter.value)
-          : updaterOrValue
-    },
-    onSortingChange: (updaterOrValue) => {
-      sorting.value =
-        typeof updaterOrValue === 'function'
-          ? updaterOrValue(sorting.value)
-          : updaterOrValue
-    },
-    getCoreRowModel: getCoreRowModel(),
-    getFilteredRowModel: getFilteredRowModel(),
-    getSortedRowModel: getSortedRowModel(),
-    globalFilterFn: 'includesString',
-  })
+      getCoreRowModel: getCoreRowModel(),
+      getFilteredRowModel: getFilteredRowModel(),
+      getSortedRowModel: getSortedRowModel(),
+      globalFilterFn: 'includesString',
+    })
+  }
+
+  const table = tableInstance as Table<Artist>
 
   // -------------------------------------------------------------------------
   // Computed: Derived Data
@@ -353,6 +360,9 @@ export const useArtistsTable = () => {
     }
 
     const sort = sorting.value[0]
+    if (!sort) {
+      return { field: null, direction: null }
+    }
     const direction = sort.desc ? SortDirection.DESC : SortDirection.ASC
 
     // Map column ID to SortOption enum
@@ -386,6 +396,7 @@ export const useArtistsTable = () => {
       !!rangeFrom.value ||
       !!rangeTo.value ||
       !!textToSearch.value ||
+      filteredIds.value.length > 0 ||
       selectedGendersToShow.value.length > 0 ||
       selectedMediaToShow.value.length > 0
     )
@@ -395,9 +406,44 @@ export const useArtistsTable = () => {
    * Get artists with calculated Y positions for bubble view
    */
   const artistsWithPositions = computed<ArtistWithPosition[]>(() => {
-    const sortField = sorting.value.length > 0 ? sorting.value[0].id : null
+    const sortField = sorting.value[0]?.id ?? null
     return calculatePositions(filteredArtists.value, sortField)
   })
+
+  const arrangeBubblePositions = () => {
+    const sortField = sorting.value[0]?.id
+    const fallbackField: 'firstname' = 'firstname'
+
+    if (
+      sortField === 'firstname' ||
+      sortField === 'surname' ||
+      sortField === 'born' ||
+      sortField === 'gender' ||
+      sortField === 'auctions_turnover_2023_h1_USD'
+    ) {
+      reArrangeSortedArtists(sortField)
+      return
+    }
+
+    reArrangeSortedArtists(fallbackField)
+  }
+
+  watch(
+    [filteredArtists, sorting],
+    ([nextArtists]) => {
+      // Preserve positions from artistsAll when setting filtered artists
+      const artistsWithPositions = nextArtists.map((artist) => {
+        const originalArtist = artistsStore.artistsAll.find((a) => a.id === artist.id)
+        return {
+          ...artist,
+          position: originalArtist?.position ?? artist.position ?? { x: 0, y: 0 },
+        }
+      })
+      artistsStore.setArtists(artistsWithPositions)
+      arrangeBubblePositions()
+    },
+    { immediate: true }
+  )
 
   // -------------------------------------------------------------------------
   // Methods: Filtering
@@ -524,6 +570,31 @@ export const useArtistsTable = () => {
   }
 
   /**
+   * Filter by a list of artist IDs
+   */
+  const filterByIds = (ids: (string | number)[]) => {
+    filteredIds.value = ids.map((id) => String(id))
+
+    if (filteredIds.value.length === 0) {
+      columnFilters.value = columnFilters.value.filter((f) => f.id !== 'id')
+      return
+    }
+
+    const existingIndex = columnFilters.value.findIndex((f) => f.id === 'id')
+    const newFilter = { id: 'id', value: filteredIds.value }
+
+    if (existingIndex >= 0) {
+      columnFilters.value = [
+        ...columnFilters.value.slice(0, existingIndex),
+        newFilter,
+        ...columnFilters.value.slice(existingIndex + 1),
+      ]
+    } else {
+      columnFilters.value = [...columnFilters.value, newFilter]
+    }
+  }
+
+  /**
    * Remove all filters
    */
   const removeFilters = () => {
@@ -532,6 +603,7 @@ export const useArtistsTable = () => {
     textToSearch.value = ''
     rangeFrom.value = ''
     rangeTo.value = ''
+    filteredIds.value = []
     globalFilter.value = ''
     columnFilters.value = []
   }
@@ -565,15 +637,7 @@ export const useArtistsTable = () => {
         break
     }
 
-    const currentSort = sorting.value.find((s) => s.id === columnId)
-
-    if (currentSort) {
-      // Toggle direction
-      sorting.value = [{ id: columnId, desc: !currentSort.desc }]
-    } else {
-      // New sort, start with ASC (desc: false)
-      sorting.value = [{ id: columnId, desc: false }]
-    }
+    sorting.value = toggleSort(sorting.value, columnId)
   }
 
   // -------------------------------------------------------------------------
@@ -592,6 +656,7 @@ export const useArtistsTable = () => {
     selectedGendersToShow,
     selectedMediaToShow,
     textToSearch,
+    filteredIds,
     isFilteringInProgress,
 
     // Computed
@@ -605,6 +670,7 @@ export const useArtistsTable = () => {
     filterByBornInRange,
     filterByGender,
     filterByMediaType,
+    filterByIds,
     removeFilters,
 
     // Sort methods

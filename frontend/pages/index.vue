@@ -8,12 +8,9 @@
     <div v-if="artistsStore.isLoading" class="loading-indicator">
       Loading artists...
     </div>
+    <div class="menu-bg" />
     <div class="menu">
       <Sort />
-      <button v-if="hasClearButton" class="clear-button" @click="handleClear" aria-label="Clear filters">
-        <img src="~/assets/close.svg" width="16" :class="['filter-toggle-img']">
-      </button>
-
       <button class="toggle-table-and-bubbles" @click="handleToggleTableAndBubbles" :aria-label="`Switch to ${isTable ? 'bubbles' : 'table'} view`">
         {{ isTable ? 'bubbles' : 'table' }}
       </button>
@@ -33,12 +30,10 @@
 </template>
 
 <script setup lang="tsx">
-import { useFilterStore } from "~/J/useFilterStore";
 import { useArtistsStore } from "~/J/useArtistsStore";
 import { randomRange } from "~/composables/useUtils";
 
 const config = useRuntimeConfig();
-const filterStore = useFilterStore();
 const artistsStore = useArtistsStore();
 const isTable = ref(true);
 
@@ -51,12 +46,6 @@ const handleToggleTableAndBubbles = () => {
 const handleArtistPositionUpdate = ({ id, position }: ArtistPositionUpdate) => {
   artistsStore.updateArtistPosition(id, position)
 }
-
-const hasClearButton = computed(() => filterStore.hasFilters);
-
-const handleClear = () => {
-  filterStore.removeFilters();
-};
 
 onMounted(async () => {
   const screenHeight = window.innerHeight;
@@ -83,20 +72,25 @@ onMounted(async () => {
   display flex
   gap 2rem
   justify-content: center;
+  left 0
+  right 0
+  top 0
   width 100%
-
-.clear-button
-  position absolute
-  left 50px
-  top 28px
-  cursor pointer
-  padding 5px
-  z-index: var(--z-index-ui-controls)
-  background: none
-  border: none
-  &:hover
-    color white
-    background-color black
+  padding 1rem 0
+.menu-bg
+  position fixed
+  top 0
+  left 0
+  right 0
+  height 8rem
+  z-index calc(var(--z-index-ui-controls) - 1)
+  pointer-events none
+  background: linear-gradient(
+    to bottom,
+    rgba(255, 255, 255, 1) 0%,
+    rgba(255, 255, 255, 1) 70%,
+    rgba(255, 255, 255, 0) 100%
+  )
 
 .toggle-table-and-bubbles
   position: absolute;
@@ -109,6 +103,7 @@ onMounted(async () => {
   font-family: sans-serif;
   background: none
   border: none
+  z-index var(--z-index-ui-controls)
   &:hover
     color white
     background-color black

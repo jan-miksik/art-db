@@ -1,153 +1,97 @@
 <template>
-  <table class="artists-table">
-    <thead>
-      <tr
-        v-for="headerGroup in table.getHeaderGroups()"
-        :key="headerGroup.id"
-      >
-        <th
-          v-for="header in headerGroup.headers"
-          :key="header.id"
-          :colSpan="header.colSpan"
+  <div ref="parentRef" class="artists-table__scroll">
+    <table class="artists-table">
+      <thead>
+        <tr
+          v-for="headerGroup in table.getHeaderGroups()"
+          :key="headerGroup.id"
         >
-          <FlexRender
-            v-if="!header.isPlaceholder"
-            :render="header.column.columnDef.header"
-            :props="header.getContext()"
-          />
-        </th>
-      </tr>
-    </thead>
-    <TransitionGroup
-      name="list"
-      tag="tbody"
-      :css="false"
-      @before-enter="onBeforeEnter"
-      @enter="onEnter"
-      @leave="onLeave"
-    >
-      <tr
-        v-for="(row, index) in table.getRowModel().rows"
-        :key="row.original.id"
-        :data-index="index"
-        @click="openModal(row.original)"
+          <th
+            v-for="header in headerGroup.headers"
+            :key="header.id"
+            :colSpan="header.colSpan"
+            :style="{ width: header.column.getSize() ? `${header.column.getSize()}px` : undefined }"
+          >
+            <FlexRender
+              v-if="!header.isPlaceholder"
+              :render="header.column.columnDef.header"
+              :props="header.getContext()"
+            />
+          </th>
+        </tr>
+      </thead>
+      <tbody
+        class="artists-table__body"
+        :style="{ height: `${totalSize}px` }"
       >
-        <td v-for="cell in row.getVisibleCells()" :key="cell.id">
-          <FlexRender
-            :render="cell.column.columnDef.cell"
-            :props="cell.getContext()"
-          />
-        </td>
-      </tr>
-    </TransitionGroup>
-  </table>
+        <tr
+          v-for="virtualRow in virtualRows"
+          :key="getRow(virtualRow.index)?.original.id ?? String(virtualRow.key)"
+          :class="[
+            'artists-table__row',
+            virtualRow.index % 2 === 0 ? 'artists-table__row--even' : 'artists-table__row--odd',
+          ]"
+          :style="{ transform: `translateY(${virtualRow.start}px)`, height: `${virtualRow.size}px` }"
+          @click="getRow(virtualRow.index) && openModal(getRow(virtualRow.index)!.original)"
+        >
+          <td 
+            v-for="cell in getRow(virtualRow.index)?.getVisibleCells?.() ?? []" 
+            :key="cell.id"
+            :style="{ width: cell.column.getSize() ? `${cell.column.getSize()}px` : undefined }"
+          >
+            <FlexRender
+              :render="cell.column.columnDef.cell"
+              :props="cell.getContext()"
+            />
+          </td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
 </template>
 
 <script setup lang="tsx">
-import {computed} from 'vue'
-import {
-  FlexRender,
-  getCoreRowModel,
-  useVueTable,
-  createColumnHelper,
-} from '@tanstack/vue-table'
-import BaseImage from "~/components/BaseImage.vue";
+import { computed, ref, watch } from 'vue'
+import { FlexRender } from '@tanstack/vue-table'
+import { useVirtualizer } from '@tanstack/vue-virtual'
 import useArtistModal from "./../useArtistModal";
-import gsap from 'gsap'
 import type { Artist } from '~/J/useArtistsStore'
+import { useArtistsTable } from '~/composables/useArtistsTable'
 
 const {openArtistModal} = useArtistModal()
+const { table } = useArtistsTable()
 
 const openModal = (artistData: Artist) => {
   openArtistModal(artistData)
 }
 
-const columnHelper = createColumnHelper<Artist>()
+const rows = computed(() => table.getRowModel().rows)
 
-const columns = [
-  columnHelper.accessor('profile_image_url', {
-    header: () => '',
-    cell: props => {
-      return h(BaseImage, {
-        imageFile: {
-          url: props.row.original.profile_image_url ?? ''
-        },
-        externalCssClass: ['artist-table__profile-image'],
-        key: props.row.original.id
-      });
-    },
-  }),
-  columnHelper.accessor('name', {
-    cell: info => info.getValue(),
-    header: () => '',
-  }),
-  columnHelper.accessor('artworks', {
-    header: () => '',
-    cell: props => {
-      return (
-          <div class="artist-table__artworks-preview" key={`${props.row.original.id}-artworks`}>
-            {props.row.original.artworks.map((artwork) => (
-                <BaseImage
-                    key={`${props.row.original.id}-artwork`}
-                    imageFile={{
-                      url: artwork.picture_url,
-                      lastUpdated: artwork.year
-                    }}
-                    externalCssClass={['artist-table__artwork-preview-image']}
-                />
-            ))}
-          </div>
-      );
-    },
-  }),
-]
-
-const artistsStore = useArtistsStore()
-
-// Animation functions
-const onBeforeEnter = (el: Element) => {
-  const element = el as HTMLElement
-  element.style.opacity = '0'
-  element.style.transform = 'translateY(30px)'
-}
-
-const onEnter = (el: Element, done: () => void) => {
-  const element = el as HTMLElement
-  const delay = element.dataset.index ? parseInt(element.dataset.index) * 0.1 : 0
-
-  gsap.to(element, {
-    opacity: 1,
-    y: 0,
-    duration: 0.6,
-    delay,
-    ease: 'power2.out',
-    onComplete: done
-  })
-}
-
-const onLeave = (el: Element, done: () => void) => {
-  const element = el as HTMLElement
-  gsap.to(element, {
-    opacity: 0,
-    y: 30,
-    duration: 0.6,
-    ease: 'power2.in',
-    onComplete: done
-  })
-}
-
-// Create a reactive data source
-const data = computed(() => {
-  return [...artistsStore.artists]
+const parentRef = ref<HTMLElement | null>(null)
+const rowVirtualizer = useVirtualizer({
+  count: rows.value.length,
+  getScrollElement: () => parentRef.value,
+  estimateSize: () => 90,
+  overscan: 10,
 })
 
-const table = useVueTable({
-  get data() {
-    return data.value
-  },
-  columns,
-  getCoreRowModel: getCoreRowModel(),
+watch(rows, () => {
+  rowVirtualizer.value.setOptions({
+    ...rowVirtualizer.value.options,
+    count: rows.value.length,
+  })
+  rowVirtualizer.value.measure()
 })
+
+const virtualRows = computed(() =>
+  rowVirtualizer.value.getVirtualItems().filter((v) => v.index >= 0 && v.index < rows.value.length)
+)
+const totalSize = computed(() => rowVirtualizer.value.getTotalSize())
+
+const getRow = (index: number) => {
+  const row = rows.value[index]
+  return row ?? null
+}
 </script>
 
 <style lang="stylus">
@@ -155,12 +99,38 @@ const table = useVueTable({
   position relative
   top 200px
   margin: auto
-  width: 90%
+  max-width: 55rem
   margin-bottom 30rem
   border-spacing 0
+  table-layout: fixed
 
-.artists-table tr:nth-child(2n)
-  background-color: #f0f0f0;
+.artists-table thead
+  display: table
+  width: 100%
+  table-layout: fixed
+
+.artists-table__scroll
+  max-height: 100vh
+  overflow: auto
+  width: 100%
+
+.artists-table__body
+  position: relative
+  display: block
+  width: 100%
+
+.artists-table__row
+  position: absolute
+  left: 0
+  width: 100%
+  display: table
+  table-layout: fixed
+
+.artists-table__row--even
+  background-color: #f0f0f0
+
+.artists-table__row--odd
+  background-color: transparent
 
 .artists-table tr:hover
   background: linear-gradient(46deg, #c7c7cc, rgba(177, 184, 182, 0.56), #4d503f3d);
@@ -188,21 +158,4 @@ th
   object-position center
   cursor default
 
-// Animation classes
-.list-move,
-.list-enter-active,
-.list-leave-active
-  transition: all 0.6s ease
-
-.list-leave-active
-  position: absolute
-  width: 100%
-
-.list-enter-from
-  opacity: 0
-  transform: translateY(30px)
-
-.list-leave-to
-  opacity: 0
-  transform: translateY(-30px)
 </style>

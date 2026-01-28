@@ -11,14 +11,16 @@
       <img src="~/assets/sort.svg" width="30" alt="Sort">
     </button>
     <div v-if="isOpenMenu" id="sort-menu" class="sort__menu" role="menu">
-      <SortOption :sortOption="sortStore.SortOption.SURNAME" label="name" class="name-sort" isSortSignBeforeText/>
-      <SortOption :sortOption="sortStore.SortOption.BORN" label="born" class="born-sort" isSortSignBeforeText/>
-      <SortOption :sortOption="sortStore.SortOption.AUCTIONS_TURNOVER_2023_H1_USD" label="auctions 2023" class="auctions-sort" :isSortSignBeforeText="false"/>
+      <SortOptionComponent :sortOption="SortOption.SURNAME" label="name" class="name-sort" isSortSignBeforeText/>
+      <SortOptionComponent :sortOption="SortOption.BORN" label="born" class="born-sort" isSortSignBeforeText/>
+      <SortOptionComponent :sortOption="SortOption.AUCTIONS_TURNOVER_2023_H1_USD" label="auctions 2023" class="auctions-sort" :isSortSignBeforeText="false"/>
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
+import SortOptionComponent from '~/components/sort/Option.vue'
+
 const menuRef = ref<HTMLElement>()
 const isOpenMenu = ref(false)
 
@@ -26,7 +28,7 @@ const toggleMenu = () => {
   isOpenMenu.value = !isOpenMenu.value
 }
 
-const sortStore = useSortStore()
+const { SortOption } = useArtistsTable()
 
 const handleClickOutside = (event: MouseEvent | TouchEvent) => {
   if (menuRef.value && !menuRef.value.contains(event.target as Node)) {
