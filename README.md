@@ -22,7 +22,6 @@ A full-stack art database application for browsing contemporary artists and artw
 - **UI Libraries**: 
   - TanStack Table (table view)
   - Interact.js (draggable bubble view)
-  - GSAP (animations)
 - **Storage for caching**: Dexie (IndexedDB wrapper)
 
 ### Backend
