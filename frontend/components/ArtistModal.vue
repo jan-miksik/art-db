@@ -140,7 +140,6 @@
 <script setup lang="ts">
 import useArtistModal from "./useArtistModal";
 
-const filterStore = useFilterStore()
 const { isOpen, artistData } = useArtistModal();
 
 const modalRef = ref<HTMLElement>()
@@ -239,14 +238,6 @@ watch(isOpen, (newIsOpen) => {
     selectedIndex.value = null
   }
 })
-
-const _showSimilarAuthors = async () => {
-  filterStore.isShowSimilarAuthors = true
-  filterStore.selectedArtistForSearchSimilar = artistData.value
-  const similarAuthors = artistData.value?.similar_authors_postgres_ids?.map((id: string) => +id)
-  filterStore.filterByIds(similarAuthors || [])
-  closeModal()
-}
 
 </script>
 

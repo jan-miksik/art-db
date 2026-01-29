@@ -188,14 +188,17 @@ export const useFilterStore = defineStore('filter', () => {
 
   const filterByIds = async (ids: number[]) => {
     isFilteringInProgress.value = true;
+    try {
+      const filteredPeople = ids
+        .map(id => useArtistsStore().artistsAll.find(artist => +artist.id === +id))
+        .filter((artist): artist is Artist => artist !== undefined);
 
-    const filteredPeople = ids
-      .map(id => useArtistsStore().artistsAll.find(artist => +artist.id === +id))
-      .filter((artist): artist is Artist => artist !== undefined);
-
-    useArtistsStore().setArtists(filteredPeople);
-    await sleep(100)
-    reArrangeSortedArtists('firstname');
+      useArtistsStore().setArtists(filteredPeople);
+      await sleep(100)
+      reArrangeSortedArtists('firstname');
+    } finally {
+      isFilteringInProgress.value = false;
+    }
   }
 
   const removeFilters = async () => {

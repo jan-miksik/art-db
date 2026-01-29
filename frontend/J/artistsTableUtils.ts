@@ -4,8 +4,6 @@ import {
   MediaTypeOptionEnum,
 } from '~/J/useFilterStore'
 
-export { GenderOptionEnum, MediaTypeOptionEnum }
-
 export type BornRangeFilter = {
   from: number | null
   to: number | null

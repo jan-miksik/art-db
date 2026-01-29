@@ -9,7 +9,7 @@ A full-stack art database application for browsing contemporary artists and artw
 - **Decentralized Storage**: Images stored on Arweave blockchain for permanent, decentralized access
 - **Interactive UI**: Dual view system with draggable bubble view and sortable table view
 - **Client-Side Caching**: IndexedDB caching for offline image access
-- **Advanced Filtering**: Filter by text search, birth year, gender, and media type
+- **Advanced Filtering**: Filter by text search, birth year, gender, and media type (painting, nft, sculpture)
 - **Real-time Sorting**: Sort by name, birth year, or auction turnover
 
 ## Tech Stack
@@ -217,9 +217,10 @@ curl -X POST \
 
 ### State Management
 - `useArtistsStore`: Full artist dataset + filtered view
-- `useFilterStore`: Text search, range filtering (birth year), gender, media type
+- `useFilterStore`: Text search, range filtering (birth year), gender, media type (painting, nft, sculpture)
 - `useSortStore`: Sorting by name, birth year, auction turnover
 - All filtering/sorting happens client-side on the full dataset
+- Filter/gender enums (`GenderOptionEnum`, `MediaTypeOptionEnum`) are defined in `useFilterStore`; other modules (e.g. `artistsTableUtils`) import them from there to avoid duplicate export warnings
 
 
 ## Deployment

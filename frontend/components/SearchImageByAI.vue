@@ -6,7 +6,7 @@
     <img v-if="selectedImageInUI" :src="selectedImageInUI" height="250" class="search-image-by-ai__image"/>
     <input type="file" id="file" ref="file" @change="handleSearchImages" style="display: none" accept="image/*" />
     <div v-if="selectedImageInUI" @click="handleRemoveSelectedImage" class="search-image-by-ai__remove-image">X</div>
-
+    <div v-if="errorMessage" class="search-image-by-ai__error">{{ errorMessage }}</div>
   </div>
 </template>
 
@@ -25,6 +25,8 @@ const searchResults = ref<SearchResult[]>([])
 const file = ref();
 const { filterByIds } = useArtistsTable()
 
+const errorMessage = ref<string | null>(null)
+
 const handleSearchImages = async (event: Event) => {
   const files = (event.target as HTMLInputElement).files
   if (files && files.length > 0) {
@@ -32,6 +34,7 @@ const handleSearchImages = async (event: Event) => {
   }
   try {
     if(!selectedPicture.value) return
+    errorMessage.value = null
     const formData = new FormData();
     formData.append('image', selectedPicture.value);
     formData.append('limit', "5");
@@ -41,6 +44,7 @@ const handleSearchImages = async (event: Event) => {
     });
     if (!payload?.success) {
       console.error("Search failed:", payload?.error);
+      errorMessage.value = payload?.error || 'Search failed. Please try again.'
       searchResults.value = [];
       selectedPicture.value = undefined;
       if (file.value) {
@@ -54,6 +58,14 @@ const handleSearchImages = async (event: Event) => {
     filterByIds(matchingIds)
   } catch (error) {
     console.error(error)
+    errorMessage.value = 'An error occurred while searching. Please try again.'
+    // Reset state on error
+    searchResults.value = [];
+    selectedPicture.value = undefined;
+    if (file.value) {
+      file.value.value = '';
+    }
+    filterByIds([]);
   }
 }
 
@@ -63,9 +75,11 @@ const handleClickSelectImage = () => {
 
 const handleRemoveSelectedImage = () => {
   selectedPicture.value = undefined
+  errorMessage.value = null
   if (file.value) {
     file.value.value = '';
   }
+  filterByIds([])
 }
 
 const selectedImageInUI = ref<string | null>(null)
@@ -123,5 +137,17 @@ watchEffect((onCleanup) => {
   flex-direction: column;
   width: 5.2rem;
   gap 0.5rem
+
+.search-image-by-ai__error
+  position absolute
+  left 0.5rem
+  top 16rem
+  background-color: rgba(255, 0, 0, 0.1)
+  color: #d32f2f
+  padding: 0.5rem
+  border-radius: 4px
+  font-size: 0.875rem
+  max-width: 250px
+  z-index: var(--z-index-ui-controls)
 
 </style>

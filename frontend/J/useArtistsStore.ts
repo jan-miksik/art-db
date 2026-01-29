@@ -47,11 +47,22 @@ export const useArtistsStore = defineStore('artists', () => {
       setArtistsAll(fetchedArtists)
       setArtists(fetchedArtists)
     } catch (err: unknown) {
-      if (err instanceof Error && (err.name === 'AbortError' || (err as any).code === 'ECONNABORTED')) {
+      interface FetchError {
+        code?: string
+        status?: number
+        statusCode?: number
+        data?: unknown
+      }
+      
+      const isFetchError = (e: unknown): e is FetchError => {
+        return typeof e === 'object' && e !== null && ('code' in e || 'status' in e || 'statusCode' in e)
+      }
+      
+      if (err instanceof Error && (err.name === 'AbortError' || (isFetchError(err) && err.code === 'ECONNABORTED'))) {
         error.value = "Request timed out. Please try again."
-      } else if (err && typeof err === 'object' && ('status' in err || 'statusCode' in err)) {
-        const status = (err as { status?: number; statusCode?: number }).status || (err as { status?: number; statusCode?: number }).statusCode
-        const errData = (err as { data?: unknown }).data
+      } else if (isFetchError(err)) {
+        const status = err.status || err.statusCode
+        const errData = err.data
         const dataMessage = errData ? `: ${typeof errData === 'string' ? errData : JSON.stringify(errData)}` : ''
         error.value = `Server error: ${status}${dataMessage}`
       } else if (err instanceof Error) {

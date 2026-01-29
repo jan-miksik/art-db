@@ -34,7 +34,11 @@ export const useArtistArrangement = () => {
 
       const previousArtist = artistsStore.artists[index - 1]
       if (!previousArtist) return
-      const hasSameFieldValue = previousArtist[fieldName] === artist[fieldName]
+      
+      // Handle null/undefined values explicitly for consistent grouping
+      const previousValue = previousArtist[fieldName] ?? null
+      const currentValue = artist[fieldName] ?? null
+      const hasSameFieldValue = previousValue === currentValue
 
       if (hasSameFieldValue) {
         // Group artists with the same field value at the same Y position
