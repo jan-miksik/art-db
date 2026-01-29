@@ -32,42 +32,70 @@ export const useSortStore = defineStore('sort', () => {
   const alphabetSort = async (fieldName: 'firstname' | 'surname' | 'gender') => {
     isSortingInProgress.value = true
 
-    if (activeSort.value.direction === SortDirection.ASC) {
-      useArtistsStore().artists.sort((a, b) => {
-        return a[fieldName].localeCompare(b[fieldName])
-      })
-        await sleep(100)
-        reArrangeSortedArtists(fieldName)
-    } else {
-      useArtistsStore().artists.sort((a, b) => {
-        return b[fieldName].localeCompare(a[fieldName])
-      })
-        await sleep(100)
-        reArrangeSortedArtists(fieldName)
+    try {
+      const artistsStore = useArtistsStore()
+      const sortedArtists = [...artistsStore.artists]
+
+      if (activeSort.value.direction === SortDirection.ASC) {
+        sortedArtists.sort((a, b) => {
+          const aValue = String(a[fieldName] ?? '')
+          const bValue = String(b[fieldName] ?? '')
+          return aValue.localeCompare(bValue)
+        })
+      } else {
+        sortedArtists.sort((a, b) => {
+          const aValue = String(a[fieldName] ?? '')
+          const bValue = String(b[fieldName] ?? '')
+          return bValue.localeCompare(aValue)
+        })
+      }
+
+      artistsStore.setArtists(sortedArtists)
+      await sleep(100)
+      reArrangeSortedArtists(fieldName)
+    } finally {
+      setTimeout(() => {
+        isSortingInProgress.value = false
+      }, 1000)
     }
-    setTimeout(() => {
-      isSortingInProgress.value = false
-    }, 1000)
   }
 
   const numberSort = async (fieldName: 'born' | 'auctions_turnover_2023_h1_USD') => {
     isSortingInProgress.value = true
 
-    if (activeSort.value.direction === SortDirection.ASC) {
-      useArtistsStore().artists.sort((a, b) => {
-        return +b[fieldName] - +a[fieldName]
-      })
+    try {
+      const artistsStore = useArtistsStore()
+      const sortedArtists = [...artistsStore.artists]
+
+      if (activeSort.value.direction === SortDirection.ASC) {
+        sortedArtists.sort((a, b) => {
+          const aValue = a[fieldName] ?? null
+          const bValue = b[fieldName] ?? null
+          // Handle nulls: null values go to the end
+          if (aValue === null && bValue === null) return 0
+          if (aValue === null) return 1
+          if (bValue === null) return -1
+          return bValue - aValue
+        })
+      } else {
+        sortedArtists.sort((a, b) => {
+          const aValue = a[fieldName] ?? null
+          const bValue = b[fieldName] ?? null
+          // Handle nulls: null values go to the end
+          if (aValue === null && bValue === null) return 0
+          if (aValue === null) return 1
+          if (bValue === null) return -1
+          return aValue - bValue
+        })
+      }
+
+      artistsStore.setArtists(sortedArtists)
       await sleep(100)
       reArrangeSortedArtists(fieldName)
-    } else {
-      useArtistsStore().artists.sort((a, b) => {
-        return +a[fieldName] - +b[fieldName]
-      })
-      await sleep(100)
-      reArrangeSortedArtists(fieldName)
-    }
+    } finally {
       await sleep(1000)
       isSortingInProgress.value = false
+    }
   }
 
 

@@ -2,7 +2,7 @@
   <img
     v-if="fullImageSrcComputed"
     :class="[{ 'image__full': !externalCssClass }, externalCssClass]"
-    ref="fullImageRef"
+    ref="imageRef"
     :loading="fullImageLoading"
     :fetchpriority="fullImageFetchpriority"
     :src="fullImageSrcComputed"
@@ -10,7 +10,7 @@
   />
   <div 
     v-else 
-    ref="fullImageRef"
+    ref="placeholderRef"
     :class="['anim-bg', { 'image__full': !externalCssClass }, externalCssClass]"
   />
 </template>
@@ -66,7 +66,8 @@ const isVisible = ref(false)
 
 const fullImageSrc = ref('')
 const fullImageFileInIDB = ref<ImageIDB>()
-const fullImageRef = ref()
+const imageRef = ref<HTMLImageElement | null>(null)
+const placeholderRef = ref<HTMLDivElement | null>(null)
 const isFullImageLoaded = ref(false)
 const blobUrlRef = ref<string | null>(null)
 let observer: IntersectionObserver | null = null
@@ -94,7 +95,8 @@ const handleSetupMissingImage = () => {
   // Create an SVG with black background as a data URL
   const blackSvg = `data:image/svg+xml;charset=utf-8,<svg xmlns="http://www.w3.org/2000/svg" width="100%" height="100%" viewBox="0 0 100 100"><rect width="100%" height="100%" fill="black"/></svg>`
   fullImageSrc.value = blackSvg
-  fullImageRef.value?.classList.remove('anim-bg')
+  imageRef.value?.classList.remove('anim-bg')
+  placeholderRef.value?.classList.remove('anim-bg')
 }
 
 
@@ -141,7 +143,8 @@ const giveFullImageSourcePlease = async () => {
       })
     }
     fullImageSrc.value = cached.src
-    fullImageRef.value?.classList.remove('anim-bg')
+    imageRef.value?.classList.remove('anim-bg')
+    placeholderRef.value?.classList.remove('anim-bg')
     return
   }
   
@@ -218,7 +221,7 @@ const giveFullImageSourcePlease = async () => {
 }
 
 const loadedFullImage = () => {
-  fullImageRef.value?.classList.remove('anim-bg')
+  imageRef.value?.classList.remove('anim-bg')
   isFullImageLoaded.value = true
 }
 
@@ -236,6 +239,16 @@ watch(() => imageFileComputed.value.url, async (newUrl, oldUrl) => {
   }
 })
 
+// Watch for when image element is rendered and attach load listener
+watch(imageRef, (newRef, oldRef) => {
+  if (oldRef) {
+    oldRef.removeEventListener('load', loadedFullImage)
+  }
+  if (newRef) {
+    newRef.addEventListener('load', loadedFullImage)
+  }
+})
+
 onMounted(async () => {
   const imageUrl = imageFileComputed.value.url
   const cached = imageUrl
@@ -244,9 +257,8 @@ onMounted(async () => {
   if (cached) {
     fullImageSrc.value = cached.src
   } else {
-    fullImageRef.value?.classList.add('anim-bg')
+    placeholderRef.value?.classList.add('anim-bg')
   }
-  fullImageRef.value?.addEventListener('load', loadedFullImage)
 
   observer = new IntersectionObserver((entries) => {
     // The callback will be called when the image enters or leaves the viewport
@@ -260,16 +272,24 @@ onMounted(async () => {
     threshold: 0
   })
 
-  // Start observing the image
-  if (fullImageRef.value) {
-    observer.observe(fullImageRef.value)
+  // Start observing the placeholder or image element
+  const elementToObserve = placeholderRef.value || imageRef.value
+  if (elementToObserve) {
+    observer.observe(elementToObserve)
   }
+  
+  // Watch for when imageRef becomes available and observe it
+  watch(imageRef, (newRef) => {
+    if (newRef && observer) {
+      observer.observe(newRef)
+    }
+  })
 })
 
 
 onUnmounted(() => {
   // Clean up event listener
-  fullImageRef.value?.removeEventListener('load', loadedFullImage)
+  imageRef.value?.removeEventListener('load', loadedFullImage)
   // Clean up IntersectionObserver to prevent memory leaks
   observer?.disconnect()
   observer = null

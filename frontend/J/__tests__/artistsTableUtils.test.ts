@@ -5,9 +5,8 @@ import {
   matchesMediaTypeFilter,
   matchesIdFilter,
   toggleSort,
-  GenderOptionEnum,
-  MediaTypeOptionEnum,
 } from '~/J/artistsTableUtils'
+import { GenderOptionEnum, MediaTypeOptionEnum } from '~/J/useFilterStore'
 
 describe('artistsTableUtils', () => {
   describe('isBornInRange', () => {

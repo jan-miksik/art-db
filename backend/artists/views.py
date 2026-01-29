@@ -2,7 +2,6 @@ import logging
 import os
 from tempfile import NamedTemporaryFile
 
-from rest_framework import viewsets
 from .serializers import ArtistSerializer, ArtworkSerializer, SearchArtistSerializer
 from rest_framework.decorators import api_view, permission_classes, throttle_classes
 from rest_framework.permissions import AllowAny, IsAdminUser
@@ -13,6 +12,9 @@ from .weaviate import (
     search_similar_artwork_ids_by_image_data,
     search_similar_authors_ids_by_image_data,
     search_similar_authors_ids_by_image_url,
+    WeaviateConnectionError,
+    WeaviateImageError,
+    WeaviateSecurityError,
 )
 from .models import Artwork, Artist
 from .throttles import SearchAnonThrottle, SearchUserThrottle
@@ -26,11 +28,6 @@ def get_validated_limit(data, key, default=2, min_val=1, max_val=100):
         return max(min_val, min(limit, max_val))
     except (ValueError, TypeError):
         return default
-
-
-class ArtistViewSet(viewsets.ModelViewSet):
-    queryset = Artist.objects.all()
-    serializer_class = ArtistSerializer
 
 
 def _build_image_search_response(images_list):
@@ -114,15 +111,22 @@ def search_authors_by_image_data(request):
     image_file = request.FILES.get('image')
     limit = get_validated_limit(request.data, 'limit', default=2)
 
-    if image_file:
+    if not image_file:
+        return failure('Image data not provided', status=400)
+
+    try:
         # Read the file data into bytes
         image_data_bytes = image_file.read()
 
         similar_images = search_similar_authors_ids_by_image_data(image_data_bytes, limit)
         images_list = list(similar_images.objects)
         return success(_build_image_search_response(images_list))
-    else:
-        return failure('Image data not provided', status=400)
+    except WeaviateConnectionError as e:
+        logging.exception("Weaviate connection error in search_authors_by_image_data")
+        return failure('Search service is temporarily unavailable', status=503)
+    except (WeaviateImageError, WeaviateSecurityError) as e:
+        logging.exception("Image or security error in search_authors_by_image_data")
+        return failure(str(e), status=400)
 
 
 # Public endpoint - anyone can search by image URL (rate limited)
@@ -133,11 +137,19 @@ def search_authors_by_image_url(request):
     image_url = request.GET.get('image_url')
     if not image_url:
         return failure('image_url query parameter is required', status=400)
+    
     limit = get_validated_limit(request.GET, 'limit', default=1)
-    similar_images = search_similar_authors_ids_by_image_url(image_url, limit)
-    images_list = list(similar_images.objects)
-
-    return success(_build_image_search_response(images_list))
+    
+    try:
+        similar_images = search_similar_authors_ids_by_image_url(image_url, limit)
+        images_list = list(similar_images.objects)
+        return success(_build_image_search_response(images_list))
+    except WeaviateConnectionError as e:
+        logging.exception("Weaviate connection error in search_authors_by_image_url")
+        return failure('Search service is temporarily unavailable', status=503)
+    except (WeaviateImageError, WeaviateSecurityError) as e:
+        logging.exception("Image or security error in search_authors_by_image_url")
+        return failure(str(e), status=400)
 
 
 # Public endpoint - anyone can search artworks by image (rate limited)
@@ -148,15 +160,22 @@ def search_artworks_by_image_data(request):
     image_file = request.FILES.get('image')
     limit = get_validated_limit(request.data, 'limit', default=10)
 
-    if image_file:
+    if not image_file:
+        return failure('Image data not provided', status=400)
+
+    try:
         # Read the file data into bytes
         image_data_bytes = image_file.read()
 
         similar_images = search_similar_artwork_ids_by_image_data(image_data_bytes, limit)
         images_list = list(similar_images)
         return success(_build_image_search_response(images_list))
-    else:
-        return failure('Image data not provided', status=400)
+    except WeaviateConnectionError as e:
+        logging.exception("Weaviate connection error in search_artworks_by_image_data")
+        return failure('Search service is temporarily unavailable', status=503)
+    except (WeaviateImageError, WeaviateSecurityError) as e:
+        logging.exception("Image or security error in search_artworks_by_image_data")
+        return failure(str(e), status=400)
 
 
 # Public endpoint - anyone can search artworks by image URL (rate limited)
@@ -167,8 +186,16 @@ def search_artworks_by_image_url(request):
     image_url = request.GET.get('image_url')
     if not image_url:
         return failure('image_url query parameter is required', status=400)
+    
     limit = get_validated_limit(request.GET, 'limit', default=1)
-    similar_images = search_similar_artwork_ids_by_image_url(image_url, limit)
-    images_list = list(similar_images)
-
-    return success(_build_image_search_response(images_list))
+    
+    try:
+        similar_images = search_similar_artwork_ids_by_image_url(image_url, limit)
+        images_list = list(similar_images)
+        return success(_build_image_search_response(images_list))
+    except WeaviateConnectionError as e:
+        logging.exception("Weaviate connection error in search_artworks_by_image_url")
+        return failure('Search service is temporarily unavailable', status=503)
+    except (WeaviateImageError, WeaviateSecurityError) as e:
+        logging.exception("Image or security error in search_artworks_by_image_url")
+        return failure(str(e), status=400)

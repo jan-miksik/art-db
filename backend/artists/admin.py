@@ -86,12 +86,16 @@ class ArtistAdmin(admin.ModelAdmin):
         # Handle saving profile image for the Artist
         if 'profile_image' in form.changed_data:
             obj.save()
-            file_path = obj.profile_image.path
-            arweave_url = upload_to_arweave(file_path)
-            if arweave_url is not None:
-                obj.profile_image_url = arweave_url
-                # Delete the file from the media folder
-                safe_remove_file(file_path)
+            # Check that profile_image exists and file is valid before accessing .path
+            if obj.profile_image and os.path.isfile(obj.profile_image.path):
+                file_path = obj.profile_image.path
+                arweave_url = upload_to_arweave(file_path)
+                if arweave_url is not None:
+                    obj.profile_image_url = arweave_url
+                    # Delete the file from the media folder
+                    safe_remove_file(file_path)
+            else:
+                logger.debug("Skipping Arweave upload for Artist profile_image: field is empty or file does not exist")
 
         super().save_model(request, obj, form, change)
 
@@ -107,28 +111,32 @@ class ArtistAdmin(admin.ModelAdmin):
                 if 'picture' in form.changed_data:
                     artwork = form.instance
                     artwork.save()
-                    file_path = artwork.picture.path
-                    arweave_url = upload_to_arweave(file_path)
-                    if arweave_url is not None:
-                        artwork.picture_url = arweave_url
-                        artwork.save()
-                        # Delete the file from the media folder
-                        safe_remove_file(file_path)
-
-                    if not artwork.picture_image_weaviate_id and artwork.id and artwork.artist.id and arweave_url:
-                        # Add the artwork to Weaviate
-                        weaviate_id = add_image_to_weaviate(artwork.id, artwork.artist.id, arweave_url)
-                        logger.debug(f"Weaviate ID for artwork {artwork.id}: {weaviate_id}")
-
-                        if weaviate_id is not None:
-                            artwork.picture_image_weaviate_id = weaviate_id
+                    # Check that picture exists and file is valid before accessing .path
+                    if artwork.picture and os.path.isfile(artwork.picture.path):
+                        file_path = artwork.picture.path
+                        arweave_url = upload_to_arweave(file_path)
+                        if arweave_url is not None:
+                            artwork.picture_url = arweave_url
                             artwork.save()
+                            # Delete the file from the media folder
+                            safe_remove_file(file_path)
+
+                        if not artwork.picture_image_weaviate_id and artwork.id and artwork.artist.id and arweave_url:
+                            # Add the artwork to Weaviate
+                            weaviate_id = add_image_to_weaviate(artwork.id, artwork.artist.id, arweave_url)
+                            logger.debug(f"Weaviate ID for artwork {artwork.id}: {weaviate_id}")
+
+                            if weaviate_id is not None:
+                                artwork.picture_image_weaviate_id = weaviate_id
+                                artwork.save()
+                            else:
+                                # Handle the case when the artwork could not be added to Weaviate
+                                logger.warning(f"Failed to add artwork {artwork.id} to Weaviate")
                         else:
-                            # Handle the case when the artwork could not be added to Weaviate
-                            logger.warning(f"Failed to add artwork {artwork.id} to Weaviate")
+                            logger.debug(
+                                f"Skipping Weaviate save for artwork {artwork.id}. picture_image_weaviate_id already exists or missing required data.")
                     else:
-                        logger.debug(
-                            f"Skipping Weaviate save for artwork {artwork.id}. picture_image_weaviate_id already exists or missing required data.")
+                        logger.debug(f"Skipping Arweave upload for Artwork {artwork.id} picture: field is empty or file does not exist")
 
     def profile_image_preview(self, obj):
         if obj.profile_image_url:
@@ -160,12 +168,16 @@ class ArtworkAdmin(admin.ModelAdmin):
         logger.debug(f"Saving artwork to database: {obj.id}")
         if 'picture' in form.changed_data:
             obj.save()
-            file_path = obj.picture.path
-            arweave_url = upload_to_arweave(file_path)
-            if arweave_url is not None:
-                obj.picture_url = arweave_url
-                # Delete the file from the media folder
-                safe_remove_file(file_path)
+            # Check that picture exists and file is valid before accessing .path
+            if obj.picture and os.path.isfile(obj.picture.path):
+                file_path = obj.picture.path
+                arweave_url = upload_to_arweave(file_path)
+                if arweave_url is not None:
+                    obj.picture_url = arweave_url
+                    # Delete the file from the media folder
+                    safe_remove_file(file_path)
+            else:
+                logger.debug(f"Skipping Arweave upload for Artwork {obj.id} picture: field is empty or file does not exist")
 
         if not obj.picture_image_weaviate_id and obj.id and obj.artist.id and obj.picture_url:
             # Add the artwork to Weaviate

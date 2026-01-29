@@ -1,12 +1,15 @@
 import arweave
+import os
 from django.conf import settings
 from arweave.arweave_lib import Transaction
 from arweave.transaction_uploader import get_uploader
 import mimetypes
-from django.conf import settings
 
 
 def upload_to_arweave(file_path):
+    if not os.path.isfile(file_path):
+        raise ValueError(f"Invalid file path: {file_path} does not exist or is not a file")
+    
     mimetypes.init()
     mimetypes.add_type('image/webp', '.webp')
     mime_type, _ = mimetypes.guess_type(file_path)
